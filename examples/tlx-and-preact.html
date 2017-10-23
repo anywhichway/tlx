@@ -1,25 +1,10 @@
-# tlx
-
-Like JSX but uses JavaScript Template Literals - No Preprocessor Required
-
-4K Raw, 2.3K minified, 1K Gzipped - No dependencies
-
-Works with React and Preact.
-
-# Installation
-
-`npm install tlx`
-
-# Usage
-
-Just prefix your template literals with `tlx`.
-
-Examples are best!
-
-```
+<html>
+<head>
 <script src="../index.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/preact/8.2.5/preact.min.js"></script>
-<script>
+</head>
+<body>
+<script id="example">
 tlx.render(tlx`<p>tlx.render <span>Hello, world!</span> <button onClick="${ () => alert('hi!') }">Click Me</button></p>`,document.body);
 
 preact.render(tlx`<p>preact.render <span>Hello, world!</span> <button onclick="${ () => alert('hi!') }">Click Me</button></p>`,document.body);
@@ -43,13 +28,15 @@ preact.render(tlx`<p>
 		${[1,2,3].map(item => (`<li>${item}</li>`))}
 	</ul>
 </p>`,document.body);
+
 </script>
-```
 
-# Release History (Reverse Chronological Order)
+<pre id="code"></pre>
+<script>
+const el = document.getElementById("code");
+el.innerHTML = document.getElementById("example").innerText.replace(/\</g,"&lt;");
+</script>
 
-2017-10-23 v0.0.1-beta Initial public release
 
- # License
- 
- MIT
+</body>
+</html>

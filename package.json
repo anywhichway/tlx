@@ -1,0 +1,26 @@
+{
+  "name": "tlx",
+  "version": "0.0.1-beta",
+  "description": "Like JSX but uses JavaScript Template Literals - No Preprocessor Required",
+  "engines": {},
+  "license": "MIT",
+  "scripts": {
+    "prepublish": "cp ./index.js ./browser/tlx.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anywhichway/tlx.git"
+  },
+  "keywords": [
+    "JSX",
+    "React",
+    "preact"
+  ],
+  "author": "Simon Y. Blackwell <syblackwell@anywhichway.com> (http://www.github.com/anywhichway)",
+  "bugs": {
+    "url": "https://github.com/anywhichway/tlx/issues"
+  },
+  "homepage": "https://github.com/anywhichway/tlx#readme",
+  "devDependencies": {},
+  "dependencies": {}
+}

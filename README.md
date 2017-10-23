@@ -17,32 +17,47 @@ Just prefix your template literals with `tlx`.
 Examples are best!
 
 ```
-<script src="../index.js"></script>
+<script src="../browser/index.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/preact/8.2.5/preact.min.js"></script>
+<div id="content"></div>
 <script>
-tlx.render(tlx`<p>tlx.render <span>Hello, world!</span> <button onClick="${ () => alert('hi!') }">Click Me</button></p>`,document.body);
+const el = document.getElementById("content");
 
-preact.render(tlx`<p>preact.render <span>Hello, world!</span> <button onclick="${ () => alert('hi!') }">Click Me</button></p>`,document.body);
+tlx.render(tlx`<p>tlx.render 
+	<span>Hello, world!</span>
+	<button onClick="${ () => alert('hi!') }">Click Me</button>
+	</p>`,el);
+
+preact.render(tlx`<p>preact.render
+	<span>Hello, world!</span> 
+	<button onclick="${ () => alert('hi!') }">Click Me</button>
+	</p>`,el);
 
 const model = {	onclick() { alert('hi!'); } };
 
-tlx.render(tlx.bind(model)`<p>bound tlx + tlx.render <span>Hello, world!</span> <button onclick="${model.onclick}">Click Me</button></p>`,document.body);
+tlx.render(tlx.bind(model)`<p>bound tlx + tlx.render
+	<span>Hello, world!</span>
+	<button onclick="${model.onclick}">Click Me</button>
+	</p>`,el);
 
-preact.render(tlx.bind(model)`<p>bound tlx + preact.render <span>Hello, world!</span> <button onclick="${model.onclick}">Click Me</button></p>`,document.body);
+preact.render(tlx.bind(model)`<p>bound tlx + preact.render
+	<span>Hello, world!</span>
+	<button onclick="${model.onclick}">Click Me</button>
+	</p>`,el);
 
 tlx.render(tlx`<p>
 	tlx.render list
 	<ul>
 		${[1,2,3].map(item => (`<li>${item}</li>`))}
 	</ul>
-</p>`,document.body);
+	</p>`,el);
 
 preact.render(tlx`<p>
 	preact.render list
 	<ul>
 		${[1,2,3].map(item => (`<li>${item}</li>`))}
 	</ul>
-</p>`,document.body);
+	</p>`,el);
 </script>
 ```
 

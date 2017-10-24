@@ -27,12 +27,12 @@ const el = document.getElementById("content");
 
 tlx.render(tlx`<p>tlx.render 
 	<span>Hello, world!</span>
-	<button onClick="${ () => alert('hi!') }">Click Me</button>
+	<button onClick="(function() { alert('hi!'); })()">Click Me</button>
 	</p>`,el);
 
 preact.render(tlx`<p>preact.render
 	<span>Hello, world!</span> 
-	<button onclick="${ () => alert('hi!') }">Click Me</button>
+	<button onclick="(function() { alert('hi!'); })()">Click Me</button>
 	</p>`,el);
 
 const model = {	onclick() { alert('hi!'); } };
@@ -69,6 +69,6 @@ preact.render(tlx`
 
 2017-10-24 v0.0.2-beta Reworked internals to use some code from [Hyperx](https://github.com/choojs/hyperx). Started adding full page re-activity.
 
- # License
+# License
  
  MIT

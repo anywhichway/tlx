@@ -16,7 +16,7 @@ Just prefix your template literals with `tlx`.
 
 Examples are best!
 
-```
+```js
 <script src="../browser/index.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/preact/8.2.5/preact.min.js"></script>
 <div id="content"></div>

@@ -1,11 +1,12 @@
 {
   "name": "tlx",
-  "version": "0.0.1-beta",
+  "version": "0.0.2-beta",
   "description": "Like JSX but uses JavaScript Template Literals - No Preprocessor Required",
   "engines": {},
   "license": "MIT",
   "scripts": {
-    "prepublish": "cp ./index.js ./browser/tlx.js"
+    "prepare": "cp ./index.js ./browser/tlx.js",
+    "prepublishOnly": "cp ./index.js ./browser/tlx.js"
   },
   "repository": {
     "type": "git",

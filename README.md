@@ -2,9 +2,11 @@
 
 Like JSX but uses JavaScript Template Literals - No Preprocessor Required
 
-4K Raw, 2.3K minified, 1K Gzipped - No dependencies
+15K Raw, 5K minified, 2K Gzipped - No dependencies
 
 Works with React and Preact.
+
+Substantial portions drawn from from [Hyperx](https://github.com/choojs/hyperx). Adds its own render function. Automatic page templates with re-activity and first class components coming soon.
 
 # Installation
 
@@ -16,7 +18,7 @@ Just prefix your template literals with `tlx`.
 
 Examples are best!
 
-```
+```js
 <script src="../browser/index.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/preact/8.2.5/preact.min.js"></script>
 <div id="content"></div>
@@ -45,25 +47,27 @@ preact.render(tlx.bind(model)`<p>bound tlx + preact.render
 	<button onclick="${model.onclick}">Click Me</button>
 	</p>`,el);
 
-tlx.render(tlx`<p>
+tlx.render(tlx`
 	tlx.render list
 	<ul>
-		${[1,2,3].map(item => (`<li>${item}</li>`))}
+		${[1,2,3].map(item => (tlx`<li>${item}</li>`))}
 	</ul>
-	</p>`,el);
+	`,el);
 
-preact.render(tlx`<p>
+preact.render(tlx`
 	preact.render list
 	<ul>
-		${[1,2,3].map(item => (`<li>${item}</li>`))}
+		${[1,2,3].map(item => (tlx`<li>${item}</li>`))}
 	</ul>
-	</p>`,el);
+	`,el);
 </script>
 ```
 
 # Release History (Reverse Chronological Order)
 
 2017-10-23 v0.0.1-beta Initial public release
+
+2017-10-24 v0.0.2-beta Reworked internals to use some code from [Hyperx](https://github.com/choojs/hyperx). Started adding full page re-activity.
 
  # License
  

@@ -9,40 +9,47 @@
 const el = document.getElementById("content");
 
 tlx.render(tlx`<p>tlx.render 
-	<span>Hello, world!</span>
-	<button onClick="${ () => alert('hi!') }">Click Me</button>
-	</p>`,el);
+		<span>Hello, world!</span>
+		<button onclick="(() => { alert('hi') })()">Click Me</button>
+		</p>`,el);
 
 preact.render(tlx`<p>preact.render
 	<span>Hello, world!</span> 
-	<button onclick="${ () => alert('hi!') }">Click Me</button>
+	<button onclick="(() => { alert('hi') })()">Click Me</button>
 	</p>`,el);
 
 const model = {	onclick() { alert('hi!'); } };
 
 tlx.render(tlx.bind(model)`<p>bound tlx + tlx.render
 	<span>Hello, world!</span>
-	<button onclick="${model.onclick}">Click Me</button>
+	<button onclick=${model.onclick}>Click Me</button>
 	</p>`,el);
 
 preact.render(tlx.bind(model)`<p>bound tlx + preact.render
 	<span>Hello, world!</span>
-	<button onclick="${model.onclick}">Click Me</button>
+	<button onclick=${model.onclick}>Click Me</button>
 	</p>`,el);
 
 tlx.render(tlx`<p>
 	tlx.render list
 	<ul>
-		${[1,2,3].map(item => (`<li>${item}</li>`))}
+		${[1,2,3].map(item => (tlx`<li>${item}</li>`))}
 	</ul>
 	</p>`,el);
 
 preact.render(tlx`<p>
 	preact.render list
 	<ul>
-		${[1,2,3].map(item => (`<li>${item}</li>`))}
+		${[1,2,3].map(item => (tlx`<li>${item}</li>`))}
 	</ul>
 	</p>`,el);
+	
+const nested = [[1,2,3],[4,5,6]];
+tlx.render(tlx`<p>
+	tlx.render nested
+	${nested.map(list => (tlx`<ul>${list.map(item => (tlx`<li>${item}</li>`))}</ul>`))}
+	</p>`,el);
+		
 </script>
 
 

@@ -10,19 +10,19 @@
 <script id="example">
 const run = () => {
 	let el = document.getElementById("render");
-	ReactDOM.render(tlx`<p>ReactDOM.render <span>Hello, world!</span> <button onClick="${ function() { alert('hi!'); } }">Click Me</button></p>`,el);
+	ReactDOM.render(tlx`<p>ReactDOM.render <span>Hello, world!</span> <button onClick="(function() { alert('hi!'); })()">Click Me</button></p>`,el);
 	
 	el = document.getElementById("bound");
 	const model = {	onclick() { alert('hi!'); } };
-	ReactDOM.render(tlx.bind(model)`<p>bound tlx + ReactDOM.render <span>Hello, world!</span> <button onClick="${model.onclick}">Click Me</button></p>`,el);
+	ReactDOM.render(tlx.bind(model)`<p>bound tlx + ReactDOM.render <span>Hello, world!</span> <button onClick=${model.onclick}>Click Me</button></p>`,el);
 	
 	el = document.getElementById("list");
-	ReactDOM.render(tlx`<p>
+	ReactDOM.render(tlx`<span>
 		ReactDOM.render list
 		<ul>
-			${[1,2,3].map(item => (`<li>${item}</li>`))}
+			${[1,2,3].map(item => (tlx`<li>${item}</li>`))}
 		</ul>
-	</p>`,el);
+	</span>`,el);
 }	
 </script>
 <pre id="code"></pre>

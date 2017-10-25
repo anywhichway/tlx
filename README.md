@@ -67,7 +67,7 @@ preact.render(tlx`
 </script>
 ```
 
-Use to templatize regualr HTML:
+Use to templatize regular HTML:
 
 ```html
 <body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'}})(document.body)">

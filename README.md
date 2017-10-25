@@ -20,6 +20,8 @@ Or, if you want to templatize regular HTML outside of a script, bind`tlx` to an 
 
 Examples are best!
 
+Use with tlx.render or preact.render:
+
 ```js
 <script src="../browser/index.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/preact/8.2.5/preact.min.js"></script>
@@ -64,6 +66,8 @@ preact.render(tlx`
 	`,el);
 </script>
 ```
+
+Use to templatize regualr HTML:
 
 ```html
 <body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'}})(document.body)">

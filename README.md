@@ -66,16 +66,16 @@ preact.render(tlx`
 ```
 
 ```html
-&lt;body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'}})(document.body)">
-&lt;div>
-	&lt;div>
+<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'}})(document.body)">
+<div>
+	<div>
 	Name: ${name}
-		&lt;div>
+		<div>
 		City: ${address.city}, State: ${address.state}
-		&lt;/div>
-	&lt;/div>
-&lt;/div>
-&lt;/body>
+		</div>
+	</div>
+</div>
+</body>
 ```
 
 # Release History (Reverse Chronological Order)

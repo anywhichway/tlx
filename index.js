@@ -44,6 +44,15 @@
 	  //}
 
 	  return function (strings,...values) {
+		if(strings instanceof HTMLElement) {
+			strings.model = (typeof(window)!=="undefined" && this!==window ? this : {});
+			for(let node of [].slice.call(strings.children)) {
+				if(node.innerHTML.indexOf("${")>=0) {
+					tlx.render(Function("return tlx`"+node.innerHTML.replace(/\${/g,"\\${")+"`")(),null,node);
+				}
+			}
+			return;
+		}
 	    var state = TEXT, reg = ''
 	    var arglen = arguments.length
 	    var parts = []
@@ -309,6 +318,38 @@
 			let children = args.length ? [].concat(...args) : null;
 		    return new VNode({nodeName,attributes,children});
 		},
+		resolve = function(template,node) { // walk up the DOM tree for model data, n=node,m=model,p=property,e=extras
+const code = // left align, 2 char indent, single char variables to reduce size since templates not minimized
+`let model=n.model;
+while(!model && n && (n.parentElement||n.ownerElement)) { n = n.parentElement||n.ownerElement; model = !n || n.model; }
+if(!model) return;
+ do{
+  try {
+   with(e){with(model){return $.parser__template__;}}
+  }catch(err){
+   if(err instanceof ReferenceError){
+    const p=err.message.split(" ")[0];
+     let prnt=n.parentElement||n.ownerElement,v;
+      while(prnt){
+       let m = prnt.model;
+       if(m && typeof(m)==="object" && p in m){v=m[p];break;}
+       prnt=prnt.parentElement;
+	  }
+      if(typeof(v)==="undefined") return; 
+	  else e[p]=v;
+   }else throw(err);
+  }
+ }while(true)`.replace(/__template__/g,"`"+template+"`");
+			//NODE = ((node instanceof HTMLElement || node instanceof Text || node instanceof Attr) ? node : null);
+			const extrs = {};
+			/*if(NODE && node.attributes) {
+				const attributes = [].slice.call(node.attributes);
+				for(let attribute of attributes) extrs[attribute.name] = (typeof(attribute.feteData)!=="undefined" ? attribute.feteData : attribute.value);
+			}*/
+			let value = new Function("n","$","e",code).call(this,node,tlx.$,extrs);
+			//NODE = null;
+			return value;
+		},
 		tlx = hyperx(h);
 		let NODE;
 		tlx.activate = (object) => {
@@ -348,21 +389,16 @@
 			for(let key in object) object[key] = tlx.activate(object[key]);
 			return proxy;
 		}
+		tlx.$ = {
+			parser(strings,...values) {
+				if(values.length===1 && strings.filter(item => item.length>0).length===0) return values[0];
+				let result = "";
+				for(let i=0;i<strings.length;i++) result += (strings[i] + (i<values.length ? (values[i] && typeof(values[i])==="object" ? JSON.stringify(values[i]) : values[i]) : ""));
+				return result;
+			}
+		},
 		tlx.h = h;
-		function interpolate(strings,...values) {
-			if(values.length===1 && strings.filter(item => item.length>0).length===0) return values[0];
-			let result = "";
-			for(let i=0;i<strings.length;i++) result += (strings[i] + (i<values.length ? values[i] : ""));
-			return result;
-		}
-		tlx.render = (vnode,target,node,model) => {  
-		    if(typeof(vnode)!=="object") {
-		    	let value = vnode+"";
-		    	if(value.indexOf("${")>=0) {
-		    		value = Function("model","return with(model) { interpolate`" + value + "`; }")(model||node.model)
-		    	}
-		    	return document.createTextNode(vnode);
-		    }
+		tlx.render = (vnode,target,node) => {
 		    if(node) {
 		    	for(let attribute of [].slice.call(node.attributes)) {
 		    		delete node[attribute.name];
@@ -373,30 +409,42 @@
 		    	node = document.createElement(vnode.nodeName);
 		    }
 		    NODE = node;
+		    if(typeof(vnode)!=="object") return document.createTextNode(vnode+"");
 		    node.vnode = vnode;
 		    const attributes = vnode.attributes || {};
 		    for(let name in attributes) {
-		    	let value = attributes[name], 
-		    		type = typeof(value);
-		    	if(type==="string" && name.indexOf("${")===0) {
-		    		value = Function("model","return with(model) { interpolate`" + value + "`; }")(model||node.model)
+		    	const value = attributes[name],
+	    			type = typeof(value);
+		    	if(type==="string" && value.indexOf("${")>=0) {
+		    		setTimeout(() => {
+		    			const resolved = resolve(value,node),
+		    				type = typeof(resolved);
+		    			if(resolved && type==="object") node[name] = value;
+			    		else if(type==="function") {
+				    		node.addEventListener(name.substring(2).toLowerCase(),value);
+				    	} else node.setAttribute(name, resolved);
+		    		});
+		    	} else {
+			    	if(value && type==="object") node[name] = value;
+			    	else if(type==="function") {
+			    		node.addEventListener(name.substring(2).toLowerCase(),value);
+			    	} else node.setAttribute(name, value);
 		    	}
-		    	if(value && type==="object") node[name] = value;
-		    	else if(type==="function") {
-		    		node.addEventListener(name.substring(2).toLowerCase(),value);
-		    	} else node.setAttribute(name, value);
 		    }
-		    (vnode.children || []).forEach(child => node.appendChild(tlx.render(child,null)));
+		    (vnode.children || []).forEach(child => {
+		    	const childnode = tlx.render(child);
+		    	node.appendChild(childnode);
+		    	if(childnode instanceof Text && childnode.textContent.indexOf("${")>=0) {
+		    		// should probably lift this out and make render a two phase that first does elements, then walks tree for text and attributes
+		    		setTimeout(() => {
+			    		const value = resolve(childnode.textContent.trim(),node);
+			    		childnode.textContent = (!value || typeof(value)!=="object" ? value : JSON.stringify(value));
+		    		});
+			    }
+		    });
 		    if(target) target.appendChild(node);
 		    NODE = null;
 		    return node;
-		}
-		tlx.mvc = (model,target=document.body,controller) => {
-			for(let node of [].slice.call(target.children)) {
-				if(node.indexOf("${")>=0) {
-					tlx.render(tlx.h(node),null,node,model);
-				}
-			}
 		}
 
 

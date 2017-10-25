@@ -16,6 +16,8 @@ Substantial portions drawn from from [Hyperx](https://github.com/choojs/hyperx).
 
 Just prefix your template literals with `tlx`.
 
+Or, if you want to templatize regular HTML outside of a script, bind`tlx` to an object and call it with an HTMLElement as an argument, e.g. `tlx.bind({<some data>})(document.getElementbyId(<some id>));` If you do this in `onload` with the argument `document.body`, your entire page will be a template!. Think of it as inverted JSX, i.e. JSX with focus on HTML rather than JavaScript.
+
 Examples are best!
 
 ```js
@@ -63,11 +65,28 @@ preact.render(tlx`
 </script>
 ```
 
+```html
+&lt;body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'}})(document.body)">
+&lt;div>
+	&lt;div>
+	Name: ${name}
+		&lt;div>
+		City: ${address.city}, State: ${address.state}
+		&lt;/div>
+	&lt;/div>
+&lt;/div>
+&lt;/body>
+```
+
 # Release History (Reverse Chronological Order)
+
+2017-10-25 v0.0.3-beta Entire HTML pages or page fragments can now be treated as templates outside of scripts.
+
+2017-10-24 v0.0.2-beta Reworked internals to use some code from [Hyperx](https://github.com/choojs/hyperx). Started adding full page re-activity.
 
 2017-10-23 v0.0.1-beta Initial public release
 
-2017-10-24 v0.0.2-beta Reworked internals to use some code from [Hyperx](https://github.com/choojs/hyperx). Started adding full page re-activity.
+
 
 # License
  

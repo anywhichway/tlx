@@ -6,7 +6,7 @@ Like JSX but uses JavaScript Template Literals - No Preprocessor Required
 
 Works with React and Preact.
 
-Substantial portions drawn from from [Hyperx](https://github.com/choojs/hyperx). Adds its own render function. Automatic page templates with re-activity and first class components coming soon.
+Substantial portions drawn from from [Hyperx](https://github.com/choojs/hyperx). Adds its own render function and full or partial page HTML templating ("inverted JSX"). HTML re-activity and first class components coming soon.
 
 # Installation
 
@@ -83,6 +83,8 @@ Use to templatize regular HTML:
 ```
 
 # Release History (Reverse Chronological Order)
+
+2017-10-25 v0.0.4-beta Documentation updates.
 
 2017-10-25 v0.0.3-beta Entire HTML pages or page fragments can now be treated as templates outside of scripts.
 

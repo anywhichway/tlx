@@ -2,7 +2,7 @@
 
 Like JSX but uses JavaScript Template Literals and adds reactivity - No Preprocessor Required
 
-15K Raw, 5K minified, 2K Gzipped - No dependencies
+19K Raw, 8K minified, 3.5K Gzipped - No dependencies
 
 Works with `React` and `Preact`.
 

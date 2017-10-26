@@ -14,7 +14,7 @@ Substantial portions drawn from from [Hyperx](https://github.com/choojs/hyperx).
 
 # Usage
 
-If you want to templatize regular HTML outside of a script, bind`tlx` to an object and call it with an HTMLElement as an argument, e.g. `tlx.bind({<some data>})(document.getElementbyId(<some id>));` If you do this in `onload` with the argument `document.body`, your entire page will be a template!. Think of it as inverted JSX, i.e. JSX with focus on HTML rather than JavaScript.
+If you want to templatize regular HTML outside of a script, bind`tlx` to an object and call it with an HTMLElement as an argument, e.g. `tlx.bind({<some data>})(document.getElementbyId(<some id>));` If you do this in `onload` with the argument `document.body`, your entire page will be a template!. Think of it as inverted JSX, i.e. JSX with focus on HTML rather than JavaScript. This is useful for SEO dependent sites or where layout needs to be put directly in the hands of a visual designer.
 
 Or, if you are a `preact` or `react` fan, just prefix your template literals with `tlx`.
 

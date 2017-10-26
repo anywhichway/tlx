@@ -2,14 +2,14 @@
 <head>
 <script src="../index.js"></script>
 </head>
-<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'}})(document.body)">
+<body onload="tlx.bind(tlx.activate({name:'Joe',address:{city:'Seattle',state:'WA'}}))(document.body)">
 <div>
 	<div>
-	Name: ${name}
-		<div>
-		City: ${address.city}, State: ${address.state}
-		</div>
+	Name: <input value="${name}" oninput="${this.linkState('name')}">
+	City: <input value="${address.city}" oninput="${this.linkState('address.city')}">
+	State: <input value="${address.state}" oninput="${this.linkState('address.state')}">
 	</div>
+	<div>${name}, ${address.city} ${address.state}</div>
 </div>
 </body>
 </html>

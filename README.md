@@ -1,12 +1,12 @@
 # tlx
 
-Like JSX but uses JavaScript Template Literals - No Preprocessor Required
+Like JSX but uses JavaScript Template Literals and adds reactivity - No Preprocessor Required
 
 15K Raw, 5K minified, 2K Gzipped - No dependencies
 
-Works with React and Preact.
+Works with `React` and `Preact`.
 
-Substantial portions drawn from from [Hyperx](https://github.com/choojs/hyperx). Adds its own render function and full or partial page HTML templating ("inverted JSX"). HTML re-activity and first class components coming soon.
+Substantial portions drawn from from [Hyperx](https://github.com/choojs/hyperx). Adds a `render` function like `React`, full or partial page HTML templating ("inverted JSX") and reactivity. Automatic reactivity, HTML directives and first class components coming soon.
 
 # Installation
 
@@ -14,13 +14,44 @@ Substantial portions drawn from from [Hyperx](https://github.com/choojs/hyperx).
 
 # Usage
 
-Just prefix your template literals with `tlx`.
+If you want to templatize regular HTML outside of a script, bind`tlx` to an object and call it with an HTMLElement as an argument, e.g. `tlx.bind({<some data>})(document.getElementbyId(<some id>));` If you do this in `onload` with the argument `document.body`, your entire page will be a template!. Think of it as inverted JSX, i.e. JSX with focus on HTML rather than JavaScript.
 
-Or, if you want to templatize regular HTML outside of a script, bind`tlx` to an object and call it with an HTMLElement as an argument, e.g. `tlx.bind({<some data>})(document.getElementbyId(<some id>));` If you do this in `onload` with the argument `document.body`, your entire page will be a template!. Think of it as inverted JSX, i.e. JSX with focus on HTML rather than JavaScript.
+Or, if you are a `preact` or `react` fan, just prefix your template literals with `tlx`.
 
 Examples are best!
 
-Use with tlx.render or preact.render:
+Use to templatize regular HTML:
+
+```html
+<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'}})(document.body)">
+<div>
+	<div>
+	Name: ${name}
+		<div>
+		City: ${address.city}, State: ${address.state}
+		</div>
+	</div>
+</div>
+</body>
+```
+
+Make it reactive (see examples/tlx.html):
+
+
+```html
+<body onload="tlx.bind(tlx.activate({name:'Joe',address:{city:'Seattle',state:'WA'}}))(document.body)">
+	<div>
+		<div>
+		Name: <input value="${name}" oninput="${this.linkState('name')}">
+		City: <input value="${address.city}" oninput="${this.linkState('address.city')}">
+		State: <input value="${address.state}" oninput="${this.linkState('address.state')}">
+		</div>
+		<div>${name}, ${address.city} ${address.state}</div>
+	</div>
+</body>
+```
+
+Use with tlx.render or preact.render (see examples/tlx-and-preact.html and examples/react.html):
 
 ```js
 <script src="../browser/index.js"></script>
@@ -31,12 +62,12 @@ const el = document.getElementById("content");
 
 tlx.render(tlx`<p>tlx.render 
 	<span>Hello, world!</span>
-	<button onClick="(function() { alert('hi!'); })()">Click Me</button>
+	<button onClick="() => { alert('hi!'); }">Click Me</button>
 	</p>`,el);
 
 preact.render(tlx`<p>preact.render
 	<span>Hello, world!</span> 
-	<button onclick="(function() { alert('hi!'); })()">Click Me</button>
+	<button onclick="() => { alert('hi!'); }">Click Me</button>
 	</p>`,el);
 
 const model = {	onclick() { alert('hi!'); } };
@@ -67,22 +98,9 @@ preact.render(tlx`
 </script>
 ```
 
-Use to templatize regular HTML:
-
-```html
-<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'}})(document.body)">
-<div>
-	<div>
-	Name: ${name}
-		<div>
-		City: ${address.city}, State: ${address.state}
-		</div>
-	</div>
-</div>
-</body>
-```
-
 # Release History (Reverse Chronological Order)
+
+2017-10-26 v0.0.5-beta HTML reactivity added.
 
 2017-10-25 v0.0.4-beta Documentation updates.
 

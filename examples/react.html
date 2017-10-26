@@ -10,7 +10,7 @@
 <script id="example">
 const run = () => {
 	let el = document.getElementById("render");
-	ReactDOM.render(tlx`<p>ReactDOM.render <span>Hello, world!</span> <button onClick="(function() { alert('hi!'); })()">Click Me</button></p>`,el);
+	ReactDOM.render(tlx`<p>ReactDOM.render <span>Hello, world!</span> <button onClick="() => { alert('hi!'); }">Click Me</button></p>`,el);
 	
 	el = document.getElementById("bound");
 	const model = {	onclick() { alert('hi!'); } };

@@ -102,7 +102,7 @@
 				template = template.template;
 				const resolved = fromJSON(resolve(template,node));
 				type = typeof(resolved);
-			    !tlx.directives || !tlx.directives.HTMLElement || !tlx.directives.HTMLElement.handle || !tlx.directives.HTMLElement.handle(name,resolved,node);
+			    !tlx.directives || !tlx.directives.HTMLElement || !tlx.directives.HTMLElement.handle || tlx.directives.HTMLElement.handle(name,resolved,node);
 				if(resolved && type==="object") node[name] = resolved;
 	    		else if(type==="function") node.addEventListener(name.substring(2).toLowerCase(),resolved);
 		    	else node.setAttribute(name, resolved);

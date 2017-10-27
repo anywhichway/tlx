@@ -1,7 +1,7 @@
 {
   "name": "tlx",
-  "version": "0.0.7-beta",
-  "description": "Like JSX but uses JavaScript Template Literals - No Preprocessor Required",
+  "version": "0.0.8-beta",
+  "description": "Like JSX but uses JavaScript Template Literals plus adds reactivity and attribute directives - No Preprocessor Required",
   "engines": {},
   "license": "MIT",
   "scripts": {

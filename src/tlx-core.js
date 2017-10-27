@@ -43,7 +43,7 @@
 	  //  h = attrToProp(h)
 	  //}
 
-	  return function (strings,...values) {
+	  return function (strings=document.body,...values) {
 		if(tlx.render && strings instanceof HTMLElement) {
 			strings.state = (typeof(window)!=="undefined" && this!==window ? this : {});
 			!tlx.options || !tlx.options.reactive || !tlx.activate || (strings.state = tlx.activate(strings.state));

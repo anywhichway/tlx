@@ -6,7 +6,7 @@
 <script src="../src/tlx-directives.js"></script>
 
 </head>
-<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'},optin:true,preferences:[1,3]})(document.body)">
+<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'},optin:true,preferences:[1,3]})()">
 <div>
 	<div>
 	Name: <input value="${name}" oninput="${this.linkState('name')}">

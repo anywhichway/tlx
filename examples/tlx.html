@@ -1,15 +1,29 @@
 <html>
 <head>
-<script src="../index.js"></script>
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-render.js"></script>
+<script src="../src/tlx-reactive.js"></script>
+<script src="../src/tlx-directives.js"></script>
+
 </head>
-<body onload="tlx.bind(tlx.activate({name:'Joe',address:{city:'Seattle',state:'WA'}}))(document.body)">
+<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'},optin:true,preferences:[1,3]})(document.body)">
 <div>
 	<div>
 	Name: <input value="${name}" oninput="${this.linkState('name')}">
 	City: <input value="${address.city}" oninput="${this.linkState('address.city')}">
-	State: <input value="${address.state}" oninput="${this.linkState('address.state')}">
+	State: <span state="${address}"><input value="${state}" oninput="${this.linkState('state')}"></span>
+	Optin: <input value="${optin}" type="checkbox" onchange="${this.linkState('optin')}">
 	</div>
-	<div>${name}, ${address.city} ${address.state}</div>
+	<div><select value="${preferences}" onchange="${this.linkState('preferences')}" multiple><option>1</option><option>2</option><option>3</option></select></div>
+	<div>${name}, ${address.city} ${address.state}, Optin: ${optin}, Prefences: ${preferences}</div>
+	<div state='{"name": "Bill"}'>${name}</div>
+	<div state="${{name: 'John'}}">${name}</div>
+	<div t-if="true">True</div>
+	<div t-if="false">False</div>
+	<ul t-foreach="${['A','B','C']}"><li>${key}: ${value}</li></ul>
+	<ul t-foreach="${{name:'Joe',age:24}}"><li>${key}: ${value}</li></ul>
+	<ul t-for="item of ${[{message:'Foo'},{message:'Bar'}]}"><li>${item.message}</li></ul>
+	<ul t-for="property in ${{name:'Joe',age:24}}"><li>${property}: ${object[property]}</li></ul>
 </div>
 </body>
 </html>

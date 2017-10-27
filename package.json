@@ -1,11 +1,11 @@
 {
   "name": "tlx",
-  "version": "0.0.5-beta",
+  "version": "0.0.6-beta",
   "description": "Like JSX but uses JavaScript Template Literals - No Preprocessor Required",
   "engines": {},
   "license": "MIT",
   "scripts": {
-    "prepare": "cp ./index.js ./browser/tlx.js",
+    "prepare": "cp ./src/*.js ./browser/ && browserify index.js -o browser/tlx.js && uglifyjs browser/tlx.js -o browser/tlx.min.js && uglifyjs src/tlx-core.js -o browser/tlx-core.min.js && uglifyjs src/tlx-render.js -o browser/tlx-render.min.js && uglifyjs src/tlx-reactive.js -o browser/tlx-reactive.min.js && uglifyjs src/tlx-directives.js -o browser/tlx-directives.min.js",
     "prepublishOnly": "cp ./index.js ./browser/tlx.js"
   },
   "repository": {

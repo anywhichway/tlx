@@ -123,6 +123,8 @@ The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 
 # Release History (Reverse Chronological Order)
 
+2017-10-27 v0.0.6-beta Fixed build issue. tlx.js was getting overwritten.
+
 2017-10-27 v0.0.6-beta Added support for directives `t-if`, `t-foreach`, `t-for`. See the example `examples/tlx.html` pending documentation updates. Split into multiple modules so only what is needed has to be loaded: tlx-core.js, tlx-render.js, tlx-reactive.js, tlx-directives.js, tlx.js (all the modules). Minified versions of all files are available.
 
 2017-10-26 v0.0.5-beta HTML reactivity added.

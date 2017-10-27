@@ -144,7 +144,7 @@ The following directives are built-in:
 
 `t-if="<boolean>"`, which will prevent rendering of child elements if the boolean is falsy.
 
-New directives can be added by augmenting the object `tlx.directive.HTMLElement` with a key representing the directive name, e.g. `x-mydirective`, and a function as the value with the signature, `(node,value) ...`. The function is free to change the `htmlElement` as it sees fit, e.g.:
+New directives can be added by augmenting the object `tlx.directives.HTMLElement` with a key representing the directive name, e.g. `x-mydirective`, and a function as the value with the signature, `(node,value) ...`. The function is free to change the `htmlElement` as it sees fit, e.g.:
 
 ```js
 tlx.directives.HTMLElement["t-if"] = (node,value) => {

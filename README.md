@@ -16,6 +16,20 @@ Watch for `tlx-components.js` and `tlx-router.js` coming soon.
 
 Or, include everything with `tlx.js` at just 5K.
 
+# Contents
+
+[Installation](#installation)
+
+[API](#api)
+
+[Reactivity](#reactivity)
+
+[Directives](#directives)
+
+[Acknowledgements](#acknowledgements)
+
+[Release History](#release-history)
+
 
 # Installation
 
@@ -195,7 +209,7 @@ The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 
 Obviously inspiration has been drawn from `React`, `preact`, `Vue`, and `Angular`. We also got inspiration from `Ractive`, `moon`, and `hyperapp`. Portions of TLX were also drawn from another anywhichway codebase `fete`, which reached its architectural limits.
 
-# Release History (Reverse Chronological Order)
+# Release History
 
 2017-10-27 v0.0.8-beta Documentation updates.
 

@@ -8,31 +8,31 @@
 		},
 		resolve = function(template,node) { // walk up the DOM tree for state data, n=node,s=state,p=property,e=extras
 			const code = // left align, 2 char indent, single char variables to reduce size since templates not minimized
-			`let state=n.state;
-			while(!state && n && (n.parentElement||n.ownerElement)) { n = n.parentElement||n.ownerElement; state = !n || n.state; }
-			if(!state) return;
-			 do{
-			  try {
-			   with(e){with(state){return $.parser__template__;}}
-			  }catch(err){
-			   if(err instanceof ReferenceError){
-			    const p=err.message.split(" ")[0];
-			     let prnt=n.parentElement||n.ownerElement,v;
-			      while(prnt){
-			       let s = prnt.state;
-			       if(s && typeof(s)==="object" && p in s){v=s[p];break;}
-			       prnt=prnt.parentElement;
-				  }
-			      if(typeof(v)==="undefined") return; 
-				  else e[p]=v;
-			   }else throw(err);
-			  }
-			 }while(true)`.replace(/__template__/g,"`"+template+"`");
-						tlx._NODE = node;
-						const extrs = {};
-						let value = new Function("n","$","e",code).call(node,node,tlx.$,extrs);
-						tlx._NODE = null;
-						return value;
+`let state=n.state;
+while(!state && n && (n.parentElement||n.ownerElement)) { n = n.parentElement||n.ownerElement; state = !n || n.state; }
+if(!state) return;
+ do{
+  try {
+   with(e){with(state){return $.parser__template__;}}
+  }catch(err){
+   if(err instanceof ReferenceError){
+    const p=err.message.split(" ")[0];
+     let prnt=n.parentElement||n.ownerElement,v;
+      while(prnt){
+       let s = prnt.state;
+       if(s && typeof(s)==="object" && p in s){v=s[p];break;}
+       prnt=prnt.parentElement;
+	  }
+      if(typeof(v)==="undefined") return; 
+	  else e[p]=v;
+   }else throw(err);
+  }
+ }while(true)`.replace(/__template__/g,"`"+template+"`");
+			tlx._NODE = node;
+			const extrs = {};
+			let value = new Function("n","$","e",code).call(node,node,tlx.$,extrs);
+			tlx._NODE = null;
+			return value;
 	};
 	tlx.render = (vnode,target,node) => {
 		function renderVNode(vnode,node) {

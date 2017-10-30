@@ -1,0 +1,18 @@
+<html>
+<head>
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-render.js"></script>
+<script src="../src/tlx-reactive.js"></script>
+<script src="../src/tlx-directives.js"></script>
+<script src="../src/tlx-component.js"></script>
+<script src="./tlx-editor.js"></script>
+
+</head>
+<body onload="tlx.bind({name:'Joe',honorific:'Mx.',seatingPreferences:['aisle','exit'],optIn:true})()">
+<p><tlx-editor type="text" value="${name}" label="Name:" t-on="${{input:this.linkState('name')}}"></tlx-editor></p>
+<p><tlx-editor type="select-one" value="${honorific}" options="${['Ind.','Misc.','Mr.','Mrs.','Ms.','Mx.','Dr.','Msgr.','Rev.']}" label="Honorific:" t-on="${{change:this.linkState('honorific')}}"></tlx-editor></p>
+<p><tlx-editor type="select-multiple" value="${seatingPreferences}" options="${['aisle','middle','window','exit','bulkhead','rear']}" label="Seating Preference:" t-on="${{change:this.linkState('seatingPreferences')}}"></tlx-editor></p>
+<p><tlx-editor type="checkbox" value="${optIn}" label="Opt In:" t-on="${{click:this.linkState('optIn')}}"></tlx-editor></p>
+<p>${honorific} ${name} has opted ${(optIn ? "in" : "out")} and prefers the following seating: ${seatingPreferences.join(", ")}.</p>
+</body>
+</html>

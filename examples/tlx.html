@@ -4,10 +4,23 @@
 <script src="../src/tlx-render.js"></script>
 <script src="../src/tlx-reactive.js"></script>
 <script src="../src/tlx-directives.js"></script>
-
+<script src="../src/tlx-component.js"></script>
+<script>
+class Message extends tlx.Component {
+	static get attributes() {
+		return {
+			style: "font-weight:bold"
+		}
+	}
+	render() {
+		return tlx`<div>\${message}</div>`;
+	}
+}
+document.registerElement("x-message",Message);
+</script>
 </head>
-<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'},optin:true,preferences:[1,3]})()">
-<div>
+<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'},optin:true,preferences:[1,3]})(document.getElementById('app'))">
+<div id="app">
 	<div>
 	Name: <input value="${name}" oninput="${this.linkState('name')}">
 	City: <input value="${address.city}" oninput="${this.linkState('address.city')}">
@@ -24,6 +37,10 @@
 	<ul t-foreach="${{name:'Joe',age:24}}"><li>${key}: ${value}</li></ul>
 	<ul t-for="item of ${[{message:'Foo'},{message:'Bar'}]}"><li>${item.message}</li></ul>
 	<ul t-for="property in ${{name:'Joe',age:24}}"><li>${property}: ${object[property]}</li></ul>
+	<script>function a() {}</script>
+	
+	<x-message state="${{message:'Hello'}}"></x-message>
 </div>
+
 </body>
 </html>

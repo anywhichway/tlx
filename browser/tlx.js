@@ -9,7 +9,26 @@
 (function() {
 	
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
-	 * Portions of code Copyright (c) 2015, James Halliday BSD Clause 2
+	 
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+	
+	Portions of hyperx code Copyright (c) 2015, James Halliday BSD Clause 2
 	All rights reserved.
 
 	Redistribution and use in source and binary forms, with or without modification,
@@ -31,9 +50,12 @@
 	LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
 	ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 	(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
+	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	
+	*/
 	
 	//var attrToProp = require('hyperscript-attribute-to-property')
+
 
 	var VAR = 0, TEXT = 1, OPEN = 2, CLOSE = 3, ATTR = 4
 	var ATTR_KEY = 5, ATTR_KEY_W = 6
@@ -51,14 +73,22 @@
 	  //  h = attrToProp(h)
 	  //}
 
-	  return function (strings,...values) {
+	  return function (strings=document.body,...values) {
 		if(tlx.render && strings instanceof HTMLElement) {
-			strings.state = (typeof(window)!=="undefined" && this!==window ? this : {});
-			!tlx.options || !tlx.options.reactive || !tlx.activate || (strings.state = tlx.activate(strings.state));
-			for(let node of [].slice.call(strings.parentElement.children)) {
-				if(node.innerHTML.indexOf("${")>=0) {
-					tlx.render(Function("return tlx.bind(this)`"+node.innerHTML.replace(/\${/g,"\\${")+"`").call(this),null,node);
+			let node = strings;
+			if(node.innerHTML.indexOf("${")>=0) {
+				if(node.childNodes.length>1) {
+					const span = document.createElement("span");
+					node.parentElement.insertBefore(span,node);
+					span.appendChild(node);
+					node = span;
 				}
+				node.state = (typeof(window)!=="undefined" && this!==window ? (this instanceof Node ? this.state : this) : node.state);
+				!node.state || !tlx.options || !tlx.options.reactive || !tlx.activate || (node.state = tlx.activate(node.state));
+				const vnode = Function("state","with(state) { return tlx.bind(this)`"+node.innerHTML.replace(/\${/g,"\\${")+"`}").call(this,node.state||{});
+				//vnode.attributes || (vnode.attributes = {});
+				//!node.state || vnode.attributes.state || (vnode.attributes.state = node.state);
+				tlx.render(vnode,null,node);
 			}
 			return;
 		}
@@ -116,11 +146,11 @@
 	        for (; i < parts.length; i++) {
 	          if (parts[i][0] === ATTR_VALUE || parts[i][0] === ATTR_KEY) {
 	            if (!cur[1][key]) cur[1][key] = strfn(parts[i][1])
-	            else cur[1][key] = concat(cur[1][key], parts[i][1])
+	            else parts[i][1]==="" ||(cur[1][key] = concat(cur[1][key], parts[i][1])); // AnyWhichWay added parts[i][1]===""
 	          } else if (parts[i][0] === VAR
 	          && (parts[i][1] === ATTR_VALUE || parts[i][1] === ATTR_KEY)) {
 	            if (!cur[1][key]) cur[1][key] = strfn(parts[i][2])
-	            else cur[1][key] = concat(cur[1][key], parts[i][2])
+	            else parts[i][2]==="" || (cur[1][key] = concat(cur[1][key], parts[i][2])); // AnyWhichWay added parts[i][1]===""
 	          } else {
 	            if (key.length && !cur[1][key] && i === j
 	            && (parts[i][0] === CLOSE || parts[i][0] === ATTR_BREAK)) {
@@ -261,10 +291,18 @@
 	  }
 
 	  function strfn (x) {
-	    if (typeof x === 'function') return x
-	    else if (typeof x === 'string') return x
-	    else if (x && typeof x === 'object') return x
-	    else return concat('', x)
+	    if (typeof x === 'function') {
+	    	return x
+	    }
+	    else if (typeof x === 'string') {
+	    	return x
+	    }
+	    else if (x && typeof x === 'object') {
+	    	return x
+	    }
+	    else {
+	    	return concat('', x)
+	    }
 	  }
 	}
 
@@ -331,8 +369,41 @@
 		    return new VNode({nodeName,attributes,children});
 		};
 		tlx = hyperx(h);
+		tlx.fromJSON = (value) => {
+			if(typeof(value)==="string") {
+				try { value = JSON.parse(value.replace(/&quot;/g,'"'));	} catch(e) { }
+			}
+			return value;
+		};
+		tlx.getAttribute = (element,name) => {
+			const desc = Object.getOwnPropertyDescriptor(element,name);
+			return (desc ? desc.value : tlx.fromJSON(element.getAttribute(name)));
+		};
+		tlx.getAttributes = (element) => {
+			const attributes = {};
+			for(let attribute of [].slice.call(element.attributes)) attributes[attribute.name] = element[attribute.name] || tlx.fromJSON(attribute.value);
+			return attributes;
+		};
 		tlx.h = h;
 		tlx.options = {};
+		tlx.setAttribute = (element,name,value) => {
+			let type = typeof(value);
+			if(name==="options" && type==="string" && value.indexOf("${")===-1) {
+				value = value.split(",");
+				type = typeof(value);
+			}
+			if(value && type==="object") element[name] = value;
+			else if(type==="function") {
+				if(name.indexOf("on")===0) element.addEventListener(name.substring(2).toLowerCase(name),value)
+				else element[name] = value;
+			} else element.setAttribute(name,value);
+			if(element.type==="checkbox" && name==="value" && value) element.checked = true;
+			else if(element.type==="select-one" && name==="value") {
+				for(let option of [].slice.call(element.options)) value!=tlx.fromJSON(option.value) || (option.selected = true);
+			} else if(element.type==="select-multiple" && name==="value" && Array.isArray(value)) {
+				for(let option of [].slice.call(element.options)) !value.includes(tlx.fromJSON(option.value)) || (option.selected = true);
+			} 
+		}
 		
 
 	if(typeof(module)!=="undefined") module.exports = tlx;
@@ -442,6 +513,12 @@
 					}
 					for(let child of [].slice.call(el.childNodes)) node.appendChild(child);
 				}
+			},
+			"t-on": (node,value) => {
+				node.removeAttribute("t-on");
+				for(let event in value) {
+					node.addEventListener(event,value[event]);
+				}
 			}
 		}
 	}
@@ -456,30 +533,16 @@
 			if(target.type==="checkbox") value = target.checked;
 			else if(target.type==="select-multiple") {
 				value = [];
-				for(let option of target.options) !option.selected || value.push(fromJSON(option.value));
-			}
-			else {
-				value = fromJSON(target.value);
-			}
+				for(let option of target.options) !option.selected || value.push(tlx.fromJSON(option.value));
+			} else value = tlx.fromJSON(target.value);
 			const parts = property.split(".");
 			let state = this;
 			property = parts.pop(); // get final property
 			for(let key of parts) { state = state[key] || {}}; // walk tree
 			state[property] = value; // set property
 		}
-		return f.bind(getstate(this)||(this.state={}));
+		return f.bind(tlx.getState(this)||(this.state={}));
 	}
-	const fromJSON = (value) => {
-			if(typeof(value)==="string") {
-				try { value = JSON.parse(value.replace(/&quot;/g,'"'));	} catch(e) { }
-			}
-			return value;
-		},
-		getstate = (node) => {
-				if(!node) return;
-				if(node.state) return node.state;
-				if(node.parentElement||node.ownerElement) return getstate(node.parentElement||node.ownerElement);
-		};
 	tlx.activate = (object) => {
 		if(!object || typeof(object)!=="object" || object.tlxDependents) return object;
 		const dependents = {},
@@ -500,16 +563,11 @@
 						target[property] = value;
 						if(dependents[property]) {
 							for(let dependent of dependents[property]) {
-								if(!dependent.ownerElement && !dependent.parentElement) {
-									dependents[property].delete(dependent);
-								} else {
+								if(!dependent.ownerElement && !dependent.parentElement) dependents[property].delete(dependent);
+								else {
 									if(!dependent.vnode) {
-										if(dependent.outerHTML.indexOf("${")>=0) {
-											tlx.render(tlx.h(dependent),null,dependent);
-										}
-									} else {
-										tlx.render(dependent.vnode,null,dependent);
-									}
+										if(dependent.outerHTML.indexOf("${")>=0) tlx.render(tlx.h(dependent),null,dependent);
+									} else tlx.render(dependent.vnode,null,dependent);
 								}
 							}
 						}
@@ -527,42 +585,48 @@
 },{}],5:[function(require,module,exports){
 (function(tlx) {
 	
-	const fromJSON = (value) => {
-			if(typeof(value)==="string") {
-				try { value = JSON.parse(value.replace(/&quot;/g,'"'));	} catch(e) { }
-			}
-			return value;
-		},
-		resolve = function(template,node) { // walk up the DOM tree for state data, n=node,s=state,p=property,e=extras
+	const resolve = function(template,node,nonReactive) { // walk up the DOM tree for state data, n=node,s=state,p=property,e=extras
 			const code = // left align, 2 char indent, single char variables to reduce size since templates not minimized
-			`let state=n.state;
-			while(!state && n && (n.parentElement||n.ownerElement)) { n = n.parentElement||n.ownerElement; state = !n || n.state; }
-			if(!state) return;
-			 do{
-			  try {
-			   with(e){with(state){return $.parser__template__;}}
-			  }catch(err){
-			   if(err instanceof ReferenceError){
-			    const p=err.message.split(" ")[0];
-			     let prnt=n.parentElement||n.ownerElement,v;
-			      while(prnt){
-			       let s = prnt.state;
-			       if(s && typeof(s)==="object" && p in s){v=s[p];break;}
-			       prnt=prnt.parentElement;
-				  }
-			      if(typeof(v)==="undefined") return; 
-				  else e[p]=v;
-			   }else throw(err);
-			  }
-			 }while(true)`.replace(/__template__/g,"`"+template+"`");
-						tlx._NODE = node;
-						const extrs = {};
-						let value = new Function("n","$","e",code).call(node,node,tlx.$,extrs);
-						tlx._NODE = null;
-						return value;
+`let state=n.state;
+while(!state && n && (n.parentElement||n.ownerElement)) { n = n.parentElement||n.ownerElement; state = !n || n.state; }
+if(!state) return;
+ do{
+  try {
+   with(e){with(state){return $.parser__template__;}}
+  }catch(err){
+   if(err instanceof ReferenceError){
+    const p=err.message.split(" ")[0];
+     let prnt=n.parentElement||n.ownerElement,v;
+      while(prnt){
+       let s = prnt.state;
+       if(s && typeof(s)==="object" && p in s){v=s[p];break;}
+       prnt=prnt.parentElement;
+	  }
+      if(typeof(v)==="undefined") return; 
+	  else e[p]=v;
+   }else throw(err);
+  }
+ }while(true)`.replace(/__template__/g,"`"+template+"`");
+			tlx._NODE = (nonReactive ? null : node);
+			const extrs = {};
+			let value = new Function("n","$","e",code).call(node,node,tlx.$,extrs);
+			tlx._NODE = null;
+			return value;
 	};
+	tlx.getState = (node) => { // force resolution of parent states first
+		let state;
+		if(!node) return;
+		if(node.state) return node.state;
+		let parent = node.parentElement||node.ownerElement;
+		if(parent) state = tlx.getState(parent);
+		const statestr = node.getAttribute("state");
+		if(statestr && statestr.indexOf("${")>=0) {
+			return node.state = resolve(statestr,{state:{}});
+		}
+		return state;
+	}
 	tlx.render = (vnode,target,node) => {
-		function renderVNode(vnode,node) {
+		function renderVNode(vnode,node,parent) {
 		    if(typeof(vnode)!=="object") {
 		    	let text = vnode+"";
 				if(/\S/.test(text)) { // don't bother with empty text nodes
@@ -575,51 +639,55 @@
 						return node;
 					}
 					!node || (node.textContent = text);
-					return node || document.createTextNode(text);
+					node || (node = document.createTextNode(text));
+					node.parentNode || !parent || parent.appendChild(node);
+					return node;
 				}
 				return;
 		    }
+		    if(["template","script"].includes(vnode.nodeName)) return node;
 		    node || (node = document.createElement(vnode.nodeName));
+		    node.parentNode || !parent || parent.appendChild(node);
 		    const attributes = vnode.attributes || {};
+		    if(attributes.state && typeof(attributes.state)==="string") {
+				const value = tlx.fromJSON(vnode.attributes.state);
+				attributes.state===value || (attributes.state = value);
+			}
+		    if(tlx.directives && tlx.directives.VNode && tlx.directives.VNode.handle) {
+		    	for(let name in attributes) {
+		    		tlx.directives.VNode.handle(name,tlx.fromJSON(attributes[name]),vnode);
+		    	}
+		    }
 		    for(let name in attributes) {
 		    	const value = attributes[name],
 	    			type = typeof(value);
 		    	if((type==="string" && value.indexOf("${")>=0) || name[1]==="-") {
 		    		templates.set(templates.size,{node:node,template:value,name});
-		    	} else {
-			    	if(value && type==="object") node[name] = value;
-			    	else if(type==="function") node.addEventListener(name.substring(2).toLowerCase(),value);
-			    	else node.setAttribute(name, value);
-		    	}
+		    	} else tlx.setAttribute(node,name,value);
 		    }
 		    (vnode.children || []).forEach(child => {
 		    	if(!child) return; // should not happen
-		    	const childnode = renderVNode(child);
-		    	if(!childnode) return;
-		    	childnode.vnode = child;
-		    	if(childnode instanceof Text && childnode.textContent.indexOf("${")>=0) {
-		    		templates.set(childnode,childnode.textContent.trim());
-			    }
-			    node.appendChild(childnode);
+		    	Array.isArray(child) || (child = [child]); // not sure why this needs to happen sometimes, child should never be an array
+		    	for(let vnode of child) {
+		    		const childnode = renderVNode(vnode,null,node);
+			    	if(!childnode) return;
+			    	childnode.vnode = vnode;
+			    	if(childnode instanceof Text && childnode.textContent.indexOf("${")>=0) {
+			    		templates.set(childnode,childnode.textContent.trim());
+				    }
+				    node.appendChild(childnode);
+		    	}
 		    });
+		    if(tlx.Component && node && node instanceof HTMLElement) {
+		    	const cls = tlx.Component.registered(node.tagName);
+		    	!cls || cls.create(vnode.attributes||{},node).connectedCallback();
+		    }
 		    return node;
 		}
 	    if(node) {
 	    	while(node.lastChild) node.removeChild(node.lastChild);
 	    }
 	    !node || (node.vnode = vnode);
-	    const attributes = vnode.attributes;
-	    if(attributes) {
-		    if(attributes.state && typeof(attributes.state)==="string") {
-				const value = fromJSON(vnode.attributes.state);
-				attributes.state===value || (attributes.state = value);
-			}
-		    if(tlx.directives && tlx.directives.VNode && tlx.directives.VNode.handle) {
-		    	for(let name in attributes) {
-		    		tlx.directives.VNode.handle(name,fromJSON(attributes[name]),vnode);
-		    	}
-		    }
-	    }
 		const templates = new Map();
 		node = renderVNode(vnode,node);
 		for(let [node,template] of templates) {
@@ -627,16 +695,11 @@
 				const name = template.name;
 				node = template.node;
 				template = template.template;
-				const resolved = fromJSON(resolve(template,node));
+				const nonreactive = name!=="value" || !tlx.Component || node instanceof tlx.Component;
+					resolved = (typeof(template)==="string" ? tlx.fromJSON(resolve(template,node,nonreactive)) : template);
 				type = typeof(resolved);
-			    !tlx.directives || !tlx.directives.HTMLElement || !tlx.directives.HTMLElement.handle || !tlx.directives.HTMLElement.handle(name,resolved,node);
-				if(resolved && type==="object") node[name] = resolved;
-	    		else if(type==="function") node.addEventListener(name.substring(2).toLowerCase(),resolved);
-		    	else node.setAttribute(name, resolved);
-				if(node.type==="checkbox" && name==="value" && resolved) node.checked = true;
-				else if(node.type==="select-multiple" && name==="value" && Array.isArray(resolved)) {
-					for(let option of [].slice.call(node.options)) !resolved.includes(fromJSON(option.value)) || (option.selected = true);
-				}
+			    !tlx.directives || !tlx.directives.HTMLElement || !tlx.directives.HTMLElement.handle || tlx.directives.HTMLElement.handle(name,resolved,node);
+			    tlx.setAttribute(node,name,resolved);
 			} else {
 				const resolved = resolve(template,node);
 				node.textContent = (!resolved || typeof(resolved)!=="object" ? resolved : JSON.stringify(resolved));
@@ -645,6 +708,7 @@
 	    if(target) target.appendChild(node);
 	    return node;
 	};
+	tlx.resolve = resolve;
 	tlx._NODE = null;
 	tlx.$ = {
 		parser(strings,...values) {

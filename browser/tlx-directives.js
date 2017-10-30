@@ -101,6 +101,12 @@
 					}
 					for(let child of [].slice.call(el.childNodes)) node.appendChild(child);
 				}
+			},
+			"t-on": (node,value) => {
+				node.removeAttribute("t-on");
+				for(let event in value) {
+					node.addEventListener(event,value[event]);
+				}
 			}
 		}
 	}

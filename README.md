@@ -1,20 +1,22 @@
 # TLX
 
-Like JSX but uses JavaScript Template Literals plus adds reactivity and attribute directives - No Preprocessor Required.
+Imagine a light weight combination of JSX, Vue, and React but using JavaScript template literals - No Preprocessor Required.
 
 Use just the parts you want (sizes are minified and GZipped):
 
-`tlx-core.js` - 2.6K Replaces JSX. Continue to use `React` or `preact`.
+`tlx-core.js` - 3K Replaces JSX. Continue to use `React` or `preact`.
 
 `tlx-render.js` - 1.5K Replaces non-component aspects of `React` and `preact`. Enables "inverted JSX", i.e. puts the focus on HTML while supporting the power of in-line template literals, e.g. `<div>${item.message}</div>`.
 
-`tlx-reactive.js` - 0.75K Adds reactivity to templates like Vue and many other libraries.
+`tlx-reactive.js` - 0.6K Adds uni-directional and bi-directional state [reactivity](#reactivity) to templates in a manner similar to Vue and many other libraries.
 
-`tlx-directives.js` - 0.7K If you like Vue or Angular, you can also use the built-in directives `t-if`, `t-foreach`, and `t-for`. Or, add your own directives. However, many directives are un-necessary due to the power of in-line template literals embedded in your HTML.
+`tlx-directives.js` - 0.7K If you like Vue or Angular, you can also use the built-in directives `t-if`, `t-foreach`, `t-for`, and `t-on`. Or, [add your own directives](custom-directives). However, many directives are un-necessary due to the power of in-line template literals embedded in your HTML.
 
-Watch for `tlx-components.js` and `tlx-router.js` coming soon.
+`tlx-component.js` - 0.7K Custom HTML tags and first class components.
 
-Or, include everything with `tlx.js` at just 5K.
+Watch for `tlx-router.js` coming soon.
+
+Or, include everything with `tlx.js` at just 5.5K minified + Gzipped, 18.6K minified, 28K raw.
 
 # Contents
 
@@ -25,6 +27,8 @@ Or, include everything with `tlx.js` at just 5K.
 [Reactivity](#reactivity)
 
 [Directives](#directives)
+
+[Components](#components)
 
 [Acknowledgements](#acknowledgements)
 
@@ -158,33 +162,11 @@ The following directives are built-in:
 
 `t-if="<boolean>"`, which will prevent rendering of child elements if the boolean is falsy.
 
-New directives can be added by augmenting the object `tlx.directives.HTMLElement` with a key representing the directive name, e.g. `x-mydirective`, and a function as the value with the signature, `(node,value) ...`. The function is free to change the `htmlElement` as it sees fit, e.g.:
+`t-import=<url>`, which will load a remote resource. Use with `t-if` to support on-demand/progressive loading.
 
-```js
-tlx.directives.HTMLElement["t-if"] = (node,value) => {
-		if(!value) {
-			while(node.lastChild) node.removeChild(node.lastChild);
-		}
-		return value;
-	};
-```
+`t-on=<object>`, which adds event handlers. The object takes the form `{<eventName>:<handler>[,<eventName>:<handler>...}}`. The handler signature is the same as a normal JavaScript event handler and just takes an `Event` as an argument.
 
-Although it may appear as if directives could be specialized by element class, this is not currently possible. All custom directives should be associated with `HTMLElement`.
-
-Advanced users can also set directives on the VDom for efficiency, e.g.:
-
-```js
-tlx.directives.VDom["t-if"] = (node,value) => {
-		if(!value) {
-			node.children = null;
-		}
-		return value;
-	}
-}
-
-```
-
-Note, full interpolation may not have occured when processing the VDom, so HTMLElement directives should also be implemented.
+## Iterating Directives
 
 Iterating directives are slightly different than Vue. The iteration expression exists in an attribute on the containing element rather than the child element being duplicated, for example:
 
@@ -201,15 +183,74 @@ Vue:
 
 ```
 
+## Custom Directives
+
+New directives can be added by augmenting the object `tlx.directives.HTMLElement` with a key representing the directive name, e.g. `x-mydirective`, and a function as the value with the signature, `(node,value) ...`. The function is free to change the `htmlElement` as it sees fit, e.g.:
+
+```js
+tlx.directives.HTMLElement["t-if"] = (htmlElement,value) => {
+		if(!value) {
+			while(htmlElement.lastChild) htmlElement.removeChild(htmlElement.lastChild);
+		}
+		return value;
+	};
+```
+
+Advanced users can also set directives on the VDom for efficiency, e.g.:
+
+```js
+tlx.directives.VDom["t-if"] = (vnode,value) => {
+		if(!value) {
+			vnode.children = null;
+		}
+		return value;
+	}
+}
+
+```
+
+Note, full interpolation may not have occured when processing the VDom, so HTMLElement directives should also be implemented.
+
+Although it may appear as if directives could be specialized by element class, this is not currently possible. All custom directives should be associated with `HTMLElement` or `VDom`.
+
+# Components
+
+Components work in a similar manner to `React` although `props` and lifecycle events are not currently supported. Below is a basic example:
+
+```html
+<script>
+class Message extends tlx.Component {
+	static get attributes() { // optionally define the default attributes for a component
+		return {
+			style: "font-weight:bold"
+		}
+	}
+	render() { // required, should return VNode tree ... which tlx template processor does
+		return tlx`<div>\${message}</div>`;
+	}
+}
+document.registerElement("x-message",Message);
+</script>
+<body onload="tlx.bind({})()">
+<x-message state="${{message:'Hello'}}"></x-message>
+</body>
+```
+
+For a single component that combines several html editor types into one, see the `components` directory.
+
+
+
 # Acknowledgements
 
 Substantial portions of `tlx-core.js` are drawn from from [Hyperx](https://github.com/choojs/hyperx).
 
 The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 
-Obviously inspiration has been drawn from `React`, `preact`, `Vue`, and `Angular`. We also got inspiration from `Ractive`, `moon`, and `hyperapp`. Portions of TLX were also drawn from another anywhichway codebase `fete`, which reached its architectural limits.
+Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, and `Angular`. We also got inspiration from `Ractive`, `moon`, and `hyperapp`. Portions of TLX were also drawn from another anywhichway codebase `fete`, which reached its architectural limits.
 
 # Release History
+
+2017-10-30 v0.0.9-beta Added component support. Enhanced documentation. Centralized some repeaded code patterns.
 
 2017-10-27 v0.0.8-beta Documentation updates.
 

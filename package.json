@@ -1,11 +1,11 @@
 {
   "name": "tlx",
-  "version": "0.0.8-beta",
-  "description": "Like JSX but uses JavaScript Template Literals plus adds reactivity and attribute directives - No Preprocessor Required",
+  "version": "0.0.9-beta",
+  "description": "Imagine a ligh weight combination of JSX, Vue, and React but using JavaScript template literals - No Preprocessor Required",
   "engines": {},
   "license": "MIT",
   "scripts": {
-    "prepare": "cp ./src/*.js ./browser/ && browserify index.js -o browser/tlx.js && uglifyjs browser/tlx.js -o browser/tlx.min.js && uglifyjs src/tlx-core.js -o browser/tlx-core.min.js && uglifyjs src/tlx-render.js -o browser/tlx-render.min.js && uglifyjs src/tlx-reactive.js -o browser/tlx-reactive.min.js && uglifyjs src/tlx-directives.js -o browser/tlx-directives.min.js"
+    "prepare": "cp ./src/*.js ./browser/ && browserify index.js -o browser/tlx.js && uglifyjs browser/tlx.js -o browser/tlx.min.js && uglifyjs src/tlx-core.js -o browser/tlx-core.min.js && uglifyjs src/tlx-render.js -o browser/tlx-render.min.js && uglifyjs src/tlx-reactive.js -o browser/tlx-reactive.min.js && uglifyjs src/tlx-directives.js -o browser/tlx-directives.min.js && uglifyjs src/tlx-component.js -o browser/tlx-component.min.js"
   },
   "repository": {
     "type": "git",

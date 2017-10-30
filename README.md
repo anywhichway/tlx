@@ -10,7 +10,7 @@ Use just the parts you want (sizes are minified and GZipped):
 
 `tlx-reactive.js` - 0.6K Adds uni-directional and bi-directional state [reactivity](#reactivity) to templates in a manner similar to Vue and many other libraries.
 
-`tlx-directives.js` - 0.7K If you like Vue or Angular, you can also use the built-in directives `t-if`, `t-foreach`, `t-for`, and `t-on`. Or, [add your own directives](directives). However, many directives are un-necessary due to the power of in-line template literals embedded in your HTML.
+`tlx-directives.js` - 0.7K If you like Vue or Angular, you can also use the built-in directives `t-if`, `t-foreach`, `t-for`, and `t-on`. Or, [add your own directives](#directives). However, many directives are un-necessary due to the power of in-line template literals embedded in your HTML.
 
 `tlx-component.js` - 0.7K Custom HTML tags and first class components.
 

@@ -4,19 +4,21 @@ Imagine a light weight combination of JSX, Vue, and React but using JavaScript t
 
 Use just the parts you want (sizes are minified and GZipped):
 
-`tlx-core.js` - 3K Replaces JSX. Continue to use `React` or `preact`.
+`tlx-core.js` - 3.2K Replaces JSX. Continue to use `React` or `preact`.
 
-`tlx-render.js` - 1.5K Replaces non-component aspects of `React` and `preact`. Enables "inverted JSX", i.e. puts the focus on HTML while supporting the power of in-line template literals, e.g. `<div>${item.message}</div>`.
+`tlx-render.js` - 1.4K Replaces non-component aspects of `React` and `preact`. Enables "inverted JSX", i.e. puts the focus on HTML while supporting the power of in-line template literals, e.g. `<div>${item.message}</div>`. Use for full SEO enablement and [multi-page apps](#multipage-apps).
 
-`tlx-reactive.js` - 0.6K Adds uni-directional and bi-directional state [reactivity](#reactivity) to templates in a manner similar to Vue and many other libraries.
+`tlx-reactive.js` - 0.8K Adds uni-directional and bi-directional state [reactivity](#reactivity) to templates in a manner similar to Vue and many other libraries.
 
-`tlx-directives.js` - 0.7K If you like Vue or Angular, you can also use the built-in directives `t-if`, `t-foreach`, `t-for`, and `t-on`. Or, [add your own directives](#directives). However, many directives are un-necessary due to the power of in-line template literals embedded in your HTML.
+`tlx-directives.js` - 0.5K If you like Vue or Angular, you can also use the built-in [directives](#directives) `t-if`, `t-foreach`, `t-for`, and `t-on`. Or, [add your own directives](#directives). However, many directives are un-necessary due to the power of in-line template literals embedded in your HTML.
 
-`tlx-component.js` - 0.7K Custom HTML tags and first class components.
+`tlx-component.js` - 0.4K Custom HTML tags and first class [components](#components).
 
 Watch for `tlx-router.js` coming soon.
 
 Or, include everything with `tlx.js` at just 5.5K minified + Gzipped, 18.6K minified, 28K raw.
+
+***Don't forget***, give us a star if you like what you see!
 
 # Contents
 
@@ -29,6 +31,8 @@ Or, include everything with `tlx.js` at just 5.5K minified + Gzipped, 18.6K mini
 [Directives](#directives)
 
 [Components](#components)
+
+[Design Comments](#design-comments)
 
 [Acknowledgements](#acknowledgements)
 
@@ -131,7 +135,7 @@ preact.render(tlx`
 
 # Reactivity
 
-Reactivity is supported by activating objects that are used via `state` directives (see below) or bound to a `tlx` parser invocation, e.g. `tlx.bind({message: "Hello World"})&#96;${message}&#96;`. Activated objects are proxies that log the currently processing HTML node when their properties are accessed via template literal interpolations. When property values are set, the other HTML nodes that reference the property are automatically re-rendered.
+Reactivity is supported by activating objects that are used via `state` directives (see below) or bound to a `tlx` parser invocation, e.g. `tlx.bind({message: "Hello World"})'${message}'`. Activated objects are proxies that log the currently processing HTML node when their properties are accessed via template literal interpolations. When property values are set, the other HTML nodes that reference the property are automatically re-rendered.
 
 Objects are automatically activated when first referenced if `tlx.options.reactive` is truthy. Loading the file `tlx-reactive.js` automatically sets the value to `true`. A future version of the software will support the values `change` and `input`. Meanwhile, you must handcode an event handler on input fields if you desire two-way data binding, e.g.:
 
@@ -144,9 +148,23 @@ Objects are automatically activated when first referenced if `tlx.options.reacti
 
 ```
 
-If you need to be able to reference the activated object outside of TLX code so you UI is responsive to external changes, then you can activate it using `const <activated> = tlx.activate(<object>)`, prior to handing it to `tlx.bind` or resolving it in a template literal.
+## Multipage Apps
 
-The reactivity module also normalizes the behavior of `checkbox` and `multiple-select` so that state object properties are set to a booleans or Arrays respectively and UI elements get checked or selected appropriately.
+The above technique can be used for multi-page apps. Just load the data you need into a header script or via an asynchronous call. The rest of the page can be plain HTML with placeholders for the data, e.g.
+
+```html
+<script>
+var data = <do something to get establish data, e.g. async/await a call or write to this section on the server>;
+</script>
+<body onload="tlx.bind(data)()">
+
+... a bunch of HTML containing template literal type tags ...
+
+</body>
+```
+
+If you need to be able to reference the activated object outside of TLX code so your UI is responsive to external changes, then you can activate it using `const <activated> = tlx.activate(<object>)`, prior to handing it to `tlx.bind` or resolving it in a template literal.
+
 
 # Directives
 
@@ -154,17 +172,17 @@ The following directives are built-in:
 
 `state`, which is a special directive in that it is not prefixed with a letter and a hyphen but supports interpolation, e.g. `state="[1,2,3]"` or `state="${[1,2,3]}"` are both valid. Interpolations are frequently useful in order to simplify the expression of JSON, e.g. `state="{name: 'Bill}"` is not valid JSON, where as `state="${{name: 'Bill'}}"` is valid JavaScript and will return the correct object, i.e. `{"name":"Bill"}`. Setting state also take priority over other attributes so that the state is available to the other attribute directives.
 
-`t-for="<vname> of <array>"`, which operates just like its JavaScript counterpart.
+`t-for="<vname> of <array>"`, operates like its JavaScript counterpart, in addition the `<vname>`, the scoped variables `value`, `index`, and `array` (similar to `Array.prototype.forEach`) are available in nested HTML string literal expressions.
 
-`t-for="<vname> in <object>"`, which operates just like its JavaScript counterpart except that a locally scoped variable `object` is available in the nested HTML string literal expressions so that `${object[key]}` can be used to retrieve a value.
+`t-for="<vname> in <object>"`, operates like its JavaScript counterpart except that In addition the `<vname>`, locally scoped variables `object` and `key` are available in the nested HTML string literal expressions so that `${object[key]}` can be used to retrieve a value in addition to `${object[<vname>]}`.
 
-`t-foreach="<object>"`, which is smart and operates on either an array or regular object. The variables `key`, `value` and `object` are available to nested HTML string literal expressions.
+`t-foreach="<object>"`, is smart and operates on either an array or regular object. The variables `key`, `value` and `object` are available to nested HTML string literal expressions.
 
-`t-if="<boolean>"`, which will prevent rendering of child elements if the boolean is falsy.
+`t-if="<boolean>"`, prevents rendering of child elements if the boolean is falsy.
 
-`t-import=<url>`, which will load a remote resource. Use with `t-if` to support on-demand/progressive loading.
+`t-import=<url>`, (coming soon) which will load a remote resource. Use with `t-if` to support on-demand/progressive loading.
 
-`t-on=<object>`, which adds event handlers. The object takes the form `{<eventName>:<handler>[,<eventName>:<handler>...}}`. The handler signature is the same as a normal JavaScript event handler and just takes an `Event` as an argument.
+`t-on=<object>`, adds event handlers. The object takes the form `{<eventName>:<handler>[,<eventName>:<handler>...}}`. The handler signature is the same as a normal JavaScript event handler and just takes an `Event` as an argument.
 
 ## Iterating Directives
 
@@ -185,10 +203,29 @@ Vue:
 
 ## Custom Directives
 
-New directives can be added by augmenting the object `tlx.directives.HTMLElement` with a key representing the directive name, e.g. `x-mydirective`, and a function as the value with the signature, `(node,value) ...`. The function is free to change the `htmlElement` as it sees fit, e.g.:
+New directives can be added by augmenting the objects `tlx.directives.VNode` or `tlx.directives.HTMLElement` with a key representing the directive name, e.g. `x-mydirective`, and a function as the value with the signature, `(vnode,htmlElement,value) ...`. The function is free to change the `vnode` and `htmlElement` as it sees fit, e.g.:
+
+`VNode` directives are processed after all attributes on the `vnode` have been interpolated and resolved but prior to adding sub-node to the real DOM node `htmlElement`. As a result, they can have a direct impact on the rendering of the `htmlElement`.
+
+`HTMLElement` directives are processed after the `htmlElement` has been fully populated and added to the DOM. As a result they are lessefficient. Also, any changes to the `vdom` will effectively be ignored until the next time the `htmlElement` is rendered.
+
+
+Here the VDom is modified for efficiency, the DOM will never get populaed with child notes if `value` is falsy:
 
 ```js
-tlx.directives.HTMLElement["t-if"] = (htmlElement,value) => {
+tlx.directives.VDom["t-if"] = (value,vnode) => {
+		if(!value) {
+			vnode.children = null;
+		}
+		return value;
+	}
+}
+```
+
+Here the DOM is manipulated after everything is resolved, it is far less efficient as a result.
+
+```js
+tlx.directives.HTMLElement["t-if"] = (value,htmlElement) => {
 		if(!value) {
 			while(htmlElement.lastChild) htmlElement.removeChild(htmlElement.lastChild);
 		}
@@ -196,26 +233,18 @@ tlx.directives.HTMLElement["t-if"] = (htmlElement,value) => {
 	};
 ```
 
-Advanced users can also set directives on the VDom for efficiency, e.g.:
-
-```js
-tlx.directives.VDom["t-if"] = (vnode,value) => {
-		if(!value) {
-			vnode.children = null;
-		}
-		return value;
-	}
-}
-
-```
-
-Note, full interpolation may not have occured when processing the VDom, so HTMLElement directives should also be implemented.
 
 Although it may appear as if directives could be specialized by element class, this is not currently possible. All custom directives should be associated with `HTMLElement` or `VDom`.
 
 # Components
 
-Components work in a similar manner to `React` although `props` and lifecycle events are not currently supported. Below is a basic example:
+Components work in a similar manner to `React` although `props` and lifecycle events are not currently supported.
+
+Components only need to implement a single method, `render(attributes)`, which must return a `VNode` tree. The `attributes` argument is optional. It is used to pass to the component a map of the attributes associated with the custom tag actually in the HTML being processed. These will not be interpolated/resolved and in general do not need to be by `render`, unless it needs the values for its own processing. Once `render` has returned a `VNode`, the calling code will actually resolve the values.
+
+Components must also be registered using
+
+Below is a basic example:
 
 ```html
 <script>
@@ -225,20 +254,22 @@ class Message extends tlx.Component {
 			style: "font-weight:bold"
 		}
 	}
-	render() { // required, should return VNode tree ... which tlx template processor does
+	render(attributes) { // required, should return VNode tree ... which tlx template processor does
 		return tlx`<div>\${message}</div>`;
 	}
 }
-document.registerElement("x-message",Message);
+document.registerTlxComponent("x-message",Message);
 </script>
 <body onload="tlx.bind({})()">
 <x-message state="${{message:'Hello'}}"></x-message>
 </body>
 ```
 
-For a single component that combines several html editor types into one, see the `components` directory.
+For a single component, `tlx-editor`, that combines several html editor types into one, see the `components/tlx-editor.js`.
 
+# Design Comments
 
+The `tlx` library has been designed so that converting to code to standards compliant Web Components once all browsers support their use should be straight forward.
 
 # Acknowledgements
 
@@ -250,7 +281,9 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, and `Angula
 
 # Release History
 
-2017-10-30 v0.0.9-beta Added component support. Enhanced documentation. Centralized some repeaded code patterns.
+2017-11-03 v0.0.10-beta Improved parsing of `t-for` directive. Optimized rendering and directives. The ordering of arguments for custom directives has been changed. `document.registerElement` was replaced with `document.registerTlxComponent` to avoid conflict with `registerElement` in Chrome. Added `dbmon` benchmark test.
+
+2017-10-30 v0.0.9-beta Added component support. Enhanced documentation. Centralized some repeated code patterns.
 
 2017-10-27 v0.0.8-beta Documentation updates.
 

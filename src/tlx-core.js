@@ -1,5 +1,5 @@
 (function() {
-	
+
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
 	 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -55,7 +55,7 @@
 	var ATTR_VALUE_SQ = 9, ATTR_VALUE_DQ = 10
 	var ATTR_EQ = 11, ATTR_BREAK = 12
 	var COMMENT = 13
-
+	
 	function hyperx(h, opts) {
 	  if (!opts) opts = {}
 	  var concat = opts.concat || function (a, b) {
@@ -65,23 +65,16 @@
 	  //  h = attrToProp(h)
 	  //}
 
-	  return function (strings=document.body,...values) {
+	  return function (strings,...values) {
+		if(!strings) throw new TypeError("tlx must be called with an HTML Element or used to interploate a string literal.")
 		if(tlx.render && strings instanceof HTMLElement) {
-			let node = strings;
-			if(node.innerHTML.indexOf("${")>=0) {
-				if(node.childNodes.length>1) {
-					const span = document.createElement("span");
-					node.parentElement.insertBefore(span,node);
-					span.appendChild(node);
-					node = span;
-				}
-				node.state = (typeof(window)!=="undefined" && this!==window ? (this instanceof Node ? this.state : this) : node.state);
-				!node.state || !tlx.options || !tlx.options.reactive || !tlx.activate || (node.state = tlx.activate(node.state));
-				const vnode = Function("state","with(state) { return tlx.bind(this)`"+node.innerHTML.replace(/\${/g,"\\${")+"`}").call(this,node.state||{});
-				//vnode.attributes || (vnode.attributes = {});
-				//!node.state || vnode.attributes.state || (vnode.attributes.state = node.state);
-				tlx.render(vnode,null,node);
-			}
+			// this ,makes everything depended on outtere scope, bad!!!
+			const vnode = Function("return tlx`"+strings.outerHTML.replace(/\${/g,"\\${")+"`")(),
+				node = document.createElement(vnode.nodeName);
+			if(this && this!==window) vnode.attributes.state = (tlx.options.reactive && tlx.activate ? tlx.activate(this) : this);
+			strings.parentElement.replaceChild(node,strings);
+			vnode.node = node;
+			tlx.render(vnode);
 			return;
 		}
 	    var state = TEXT, reg = ''
@@ -185,7 +178,7 @@
 	    && Array.isArray(tree[2][0][2])) {
 	      tree[2][0] = h(tree[2][0][0], tree[2][0][1], tree[2][0][2])
 	    }
-	    return tree[2][0]
+	    return tree[2][0];
 
 	    function parse (str) {
 	      var res = []
@@ -326,15 +319,42 @@
 	class VNode {
 		constructor(config) {
 			Object.assign(this,config);
-			/*return new Proxy(this,{
-				get, set, delete update real DOM nodes;
-				
-				Mutation observer will update Vdom nodes?
-			})*/
+		}
+	}
+	class VText extends VNode {
+		constructor(config) {
+			super(config);
 		}
 	}
 
-	const h = (nodeName, attributes, ...args) => {
+	const hCompress = (h) => {
+			if(!h || h.compressed) return h;
+			h.compressed = true;
+			const children = [];
+			if(h.children) {
+				for(let child of h.children) {
+					if(typeof(child)==="string") {
+						const text = child.replace(/[ \r\n\t]+/g," ");
+						if(/\S/.test(text)) {
+							if(text[0]===" " && text[1]===" ") text = text.trimLeft() + " ";
+							if(text[text.length-1]===" " && text[text.length-2]===" ") text = text.trimRight() + " ";
+							children.push(new VText({text,parent:h}));
+						}
+					} else if(Array.isArray(child)) {
+						for(let item of child) {
+							item.parent = h;
+							children.push(hCompress(item));
+						}
+					} else if(child) {
+						child.parent = h;
+						children.push(hCompress(child));
+					}
+				}
+				h.children = children;
+			}
+			return h;
+		},
+		h = (nodeName, attributes, ...args) => {
 			// patch for Preact and React
 			if(attributes) {
 				for(let name in attributes) {
@@ -357,7 +377,7 @@
 				
 			if(typeof(React)!=="undefined") return React.createElement(nodeName,attributes,...args);
 			if(typeof(preact)!=="undefined") return preact.h(nodeName,attributes, ...args);
-			let children = args.length ? [].concat(...args) : null;
+			let children = args.length ? [].concat(...args).filter(item => item!=null) : [];
 		    return new VNode({nodeName,attributes,children});
 		};
 		tlx = hyperx(h);
@@ -377,25 +397,30 @@
 			return attributes;
 		};
 		tlx.h = h;
+		tlx.hCompress = hCompress;
 		tlx.options = {};
 		tlx.setAttribute = (element,name,value) => {
+			value = tlx.fromJSON(value);
 			let type = typeof(value);
-			if(name==="options" && type==="string" && value.indexOf("${")===-1) {
+			if(name==="options" && type==="string") {
 				value = value.split(",");
 				type = typeof(value);
 			}
 			if(value && type==="object") element[name] = value;
 			else if(type==="function") {
-				if(name.indexOf("on")===0) element.addEventListener(name.substring(2).toLowerCase(name),value)
-				else element[name] = value;
-			} else element.setAttribute(name,value);
-			if(element.type==="checkbox" && name==="value" && value) element.checked = true;
+				//if(name.indexOf("on")===0) element.addEventListener(name.substring(2).toLowerCase(name),value)
+				//else element[name] = value;
+				 element[name] = value;
+			} else if(!(element instanceof HTMLSelectElement) || name!=="value") element.setAttribute(name,value);
+			if(element.type==="checkbox" && name==="value" && value) requestAnimationFrame(() => element.checked = true);
 			else if(element.type==="select-one" && name==="value") {
-				for(let option of [].slice.call(element.options)) value!=tlx.fromJSON(option.value) || (option.selected = true);
+				for(let option of [].slice.call(element.options)) value!=tlx.fromJSON(option.value) || requestAnimationFrame(() => option.selected = true);
 			} else if(element.type==="select-multiple" && name==="value" && Array.isArray(value)) {
-				for(let option of [].slice.call(element.options)) !value.includes(tlx.fromJSON(option.value)) || (option.selected = true);
+				for(let option of [].slice.call(element.options)) !value.includes(tlx.fromJSON(option.value)) || requestAnimationFrame(() => option.selected = true);
 			} 
 		}
+		tlx.VNode = VNode;
+		tlx.VText = VText;
 		
 
 	if(typeof(module)!=="undefined") module.exports = tlx;

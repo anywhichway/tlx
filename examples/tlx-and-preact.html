@@ -9,19 +9,19 @@
 const el = document.getElementById("content");
 
 tlx.render(tlx`<p>tlx.render 
-		<span>Hello, world!</span>
+		<span>Hello, world! </span>
 		<button onclick="() => { alert('hi') }">Click Me</button>
 		</p>`,el);
 
 preact.render(tlx`<p>preact.render
-	<span>Hello, world!</span> 
+	<span>Hello, world! </span> 
 	<button onclick="() => { alert('hi') }">Click Me</button>
 	</p>`,el);
 
 const model = {	onclick() { alert('hi!'); } };
 
 tlx.render(tlx.bind(model)`<p>bound tlx + tlx.render
-	<span>Hello, world!</span>
+	<span>Hello, world! </span>
 	<button onclick=${model.onclick}>Click Me</button>
 	</p>`,el);
 

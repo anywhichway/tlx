@@ -6,13 +6,25 @@
 <script src="../src/tlx-directives.js"></script>
 <script src="../src/tlx-component.js"></script>
 <script src="./tlx-editor.js"></script>
-
+<style>
+input:invalid {border: 2px solid red;}
+</style>
 </head>
-<body onload="tlx.bind({name:'Joe',honorific:'Mx.',seatingPreferences:['aisle','exit'],optIn:true})()">
-<p><tlx-editor type="text" value="${name}" label="Name:" t-on="${{input:this.linkState('name')}}"></tlx-editor></p>
-<p><tlx-editor type="select-one" value="${honorific}" options="${['Ind.','Misc.','Mr.','Mrs.','Ms.','Mx.','Dr.','Msgr.','Rev.']}" label="Honorific:" t-on="${{change:this.linkState('honorific')}}"></tlx-editor></p>
-<p><tlx-editor type="select-multiple" value="${seatingPreferences}" options="${['aisle','middle','window','exit','bulkhead','rear']}" label="Seating Preference:" t-on="${{change:this.linkState('seatingPreferences')}}"></tlx-editor></p>
-<p><tlx-editor type="checkbox" value="${optIn}" label="Opt In:" t-on="${{click:this.linkState('optIn')}}"></tlx-editor></p>
-<p>${honorific} ${name} has opted ${(optIn ? "in" : "out")} and prefers the following seating: ${seatingPreferences.join(", ")}.</p>
-</body>
+<body onload="tlx.bind({name:'Joe',age:20,honorific:'Mx.',seatingPreferences:['aisle','exit'],optIn:true,tier:'gold',notes:'',attest:''})(document.getElementById('page'))">
+<div id="page">
+	<form>
+	<p><tlx-editor type="text" value="${name}" label="Name:" t-on="${{input:this.linkState('name')}}" required></tlx-editor></p>
+	<p><tlx-editor type="number" value="${age}" min="0" max="115" label="Age:" t-on="${{change:this.linkState('age')}}"></tlx-editor></p>
+	<p><tlx-editor type="select-one" value="${honorific}" options="${['Ind.','Misc.','Mr.','Mrs.','Ms.','Mx.','Dr.','Msgr.','Rev.','Sir']}" label="Honorific:" t-on="${{change:this.linkState('honorific')}}"></tlx-editor></p>
+	<p><tlx-editor type="select-multiple" value="${seatingPreferences}" options="${['aisle','middle','window','exit','bulkhead','rear']}" label="Seating Preference:" t-on="${{change:this.linkState('seatingPreferences')}}"></tlx-editor></p>
+	<p><tlx-editor type="checkbox" value="${optIn}" label="Opt In:" t-on="${{click:this.linkState('optIn')}}"></tlx-editor></p>
+	<p><tlx-editor type="radiogroup" value="${tier}" label="Tier:" options="${['bronze','silver','gold']}" t-on="${{click:this.linkState('tier')}}"></tlx-editor></p>
+	<p><tlx-editor type="textarea" value="${notes}" label="Notes:" t-on="${{input:this.linkState('notes')}}"></tlx-editor></p>
+	<p><tlx-editor type="text" value="no" options="${['yes','no']}" label="Verified (yes or no):" t-on="${{change:this.linkState('attest')}}"></tlx-editor></p>
+	<p><input type="submit"></p>
+	</form>
+	<p>${honorific} ${name} has opted ${(optIn ? "in" : "out")} and prefers the following seating: ${seatingPreferences.join(", ")} with ${tier} tier priority.</p>
+	<table><tr><td>Notes: </td><td>${notes}</td></table>
+	</body>
+</div>
 </html>

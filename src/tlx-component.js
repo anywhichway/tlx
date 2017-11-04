@@ -3,7 +3,7 @@
 	const elements = {};
 	document.registerTlxComponent = function(name,cls) {
 		tlx.Component.register(cls,name);
-	}
+	};
 	tlx.Component = class Component extends HTMLElement {
 		static create(element) {
 			element = (element && element instanceof HTMLElement ? element : document.createElement(element));
@@ -11,7 +11,7 @@
 		}
 		static register(cls,name=cls.name) {
 			const cname = name.toUpperCase();
-			if(elements[cname]!=cls) {
+			if(elements[cname]!==cls) {
 				elements[cname] = cls;
 				cls.create = (element) => {
 					element = Component.create(element);

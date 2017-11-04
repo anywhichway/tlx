@@ -54,15 +54,15 @@
 		ATTR_VALUE_W = 7, ATTR_VALUE = 8,
 		ATTR_VALUE_SQ = 9, ATTR_VALUE_DQ = 10,
 		ATTR_EQ = 11, ATTR_BREAK = 12,
-		COMMENT = 13;
+		COMMENT = 13,
+		tlx;
 	
-	function hyperx(h, opts) {
-		if (!opts) {
-			opts = {}
-		}
-		var concat = opts.concat || function (a, b) {
-			return String(a) + String(b)
-		}
+	
+	
+	function hyperx(h, opts={}) {
+		const concat = opts.concat || function (a, b) {
+			return String(a) + String(b);
+		};
 		//if (opts.attrToProp !== false) {
 		//  h = attrToProp(h)
 		//}
@@ -86,25 +86,129 @@
 			var state = TEXT, reg = "",
 				arglen = arguments.length,
 				parts = [];
-
+			function parse(str) {
+				var res = []
+				if (state === ATTR_VALUE_W) state = ATTR
+				for (var i = 0; i < str.length; i++) {
+					var c = str.charAt(i)
+					if (state === TEXT && c === '<') {
+						if (reg.length) res.push([TEXT, reg])
+						reg = ""
+							state = OPEN
+					} else if (c === '>' && !quot(state) && state !== COMMENT) {
+						if (state === OPEN) res.push([OPEN,reg])
+						else if (state === ATTR_KEY) res.push([ATTR_KEY,reg])
+						else if (state === ATTR_VALUE && reg.length) res.push([ATTR_VALUE,reg])
+						res.push([CLOSE])
+						reg = ""
+						state = TEXT
+					} else if (state === COMMENT && /-$/.test(reg) && c === '-') {
+						if (opts.comments) res.push([ATTR_VALUE,reg.substr(0, reg.length - 1)],[CLOSE])
+						reg = ""
+							state = TEXT
+					} else if (state === OPEN && /^!--$/.test(reg)) {
+						if (opts.comments) res.push([OPEN, reg],[ATTR_KEY,'comment'],[ATTR_EQ])
+						reg = c
+						state = COMMENT
+					} else if (state === TEXT || state === COMMENT) {
+						reg += c
+					} else if (state === OPEN && /\s/.test(c)) {
+						res.push([OPEN, reg])
+						reg = ""
+							state = ATTR
+					} else if (state === OPEN) {
+						reg += c
+					} else if (state === ATTR && /[^\s"'=/]/.test(c)) {
+						state = ATTR_KEY
+						reg = c
+					} else if (state === ATTR && /\s/.test(c)) {
+						if (reg.length) res.push([ATTR_KEY,reg])
+						res.push([ATTR_BREAK])
+					} else if (state === ATTR_KEY && /\s/.test(c)) {
+						res.push([ATTR_KEY,reg])
+						reg = ""
+							state = ATTR_KEY_W
+					} else if (state === ATTR_KEY && c === '=') {
+						res.push([ATTR_KEY,reg],[ATTR_EQ])
+						reg = ""
+							state = ATTR_VALUE_W
+					} else if (state === ATTR_KEY) reg += c
+					else if ((state === ATTR_KEY_W || state === ATTR) && c === '=') {
+						res.push([ATTR_EQ])
+						state = ATTR_VALUE_W
+					} else if ((state === ATTR_KEY_W || state === ATTR) && !/\s/.test(c)) {
+						res.push([ATTR_BREAK])
+						if (/[\w-]/.test(c)) {
+							reg += c
+							state = ATTR_KEY
+						} else state = ATTR
+					} else if (state === ATTR_VALUE_W && c === '"') state = ATTR_VALUE_DQ
+					else if (state === ATTR_VALUE_W && c === "'") state = ATTR_VALUE_SQ
+					else if (state === ATTR_VALUE_DQ && c === '"') {
+						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
+						reg = ""
+							state = ATTR
+					} else if (state === ATTR_VALUE_SQ && c === "'") {
+						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
+						reg = ""
+							state = ATTR
+					} else if (state === ATTR_VALUE_W && !/\s/.test(c)) {
+						state = ATTR_VALUE
+						i--
+					} else if (state === ATTR_VALUE && /\s/.test(c)) {
+						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
+						reg = ""
+							state = ATTR
+					} else if (state === ATTR_VALUE || state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ) reg += c
+				}
+				if (state === TEXT && reg.length) {
+					res.push([TEXT,reg])
+					reg = ""
+				} else if (state === ATTR_VALUE && reg.length) {
+					res.push([ATTR_VALUE,reg])
+					reg = ""
+				} else if (state === ATTR_VALUE_DQ && reg.length) {
+					res.push([ATTR_VALUE,reg])
+					reg = ""
+				} else if (state === ATTR_VALUE_SQ && reg.length) {
+					res.push([ATTR_VALUE,reg])
+					reg = ""
+				} else if (state === ATTR_KEY) {
+					res.push([ATTR_KEY,reg])
+					reg = ""
+				}
+				return res
+			};
+			
+			function strfn(x) {
+				if (typeof x === 'function') {
+					return x;
+				} else if (typeof x === 'string') {
+					return x;
+				} else if (x && typeof x === 'object') {
+					return x;
+				} else {
+					return concat("", x);
+				}
+			};
 			for (let i = 0; i < strings.length; i++) {
 				if (i < arglen - 1) {
 					let arg = arguments[i+1],
 						p = parse(strings[i]),
 						xstate = state;
 					if (xstate === ATTR_VALUE_DQ) {
-						xstate = ATTR_VALUE
+						xstate = ATTR_VALUE;
 					} else if (xstate === ATTR_VALUE_SQ) {
-						xstate = ATTR_VALUE
+						xstate = ATTR_VALUE;
 					} else if (xstate === ATTR_VALUE_W) {
-						xstate = ATTR_VALUE
+						xstate = ATTR_VALUE;
 					} else if (xstate === ATTR) {
-						xstate = ATTR_KEY
+						xstate = ATTR_KEY;
 					}
-					p.push([ VAR, xstate, arg ])
-					parts.push.apply(parts, p)
+					p.push([ VAR, xstate, arg ]);
+					parts.push.apply(parts, p);
 				} else {
-					parts.push.apply(parts, parse(strings[i]))
+					parts.push.apply(parts, parse(strings[i]));
 				}
 			}
 
@@ -207,115 +311,6 @@
 				tree[2][0] = h(tree[2][0][0], tree[2][0][1], tree[2][0][2])
 			}
 			return tree[2][0];
-
-			function parse (str) {
-				var res = []
-				if (state === ATTR_VALUE_W) state = ATTR
-				for (var i = 0; i < str.length; i++) {
-					var c = str.charAt(i)
-					if (state === TEXT && c === '<') {
-						if (reg.length) res.push([TEXT, reg])
-						reg = ""
-							state = OPEN
-					} else if (c === '>' && !quot(state) && state !== COMMENT) {
-						if (state === OPEN) res.push([OPEN,reg])
-						else if (state === ATTR_KEY) res.push([ATTR_KEY,reg])
-						else if (state === ATTR_VALUE && reg.length) res.push([ATTR_VALUE,reg])
-						res.push([CLOSE])
-						reg = ""
-						state = TEXT
-					} else if (state === COMMENT && /-$/.test(reg) && c === '-') {
-						if (opts.comments) res.push([ATTR_VALUE,reg.substr(0, reg.length - 1)],[CLOSE])
-						reg = ""
-							state = TEXT
-					} else if (state === OPEN && /^!--$/.test(reg)) {
-						if (opts.comments) res.push([OPEN, reg],[ATTR_KEY,'comment'],[ATTR_EQ])
-						reg = c
-						state = COMMENT
-					} else if (state === TEXT || state === COMMENT) {
-						reg += c
-					} else if (state === OPEN && /\s/.test(c)) {
-						res.push([OPEN, reg])
-						reg = ""
-							state = ATTR
-					} else if (state === OPEN) {
-						reg += c
-					} else if (state === ATTR && /[^\s"'=/]/.test(c)) {
-						state = ATTR_KEY
-						reg = c
-					} else if (state === ATTR && /\s/.test(c)) {
-						if (reg.length) res.push([ATTR_KEY,reg])
-						res.push([ATTR_BREAK])
-					} else if (state === ATTR_KEY && /\s/.test(c)) {
-						res.push([ATTR_KEY,reg])
-						reg = ""
-							state = ATTR_KEY_W
-					} else if (state === ATTR_KEY && c === '=') {
-						res.push([ATTR_KEY,reg],[ATTR_EQ])
-						reg = ""
-							state = ATTR_VALUE_W
-					} else if (state === ATTR_KEY) reg += c
-					else if ((state === ATTR_KEY_W || state === ATTR) && c === '=') {
-						res.push([ATTR_EQ])
-						state = ATTR_VALUE_W
-					} else if ((state === ATTR_KEY_W || state === ATTR) && !/\s/.test(c)) {
-						res.push([ATTR_BREAK])
-						if (/[\w-]/.test(c)) {
-							reg += c
-							state = ATTR_KEY
-						} else state = ATTR
-					} else if (state === ATTR_VALUE_W && c === '"') state = ATTR_VALUE_DQ
-					else if (state === ATTR_VALUE_W && c === "'") state = ATTR_VALUE_SQ
-					else if (state === ATTR_VALUE_DQ && c === '"') {
-						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
-						reg = ""
-							state = ATTR
-					} else if (state === ATTR_VALUE_SQ && c === "'") {
-						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
-						reg = ""
-							state = ATTR
-					} else if (state === ATTR_VALUE_W && !/\s/.test(c)) {
-						state = ATTR_VALUE
-						i--
-					} else if (state === ATTR_VALUE && /\s/.test(c)) {
-						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
-						reg = ""
-							state = ATTR
-					} else if (state === ATTR_VALUE || state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ) reg += c
-				}
-				if (state === TEXT && reg.length) {
-					res.push([TEXT,reg])
-					reg = ""
-				} else if (state === ATTR_VALUE && reg.length) {
-					res.push([ATTR_VALUE,reg])
-					reg = ""
-				} else if (state === ATTR_VALUE_DQ && reg.length) {
-					res.push([ATTR_VALUE,reg])
-					reg = ""
-				} else if (state === ATTR_VALUE_SQ && reg.length) {
-					res.push([ATTR_VALUE,reg])
-					reg = ""
-				} else if (state === ATTR_KEY) {
-					res.push([ATTR_KEY,reg])
-					reg = ""
-				}
-				return res
-			}
-		}
-
-		function strfn (x) {
-			if (typeof x === 'function') {
-				return x
-			}
-			else if (typeof x === 'string') {
-				return x
-			}
-			else if (x && typeof x === 'object') {
-				return x
-			}
-			else {
-				return concat("", x)
-			}
 		}
 	}
 
@@ -407,50 +402,49 @@
 			if(typeof(preact)!=="undefined") return preact.h(nodeName,attributes, ...args);
 			let children = args.length ? [].concat(...args).filter(item => item!=null) : [];
 		    return new VNode({nodeName,attributes,children});
-		},
-		tlx = hyperx(h);
-		tlx.fromJSON = (value) => {
-			if(typeof(value)==="string") {
-				try { value = JSON.parse(value.replace(/&quot;/g,'"'));	} catch(e) { }
-			}
-			return value;
 		};
-		tlx.getAttribute = (element,name) => {
-			const desc = Object.getOwnPropertyDescriptor(element,name);
-			return (desc ? desc.value : tlx.fromJSON(element.getAttribute(name)));
-		};
-		tlx.getAttributes = (element) => {
-			const attributes = {};
-			for(let attribute of [].slice.call(element.attributes)) attributes[attribute.name] = element[attribute.name] || tlx.fromJSON(attribute.value);
-			return attributes;
-		};
-		tlx.h = h;
-		tlx.hCompress = hCompress;
-		tlx.options = {};
-		tlx.setAttribute = (element,name,value) => {
-			value = tlx.fromJSON(value);
-			let type = typeof(value);
-			if(name==="options" && type==="string") {
-				value = value.split(",");
-				type = typeof(value);
-			}
-			if(value && type==="object") element[name] = value;
-			else if(type==="function") {
-				//if(name.indexOf("on")===0) element.addEventListener(name.substring(2).toLowerCase(name),value)
-				//else element[name] = value;
-				 element[name] = value;
-			} else if(!(element instanceof HTMLSelectElement) || name!=="value") element.setAttribute(name,value);
-			if(element.type==="checkbox" && name==="value" && value) requestAnimationFrame(() => element.checked = true);
-			else if(element.type==="select-one" && name==="value") {
-				for(let option of [].slice.call(element.options)) value!=tlx.fromJSON(option.value) || requestAnimationFrame(() => option.selected = true);
-			} else if(element.type==="select-multiple" && name==="value" && Array.isArray(value)) {
-				for(let option of [].slice.call(element.options)) !value.includes(tlx.fromJSON(option.value)) || requestAnimationFrame(() => option.selected = true);
-			} 
+	tlx = hyperx(h);
+	tlx.fromJSON = (value) => {
+		if(typeof(value)==="string") {
+			try { value = JSON.parse(value.replace(/&quot;/g,'"'));	} catch(e) { }
 		}
-		tlx.VNode = VNode;
-		tlx.VText = VText;
+		return value;
+	};
+	tlx.getAttribute = (element,name) => {
+		const desc = Object.getOwnPropertyDescriptor(element,name);
+		return (desc ? desc.value : tlx.fromJSON(element.getAttribute(name)));
+	};
+	tlx.getAttributes = (element) => {
+		const attributes = {};
+		for(let attribute of [].slice.call(element.attributes)) attributes[attribute.name] = element[attribute.name] || tlx.fromJSON(attribute.value);
+		return attributes;
+	};
+	tlx.h = h;
+	tlx.hCompress = hCompress;
+	tlx.options = {};
+	tlx.setAttribute = (element,name,value) => {
+		value = tlx.fromJSON(value);
+		let type = typeof(value);
+		if(name==="options" && type==="string") {
+			value = value.split(",");
+			type = typeof(value);
+		}
+		if(value && type==="object") element[name] = value;
+		else if(type==="function") {
+			//if(name.indexOf("on")===0) element.addEventListener(name.substring(2).toLowerCase(name),value)
+			//else element[name] = value;
+			 element[name] = value;
+		} else if(!(element instanceof HTMLSelectElement) || name!=="value") element.setAttribute(name,value);
+		if(element.type==="checkbox" && name==="value" && value) requestAnimationFrame(() => element.checked = true);
+		else if(element.type==="select-one" && name==="value") {
+			for(let option of [].slice.call(element.options)) value!=tlx.fromJSON(option.value) || requestAnimationFrame(() => option.selected = true);
+		} else if(element.type==="select-multiple" && name==="value" && Array.isArray(value)) {
+			for(let option of [].slice.call(element.options)) !value.includes(tlx.fromJSON(option.value)) || requestAnimationFrame(() => option.selected = true);
+		} 
+	}
+	tlx.VNode = VNode;
+	tlx.VText = VText;
 		
-
 	if(typeof(module)!=="undefined") module.exports = tlx;
 	if(typeof(window)!=="undefined") window.tlx = tlx;
 }).call(this);

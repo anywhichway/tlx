@@ -86,9 +86,25 @@
 			var state = TEXT, reg = "",
 				arglen = arguments.length,
 				parts = [];
+			function quot (state) {
+				return state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ
+			};
+			function strfn(x) {
+				if (typeof x === 'function') {
+					return x;
+				} else if (typeof x === 'string') {
+					return x;
+				} else if (x && typeof x === 'object') {
+					return x;
+				} else {
+					return concat("", x);
+				}
+			};
 			function parse(str) {
 				var res = [];
-				if (state === ATTR_VALUE_W) state = ATTR
+				if (state === ATTR_VALUE_W) {
+					state = ATTR;
+				}
 				for (var i = 0; i < str.length; i++) {
 					var c = str.charAt(i)
 					if (state === TEXT && c === "<") {
@@ -118,12 +134,12 @@
 						state = TEXT;
 					} else if (state === OPEN && /^!--$/.test(reg)) {
 						if (opts.comments) {
-							res.push([OPEN, reg],[ATTR_KEY,'comment'],[ATTR_EQ]);
+							res.push([OPEN, reg],[ATTR_KEY,"comment"],[ATTR_EQ]);
 						}
 						reg = c;
 						state = COMMENT;
 					} else if (state === TEXT || state === COMMENT) {
-						reg += c
+						reg += c;
 					} else if (state === OPEN && /\s/.test(c)) {
 						res.push([OPEN, reg]);
 						reg = "";
@@ -143,11 +159,12 @@
 						reg = "";
 						state = ATTR_KEY_W;
 					} else if (state === ATTR_KEY && c === "=") {
-						res.push([ATTR_KEY,reg],[ATTR_EQ])
+						res.push([ATTR_KEY,reg],[ATTR_EQ]);
 						reg = "";
 						state = ATTR_VALUE_W;
-					} else if (state === ATTR_KEY) reg += c
-					else if ((state === ATTR_KEY_W || state === ATTR) && c === "=") {
+					} else if (state === ATTR_KEY) {
+						reg += c;
+					} else if ((state === ATTR_KEY_W || state === ATTR) && c === "=") {
 						res.push([ATTR_EQ]);
 						state = ATTR_VALUE_W;
 					} else if ((state === ATTR_KEY_W || state === ATTR) && !/\s/.test(c)) {
@@ -158,9 +175,11 @@
 						} else {
 							state = ATTR;
 						}
-					} else if (state === ATTR_VALUE_W && c === '"') state = ATTR_VALUE_DQ
-					else if (state === ATTR_VALUE_W && c === "'") state = ATTR_VALUE_SQ
-					else if (state === ATTR_VALUE_DQ && c === '"') {
+					} else if (state === ATTR_VALUE_W && c === '"') {
+						state = ATTR_VALUE_DQ;
+					} else if (state === ATTR_VALUE_W && c === "'") {
+						state = ATTR_VALUE_SQ;
+					} else if (state === ATTR_VALUE_DQ && c === '"') {
 						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
 						reg = "";
 						state = ATTR;
@@ -195,20 +214,6 @@
 				}
 				return res;
 			};
-			function quot (state) {
-				return state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ
-			};
-			function strfn(x) {
-				if (typeof x === 'function') {
-					return x;
-				} else if (typeof x === 'string') {
-					return x;
-				} else if (x && typeof x === 'object') {
-					return x;
-				} else {
-					return concat("", x);
-				}
-			};
 			for (let i = 0; i < strings.length; i++) {
 				if (i < arglen - 1) {
 					let arg = arguments[i+1],
@@ -230,18 +235,18 @@
 				}
 			}
 
-			var tree = [null,{},[]]
-			var stack = [[tree,-1]]
+			var tree = [null,{},[]],
+				stack = [[tree,-1]];
 			for (let i = 0; i < parts.length; i++) {
 				let cur = stack[stack.length-1][0],
 					p = parts[i], s = p[0];
 				if (s === OPEN && /^\//.test(p[1])) {
 					var ix = stack[stack.length-1][1]
 					if (stack.length > 1) {
-						stack.pop()
+						stack.pop();
 						stack[stack.length-1][0][2][ix] = h(
 								cur[0], cur[1], cur[2].length ? cur[2] : undefined
-						)
+						);
 					}
 				} else if (s === OPEN) {
 					let c = [p[1],{},[]];
@@ -252,13 +257,17 @@
 						copyKey;
 					for (; i < parts.length; i++) {
 						if (parts[i][0] === ATTR_KEY) {
-							key = concat(key, parts[i][1])
+							key = concat(key, parts[i][1]);
 						} else if (parts[i][0] === VAR && parts[i][1] === ATTR_KEY) {
 							if (typeof parts[i][2] === 'object' && !key) {
 								for (copyKey in parts[i][2]) {
-									if (parts[i][2].hasOwnProperty(copyKey) && !cur[1][copyKey]) cur[1][copyKey] = parts[i][2][copyKey]
+									if (parts[i][2].hasOwnProperty(copyKey) && !cur[1][copyKey]) {
+										cur[1][copyKey] = parts[i][2][copyKey];
+									}
 								}
-							} else key = concat(key, parts[i][2])
+							} else {
+								key = concat(key, parts[i][2]);
+							}
 						} else break
 					}
 					if (parts[i][0] === ATTR_EQ) i++
@@ -273,7 +282,7 @@
 						} else if (parts[i][0] === VAR
 								&& (parts[i][1] === ATTR_VALUE || parts[i][1] === ATTR_KEY)) {
 							if (!cur[1][key]) {
-								cur[1][key] = strfn(parts[i][2])
+								cur[1][key] = strfn(parts[i][2]);
 							} else {
 								parts[i][2]==="" || (cur[1][key] = concat(cur[1][key], parts[i][2])); // AnyWhichWay added parts[i][1]===""
 							}
@@ -282,51 +291,56 @@
 									&& (parts[i][0] === CLOSE || parts[i][0] === ATTR_BREAK)) {
 								// https://html.spec.whatwg.org/multipage/infrastructure.html#boolean-attributes
 								// empty string is falsy, not well behaved value in browser
-								cur[1][key] = key.toLowerCase()
+								cur[1][key] = key.toLowerCase();
 							}
 							if (parts[i][0] === CLOSE) {
-								i--
+								i--;
 							}
 							break
 						}
 					}
-				} else if (s === ATTR_KEY) cur[1][p[1]] = true
-				else if (s === VAR && p[1] === ATTR_KEY) cur[1][p[2]] = true
-				else if (s === CLOSE) {
+				} else if (s === ATTR_KEY) {
+					cur[1][p[1]] = true;
+				} else if (s === VAR && p[1] === ATTR_KEY) {
+					cur[1][p[2]] = true;
+				} else if (s === CLOSE) {
 					if (selfClosing(cur[0]) && stack.length) {
 						let ix = stack[stack.length-1][1];
-						stack.pop()
+						stack.pop();
 						stack[stack.length-1][0][2][ix] = h(
 								cur[0], cur[1], cur[2].length ? cur[2] : undefined
-						)
+						);
 					}
 				} else if (s === VAR && p[1] === TEXT) {
 					if (p[2] === undefined || p[2] === null) {
-						p[2] = ""
+						p[2] = "";
 					} else if (!p[2]) {
-						p[2] = concat("", p[2])
+						p[2] = concat("", p[2]);
 					}
 					if (Array.isArray(p[2][0])) {
-						cur[2].push.apply(cur[2], p[2])
+						cur[2].push.apply(cur[2], p[2]);
 					} else {
-						cur[2].push(p[2])
+						cur[2].push(p[2]);
 					}
 				} else if (s === TEXT) {
-					cur[2].push(p[1])
+					cur[2].push(p[1]);
 				} else if (s === ATTR_EQ || s === ATTR_BREAK) {
 					// no-op
 				} else {
-					throw new Error('unhandled: ' + s)
+					throw new Error('unhandled: ' + s);
 				}
 			}
 
-			if (tree[2].length > 1 && /^\s*$/.test(tree[2][0])) tree[2].shift()
+			if (tree[2].length > 1 && /^\s*$/.test(tree[2][0])) {
+				tree[2].shift();
+			}
 
-			if (tree[2].length > 2 || (tree[2].length === 2 && /\S/.test(tree[2][1]))) throw new Error('multiple root elements must be wrapped in an enclosing tag')
+			if (tree[2].length > 2 || (tree[2].length === 2 && /\S/.test(tree[2][1]))) {
+				throw new Error('multiple root elements must be wrapped in an enclosing tag');
+			}
 
-			if (Array.isArray(tree[2][0]) && typeof tree[2][0][0] === 'string'
-				&& Array.isArray(tree[2][0][2])) {
-				tree[2][0] = h(tree[2][0][0], tree[2][0][1], tree[2][0][2])
+			if (Array.isArray(tree[2][0]) && typeof tree[2][0][0] === 'string' && Array.isArray(tree[2][0][2])) {
+				tree[2][0] = h(tree[2][0][0], tree[2][0][1], tree[2][0][2]);
 			}
 			return tree[2][0];
 		}

@@ -436,7 +436,7 @@
 								if(typeof(f)==="function") {
 									attributes[name] = f;
 								}
-							} catch(e) { ; }
+							} catch(e) { true; }
 						}
 						if(typeof(f)==="function" && typeof(React)!=="undefined") {
 							delete attributes[name];
@@ -489,7 +489,7 @@
 		} else if(type==="function") {
 			//if(name.indexOf("on")===0) element.addEventListener(name.substring(2).toLowerCase(name),value)
 			//else element[name] = value;
-			 element[name] = value;
+			element[name] = value;
 		} else if(!(element instanceof HTMLSelectElement) || name!=="value") {
 			element.setAttribute(name,value);
 		}

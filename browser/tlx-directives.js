@@ -60,7 +60,9 @@
 		HTMLElement: {
 			"t-if": (value,vnode,node) => {
 				if(!value) {
-					while(node.lastChild) node.removeChild(node.lastChild);
+					while(node.lastChild) {
+						node.removeChild(node.lastChild);
+					}
 				}
 				return true;
 			},

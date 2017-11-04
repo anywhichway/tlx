@@ -139,16 +139,22 @@ else e[p]=v;
 			}
 		}
 		node = renderVNode(vnode,node,parent);
-		if(target) target.appendChild(node);
+		if(target) {
+			target.appendChild(node);
+		}
 		return node;
 	};
 	tlx.resolve = resolve;
 	tlx._NODE = null;
 	tlx.$ = {
 			parse(strings,...values) {
-				if(values.length===1 && strings.filter(item => item.length>0).length===0) return values[0];
+				if(values.length===1 && strings.filter(item => item.length>0).length===0) {
+					return values[0];
+				}
 				let result = "";
-				for(let i=0;i<strings.length;i++) result += (strings[i] + (i<values.length ? (values[i] && typeof(values[i])==="object" ? JSON.stringify(values[i]) : values[i]) : ""));
+				for(let i=0;i<strings.length;i++) {
+					result += (strings[i] + (i<values.length ? (values[i] && typeof(values[i])==="object" ? JSON.stringify(values[i]) : values[i]) : ""));
+				}
 				return result;
 			},
 			parseValues(strings,...values) {

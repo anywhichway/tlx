@@ -36,5 +36,5 @@
 			this.state || (tlx.options.active ? tlx.activate({}) : {});
 			Object.assign(this.state,state);
 		}
-	}
+	};
 }(tlx));

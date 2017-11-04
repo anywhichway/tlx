@@ -87,99 +87,117 @@
 				arglen = arguments.length,
 				parts = [];
 			function parse(str) {
-				var res = []
+				var res = [];
 				if (state === ATTR_VALUE_W) state = ATTR
 				for (var i = 0; i < str.length; i++) {
 					var c = str.charAt(i)
-					if (state === TEXT && c === '<') {
-						if (reg.length) res.push([TEXT, reg])
-						reg = ""
-							state = OPEN
-					} else if (c === '>' && !quot(state) && state !== COMMENT) {
-						if (state === OPEN) res.push([OPEN,reg])
-						else if (state === ATTR_KEY) res.push([ATTR_KEY,reg])
-						else if (state === ATTR_VALUE && reg.length) res.push([ATTR_VALUE,reg])
-						res.push([CLOSE])
-						reg = ""
-						state = TEXT
-					} else if (state === COMMENT && /-$/.test(reg) && c === '-') {
-						if (opts.comments) res.push([ATTR_VALUE,reg.substr(0, reg.length - 1)],[CLOSE])
-						reg = ""
-							state = TEXT
+					if (state === TEXT && c === "<") {
+						if (reg.length) {
+							res.push([TEXT, reg]);
+						}
+						reg = "";
+						state = OPEN;
+					} else if (c === ">" && !quot(state) && state !== COMMENT) {
+						if (state === OPEN) {
+							res.push([OPEN,reg]);
+						}
+						else if (state === ATTR_KEY) {
+							res.push([ATTR_KEY,reg]);
+						}
+						else if (state === ATTR_VALUE && reg.length) {
+							res.push([ATTR_VALUE,reg]);
+						}
+						res.push([CLOSE]);
+						reg = "";
+						state = TEXT;
+					} else if (state === COMMENT && /-$/.test(reg) && c === "-") {
+						if (opts.comments) {
+							res.push([ATTR_VALUE,reg.substr(0, reg.length - 1)],[CLOSE]);
+						}
+						reg = "";
+						state = TEXT;
 					} else if (state === OPEN && /^!--$/.test(reg)) {
-						if (opts.comments) res.push([OPEN, reg],[ATTR_KEY,'comment'],[ATTR_EQ])
-						reg = c
-						state = COMMENT
+						if (opts.comments) {
+							res.push([OPEN, reg],[ATTR_KEY,'comment'],[ATTR_EQ]);
+						}
+						reg = c;
+						state = COMMENT;
 					} else if (state === TEXT || state === COMMENT) {
 						reg += c
 					} else if (state === OPEN && /\s/.test(c)) {
-						res.push([OPEN, reg])
-						reg = ""
-							state = ATTR
+						res.push([OPEN, reg]);
+						reg = "";
+						state = ATTR;
 					} else if (state === OPEN) {
-						reg += c
+						reg += c;
 					} else if (state === ATTR && /[^\s"'=/]/.test(c)) {
-						state = ATTR_KEY
-						reg = c
+						state = ATTR_KEY;
+						reg = c;
 					} else if (state === ATTR && /\s/.test(c)) {
-						if (reg.length) res.push([ATTR_KEY,reg])
-						res.push([ATTR_BREAK])
+						if (reg.length) {
+							res.push([ATTR_KEY,reg]);
+						}
+						res.push([ATTR_BREAK]);
 					} else if (state === ATTR_KEY && /\s/.test(c)) {
-						res.push([ATTR_KEY,reg])
-						reg = ""
-							state = ATTR_KEY_W
-					} else if (state === ATTR_KEY && c === '=') {
+						res.push([ATTR_KEY,reg]);
+						reg = "";
+						state = ATTR_KEY_W;
+					} else if (state === ATTR_KEY && c === "=") {
 						res.push([ATTR_KEY,reg],[ATTR_EQ])
-						reg = ""
-							state = ATTR_VALUE_W
+						reg = "";
+						state = ATTR_VALUE_W;
 					} else if (state === ATTR_KEY) reg += c
-					else if ((state === ATTR_KEY_W || state === ATTR) && c === '=') {
-						res.push([ATTR_EQ])
-						state = ATTR_VALUE_W
+					else if ((state === ATTR_KEY_W || state === ATTR) && c === "=") {
+						res.push([ATTR_EQ]);
+						state = ATTR_VALUE_W;
 					} else if ((state === ATTR_KEY_W || state === ATTR) && !/\s/.test(c)) {
 						res.push([ATTR_BREAK])
 						if (/[\w-]/.test(c)) {
-							reg += c
-							state = ATTR_KEY
-						} else state = ATTR
+							reg += c;
+							state = ATTR_KEY;
+						} else {
+							state = ATTR;
+						}
 					} else if (state === ATTR_VALUE_W && c === '"') state = ATTR_VALUE_DQ
 					else if (state === ATTR_VALUE_W && c === "'") state = ATTR_VALUE_SQ
 					else if (state === ATTR_VALUE_DQ && c === '"') {
 						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
-						reg = ""
-							state = ATTR
+						reg = "";
+						state = ATTR;
 					} else if (state === ATTR_VALUE_SQ && c === "'") {
 						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
-						reg = ""
-							state = ATTR
+						reg = "";
+						state = ATTR;
 					} else if (state === ATTR_VALUE_W && !/\s/.test(c)) {
-						state = ATTR_VALUE
-						i--
+						state = ATTR_VALUE;
+						i--;
 					} else if (state === ATTR_VALUE && /\s/.test(c)) {
-						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
-						reg = ""
-							state = ATTR
+						res.push([ATTR_VALUE,reg],[ATTR_BREAK]);
+						reg = "";
+						state = ATTR;
 					} else if (state === ATTR_VALUE || state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ) reg += c
 				}
 				if (state === TEXT && reg.length) {
-					res.push([TEXT,reg])
-					reg = ""
+					res.push([TEXT,reg]);
+					reg = "";
 				} else if (state === ATTR_VALUE && reg.length) {
-					res.push([ATTR_VALUE,reg])
-					reg = ""
+					res.push([ATTR_VALUE,reg]);
+					reg = "";
 				} else if (state === ATTR_VALUE_DQ && reg.length) {
-					res.push([ATTR_VALUE,reg])
-					reg = ""
+					res.push([ATTR_VALUE,reg]);
+					reg = "";
 				} else if (state === ATTR_VALUE_SQ && reg.length) {
-					res.push([ATTR_VALUE,reg])
-					reg = ""
+					res.push([ATTR_VALUE,reg]);
+					reg = "";
 				} else if (state === ATTR_KEY) {
-					res.push([ATTR_KEY,reg])
-					reg = ""
+					res.push([ATTR_KEY,reg]);
+					reg = "";
 				}
-				return res
+				return res;
 			};
-			
+			function quot (state) {
+				return state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ
+			};
 			function strfn(x) {
 				if (typeof x === 'function') {
 					return x;
@@ -314,12 +332,8 @@
 		}
 	}
 
-	function quot (state) {
-		return state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ
-	}
-
-	var hasOwn = Object.prototype.hasOwnProperty
-	function has (obj, key) { return hasOwn.call(obj, key) }
+	var hasOwn = Object.prototype.hasOwnProperty;
+	function has (obj, key) { return hasOwn.call(obj, key) };
 
 	var closeRE = RegExp('^(' + [
 		'area', 'base', 'basefont', 'bgsound', 'br', 'col', 'command', 'embed',

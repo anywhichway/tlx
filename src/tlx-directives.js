@@ -38,8 +38,8 @@
 				}
 			},
 			"t-foreach": (value,vnode,node) => {
+				const object = value;
 				if(Array.isArray(value)) {
-					const object = value;
 					for(let key=0;key<object.length;key++) {
 						const value = object[key];
 						for(let child of vnode.children) {
@@ -47,7 +47,6 @@
 						}
 					}
 				} else {
-					const object = value;
 					for(let key in object) {
 						const value = object[key];
 						for(let child of vnode.children) {
@@ -74,5 +73,5 @@
 				}
 			}
 		}
-	}
+	};
 }(tlx));

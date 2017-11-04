@@ -10,14 +10,18 @@
 				}
 				else if(target.type==="select-multiple") {
 					value = [];
-					for(let option of target.options) !option.selected || value.push(tlx.fromJSON(option.value));
+					for(let option of target.options) {
+						!option.selected || value.push(tlx.fromJSON(option.value));
+					}
 				} else {
 					value = tlx.fromJSON(target.value);
 				}
 				const parts = property.split(".");
 				let state = this;
 				property = parts.pop(); // get final property
-				for(let key of parts) { state = state[key] || {}} // walk tree
+				for(let key of parts) {
+					state = state[key] || {};
+				} // walk tree
 				state[property] = value; // set property
 			}
 		}
@@ -45,7 +49,7 @@
 						const type = typeof(value);
 						!value || type!=="object" || value.tlxDependents || (value = tlx.activate(value));
 						if(typeof(oldvalue)===type==="object") {
-							const olddepenents = oldvalue.tlxDependents,
+							const olddependents = oldvalue.tlxDependents,
 								newdependents = value.tlxDependents;
 							if(olddependents) {
 								for(let key in olddependents) newdependents[key] = olddependents[key];

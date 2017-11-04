@@ -510,7 +510,7 @@
 			}
 		}
 	}
-})(tlx);
+}(tlx));
 },{}],4:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
@@ -519,26 +519,36 @@
 			const target = event.target;
 			if([HTMLInputElement,HTMLTextAreaElement,HTMLSelectElement].some(cls => target instanceof cls)) {
 				let value;
-				if(target.type==="checkbox") value = target.checked;
+				if(target.type==="checkbox") {
+					value = target.checked;
+				}
 				else if(target.type==="select-multiple") {
 					value = [];
-					for(let option of target.options) !option.selected || value.push(tlx.fromJSON(option.value));
-				} else value = tlx.fromJSON(target.value);
+					for(let option of target.options) {
+						!option.selected || value.push(tlx.fromJSON(option.value));
+					}
+				} else {
+					value = tlx.fromJSON(target.value);
+				}
 				const parts = property.split(".");
 				let state = this;
 				property = parts.pop(); // get final property
-				for(let key of parts) { state = state[key] || {}}; // walk tree
+				for(let key of parts) {
+					state = state[key] || {};
+				} // walk tree
 				state[property] = value; // set property
 			}
 		}
 		return f.bind(tlx.getState(this)||(this.state={}));
-	}
+	};
 	tlx.activate = (object) => {
 		if(!object || typeof(object)!=="object" || object.tlxDependents) return object;
 		const dependents = {},
 			proxy = new Proxy(object,{
 				get: (target,property) => {
-					if(property==="tlxDependents") return dependents;
+					if(property==="tlxDependents") {
+						return dependents;
+					}
 					const value = target[property],
 						type = typeof(value);
 					if(tlx._NODE && type!=="function" && type!=="undefined") {
@@ -553,7 +563,7 @@
 						const type = typeof(value);
 						!value || type!=="object" || value.tlxDependents || (value = tlx.activate(value));
 						if(typeof(oldvalue)===type==="object") {
-							const olddepenents = oldvalue.tlxDependents,
+							const olddependents = oldvalue.tlxDependents,
 								newdependents = value.tlxDependents;
 							if(olddependents) {
 								for(let key in olddependents) newdependents[key] = olddependents[key];
@@ -562,8 +572,9 @@
 						target[property] = value;
 						if(dependents[property]) {
 							for(let dependent of dependents[property]) {
-								if(!dependent.ownerElement && !dependent.parentElement) dependents[property].delete(dependent);
-								else {
+								if(!dependent.ownerElement && !dependent.parentElement) {
+									dependents[property].delete(dependent);
+								} else {
 									//while(dependent.lastChild) dependent.removeChild(dependent.lastChild);
 									dependent.vnode.node = dependent;
 									tlx.render(dependent.vnode);
@@ -575,18 +586,24 @@
 					return true;
 				}
 			});
-		for(let key in object) object[key] = tlx.activate(object[key]);
+		for(let key in object) {
+			object[key] = tlx.activate(object[key]);
+		}
 		return proxy;
-	}
+	};
 	tlx.getState = (node) => { // force resolution of parent states first
-		if(!node) return;
-		if(node.state) return node.state;
+		if(!node) {
+			return;
+		}
+		if(node.state) {
+			return node.state;
+		}
 		return tlx.getState(node.parentElement||node.ownerElement);
-	}
+	};
 	tlx.options || (tlx.options={});
 	tlx.options.reactive = true;
 		
-})(tlx);
+}(tlx));
 },{}],5:[function(require,module,exports){
 (function(tlx) {
 	
@@ -623,8 +640,8 @@ else e[p]=v;
 
 	tlx.render = (vnode,target,parent,extras) => {
 		function renderVNode(vnode,node,parent) {
-		    if(vnode instanceof tlx.VText) {
-		    	const text = vnode.text;
+			if(vnode instanceof tlx.VText) {
+				const text = vnode.text;
 				node || (node = document.createTextNode(text));
 				!extras || (node.tlxExtras = extras);
 				extras = node.tlxExtras;
@@ -636,106 +653,114 @@ else e[p]=v;
 					requestAnimationFrame(() => node.data = value);
 				}
 				return node;
-		    }
-		    node || (node = document.createElement(vnode.nodeName));
+			}
+			node || (node = document.createElement(vnode.nodeName));
 			node.vnode = vnode;
 			!extras || (node.tlxExtras = extras);
 			extras = node.tlxExtras;
-		    !parent || node.parentNode===parent || parent.appendChild(node);
-		    if(["template","script"].includes(vnode.nodeName)) return node;
-		    const attributes = vnode.attributes || {},
-	    	handled = {};
-		    let component,value;
-		    if(tlx.Component) { // does above need to happen when wer are doing a component? probably not
-		    	component = tlx.Component.registered(node.tagName);
-		    }
-		    if(attributes.state) {
+			!parent || node.parentNode===parent || parent.appendChild(node);
+			if(["template","script"].includes(vnode.nodeName)) {
+				return node;
+			}
+			const attributes = vnode.attributes || {},
+			handled = {};
+			let component,value;
+			if(tlx.Component) { // does above need to happen when wer are doing a component? probably not
+				component = tlx.Component.registered(node.tagName);
+			}
+			if(attributes.state) {
 				const value = resolve(attributes.state,node,extras);
 				node.state = (tlx.options.reactive && tlx.options.activate ? tlx.options.activate(value) : value);
 				handled.state = node.state;
 			}
-		    if(component) {
-		    	const attrs = Object.assign({},attributes);
-		    	!node.state || delete attrs.state;
-		    	tlx.render(tlx.hCompress(component.create(node).render(attrs)),null,node,extras);
-		    } else {
-			    if(attributes.type) {
+			if(component) {
+				const attrs = Object.assign({},attributes);
+				!node.state || delete attrs.state;
+				tlx.render(tlx.hCompress(component.create(node).render(attrs)),null,node,extras);
+			} else {
+				if(attributes.type) {
 					const value = resolve(attributes.type,node,extras);
 					tlx.setAttribute(node,"type",value);
 					handled.type = value;
 				}
-			    if(attributes.options) {
+				if(attributes.options) {
 					const value =  resolve(attributes.options,node,extras);
 					tlx.setAttribute(node,"options",value);
 					handled.options = value;
 				}
-			    if(attributes.value) {
+				if(attributes.value) {
 					value =  resolve(attributes.value,node,extras,true);
 					tlx.setAttribute(node,"value",value);
 					node.value = value;
 					handled.value = value;
-			    }
-			    for(let name in attributes) {
-			    	if(typeof(handled[name])==="undefined") {
-				    	const value = handled[name] = resolve(attributes[name],node,extras);
-				    	tlx.setAttribute(node,name,value,extras);
-			    	}
-			    }
-			    if(tlx.directives && tlx.directives.VNode) {
-			    	const directives =  tlx.directives.VNode;
-			    	for(let name in attributes) {
-			    		const directive = directives[name];
-			    		if(directive) {
-				    		if(!directive(handled[name],vnode,node)) return node;
-			    		}
-			    	}
-			    }
-		    }
-		    const children = vnode.children||[];
-		    for(let child of children) {
-		    	Array.isArray(child) || (child = [child]); // not sure why this needs to happen sometimes, child should never be an array
-		    	for(let vnode of child) {
-		    		const childnode = renderVNode(vnode,null,node);
-			    	if(!childnode) return;
-			    	childnode.vnode = vnode;
-		    	}
-		    }
-		    if(typeof(value)!=="undefined") {
-		    	tlx.setAttribute(node,"value",value,extras);
-		    }
-		    
-		    if(tlx.directives && tlx.directives.HTMLElement) {
-		    	const directives =  tlx.directives.HTMLElement;
-		    	for(let name in attributes) {
-		    		const directive = directives[name];
-		    		if(directive) {
-			    		directive(handled[name] || resolve(attributes[name],node),vnode,node,extras);
-		    		}
-		    	}
-		    }
-		    return node;
+				}
+				for(let name in attributes) {
+					if(typeof(handled[name])==="undefined") {
+						const value = handled[name] = resolve(attributes[name],node,extras);
+						tlx.setAttribute(node,name,value,extras);
+					}
+				}
+				if(tlx.directives && tlx.directives.VNode) {
+					const directives =  tlx.directives.VNode;
+					for(let name in attributes) {
+						const directive = directives[name];
+						if(directive) {
+							if(!directive(handled[name],vnode,node)) {
+								return node;
+							}
+						}
+					}
+				}
+			}
+			const children = vnode.children||[];
+			for(let child of children) {
+				Array.isArray(child) || (child = [child]); // not sure why this needs to happen sometimes, child should never be an array
+				for(let vnode of child) {
+					const childnode = renderVNode(vnode,null,node);
+					if(!childnode) {
+						return;
+					}
+					childnode.vnode = vnode;
+				}
+			}
+			if(typeof(value)!=="undefined") {
+				tlx.setAttribute(node,"value",value,extras);
+			}
+	
+			if(tlx.directives && tlx.directives.HTMLElement) {
+				const directives =  tlx.directives.HTMLElement;
+				for(let name in attributes) {
+					const directive = directives[name];
+					if(directive) {
+						directive(handled[name] || resolve(attributes[name],node),vnode,node,extras);
+					}
+				}
+			}
+			return node;
 		}
 		tlx.hCompress(vnode);
 		let node = vnode.node;
-	    if(node) {
-	    	while(node.lastChild) node.removeChild(node.lastChild);
-	    }
+		if(node) {
+			while(node.lastChild) {
+				node.removeChild(node.lastChild);
+			}
+		}
 		node = renderVNode(vnode,node,parent);
 		if(target) target.appendChild(node);
-	    return node;
+		return node;
 	};
 	tlx.resolve = resolve;
 	tlx._NODE = null;
 	tlx.$ = {
-		parse(strings,...values) {
-			if(values.length===1 && strings.filter(item => item.length>0).length===0) return values[0];
-			let result = "";
-			for(let i=0;i<strings.length;i++) result += (strings[i] + (i<values.length ? (values[i] && typeof(values[i])==="object" ? JSON.stringify(values[i]) : values[i]) : ""));
-			return result;
-		},
-		parseValues(strings,...values) {
-			return values;
-		}
+			parse(strings,...values) {
+				if(values.length===1 && strings.filter(item => item.length>0).length===0) return values[0];
+				let result = "";
+				for(let i=0;i<strings.length;i++) result += (strings[i] + (i<values.length ? (values[i] && typeof(values[i])==="object" ? JSON.stringify(values[i]) : values[i]) : ""));
+				return result;
+			},
+			parseValues(strings,...values) {
+				return values;
+			}
 	};
-})(tlx);
+}(tlx));
 },{}]},{},[1]);

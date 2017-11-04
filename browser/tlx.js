@@ -57,12 +57,12 @@
 	//var attrToProp = require('hyperscript-attribute-to-property')
 
 
-	var VAR = 0, TEXT = 1, OPEN = 2, CLOSE = 3, ATTR = 4
-	var ATTR_KEY = 5, ATTR_KEY_W = 6
-	var ATTR_VALUE_W = 7, ATTR_VALUE = 8
-	var ATTR_VALUE_SQ = 9, ATTR_VALUE_DQ = 10
-	var ATTR_EQ = 11, ATTR_BREAK = 12
-	var COMMENT = 13
+	var VAR = 0, TEXT = 1, OPEN = 2, CLOSE = 3, ATTR = 4,
+		ATTR_KEY = 5, ATTR_KEY_W = 6,
+		ATTR_VALUE_W = 7, ATTR_VALUE = 8,
+		ATTR_VALUE_SQ = 9, ATTR_VALUE_DQ = 10,
+		ATTR_EQ = 11, ATTR_BREAK = 12,
+		COMMENT = 13;
 	
 	function hyperx(h, opts) {
 		if (!opts) {
@@ -76,7 +76,9 @@
 		//}
 
 		return function (strings,...values) {
-			if(!strings) throw new TypeError("tlx must be called with an HTML Element or used to interploate a string literal.")
+			if(!strings) {
+				throw new TypeError("tlx must be called with an HTML Element or used to interploate a string literal.");
+			}
 			if(tlx.render && strings instanceof HTMLElement) {
 				// this ,makes everything depended on outtere scope, bad!!!
 				const vnode = Function("return tlx`"+strings.outerHTML.replace(/\${/g,"\\${")+"`")(),
@@ -89,7 +91,7 @@
 				tlx.render(vnode);
 				return;
 			}
-			var state = TEXT, reg = ''
+			var state = TEXT, reg = ""
 				var arglen = arguments.length
 				var parts = []
 
@@ -132,7 +134,7 @@
 					cur[2].push(c)
 					stack.push([c,cur[2].length-1])
 				} else if (s === ATTR_KEY || (s === VAR && p[1] === ATTR_KEY)) {
-					var key = ''
+					var key = ""
 					var copyKey
 					for (; i < parts.length; i++) {
 						if (parts[i][0] === ATTR_KEY) {
@@ -186,9 +188,9 @@
 					}
 				} else if (s === VAR && p[1] === TEXT) {
 					if (p[2] === undefined || p[2] === null) {
-						p[2] = ''
+						p[2] = ""
 					} else if (!p[2]) {
-						p[2] = concat('', p[2])
+						p[2] = concat("", p[2])
 					}
 					if (Array.isArray(p[2][0])) {
 						cur[2].push.apply(cur[2], p[2])
@@ -221,18 +223,18 @@
 					var c = str.charAt(i)
 					if (state === TEXT && c === '<') {
 						if (reg.length) res.push([TEXT, reg])
-						reg = ''
+						reg = ""
 							state = OPEN
 					} else if (c === '>' && !quot(state) && state !== COMMENT) {
 						if (state === OPEN) res.push([OPEN,reg])
 						else if (state === ATTR_KEY) res.push([ATTR_KEY,reg])
 						else if (state === ATTR_VALUE && reg.length) res.push([ATTR_VALUE,reg])
 						res.push([CLOSE])
-						reg = ''
+						reg = ""
 						state = TEXT
 					} else if (state === COMMENT && /-$/.test(reg) && c === '-') {
 						if (opts.comments) res.push([ATTR_VALUE,reg.substr(0, reg.length - 1)],[CLOSE])
-						reg = ''
+						reg = ""
 							state = TEXT
 					} else if (state === OPEN && /^!--$/.test(reg)) {
 						if (opts.comments) res.push([OPEN, reg],[ATTR_KEY,'comment'],[ATTR_EQ])
@@ -242,7 +244,7 @@
 						reg += c
 					} else if (state === OPEN && /\s/.test(c)) {
 						res.push([OPEN, reg])
-						reg = ''
+						reg = ""
 							state = ATTR
 					} else if (state === OPEN) {
 						reg += c
@@ -254,11 +256,11 @@
 						res.push([ATTR_BREAK])
 					} else if (state === ATTR_KEY && /\s/.test(c)) {
 						res.push([ATTR_KEY,reg])
-						reg = ''
+						reg = ""
 							state = ATTR_KEY_W
 					} else if (state === ATTR_KEY && c === '=') {
 						res.push([ATTR_KEY,reg],[ATTR_EQ])
-						reg = ''
+						reg = ""
 							state = ATTR_VALUE_W
 					} else if (state === ATTR_KEY) reg += c
 					else if ((state === ATTR_KEY_W || state === ATTR) && c === '=') {
@@ -274,36 +276,36 @@
 					else if (state === ATTR_VALUE_W && c === "'") state = ATTR_VALUE_SQ
 					else if (state === ATTR_VALUE_DQ && c === '"') {
 						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
-						reg = ''
+						reg = ""
 							state = ATTR
 					} else if (state === ATTR_VALUE_SQ && c === "'") {
 						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
-						reg = ''
+						reg = ""
 							state = ATTR
 					} else if (state === ATTR_VALUE_W && !/\s/.test(c)) {
 						state = ATTR_VALUE
 						i--
 					} else if (state === ATTR_VALUE && /\s/.test(c)) {
 						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
-						reg = ''
+						reg = ""
 							state = ATTR
 					} else if (state === ATTR_VALUE || state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ) reg += c
 				}
 				if (state === TEXT && reg.length) {
 					res.push([TEXT,reg])
-					reg = ''
+					reg = ""
 				} else if (state === ATTR_VALUE && reg.length) {
 					res.push([ATTR_VALUE,reg])
-					reg = ''
+					reg = ""
 				} else if (state === ATTR_VALUE_DQ && reg.length) {
 					res.push([ATTR_VALUE,reg])
-					reg = ''
+					reg = ""
 				} else if (state === ATTR_VALUE_SQ && reg.length) {
 					res.push([ATTR_VALUE,reg])
-					reg = ''
+					reg = ""
 				} else if (state === ATTR_KEY) {
 					res.push([ATTR_KEY,reg])
-					reg = ''
+					reg = ""
 				}
 				return res
 			}
@@ -320,7 +322,7 @@
 				return x
 			}
 			else {
-				return concat('', x)
+				return concat("", x)
 			}
 		}
 	}
@@ -413,7 +415,7 @@
 			if(typeof(preact)!=="undefined") return preact.h(nodeName,attributes, ...args);
 			let children = args.length ? [].concat(...args).filter(item => item!=null) : [];
 		    return new VNode({nodeName,attributes,children});
-		};
+		},
 		tlx = hyperx(h);
 		tlx.fromJSON = (value) => {
 			if(typeof(value)==="string") {
@@ -774,16 +776,22 @@ else e[p]=v;
 			}
 		}
 		node = renderVNode(vnode,node,parent);
-		if(target) target.appendChild(node);
+		if(target) {
+			target.appendChild(node);
+		}
 		return node;
 	};
 	tlx.resolve = resolve;
 	tlx._NODE = null;
 	tlx.$ = {
 			parse(strings,...values) {
-				if(values.length===1 && strings.filter(item => item.length>0).length===0) return values[0];
+				if(values.length===1 && strings.filter(item => item.length>0).length===0) {
+					return values[0];
+				}
 				let result = "";
-				for(let i=0;i<strings.length;i++) result += (strings[i] + (i<values.length ? (values[i] && typeof(values[i])==="object" ? JSON.stringify(values[i]) : values[i]) : ""));
+				for(let i=0;i<strings.length;i++) {
+					result += (strings[i] + (i<values.length ? (values[i] && typeof(values[i])==="object" ? JSON.stringify(values[i]) : values[i]) : ""));
+				}
 				return result;
 			},
 			parseValues(strings,...values) {

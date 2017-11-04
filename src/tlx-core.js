@@ -83,15 +83,15 @@
 				tlx.render(vnode);
 				return;
 			}
-			var state = TEXT, reg = ""
-				var arglen = arguments.length
-				var parts = []
+			var state = TEXT, reg = "",
+				arglen = arguments.length,
+				parts = [];
 
-			for (var i = 0; i < strings.length; i++) {
+			for (let i = 0; i < strings.length; i++) {
 				if (i < arglen - 1) {
-					var arg = arguments[i+1]
-					var p = parse(strings[i])
-					var xstate = state
+					let arg = arguments[i+1],
+						p = parse(strings[i]),
+						xstate = state;
 					if (xstate === ATTR_VALUE_DQ) {
 						xstate = ATTR_VALUE
 					} else if (xstate === ATTR_VALUE_SQ) {
@@ -110,9 +110,9 @@
 
 			var tree = [null,{},[]]
 			var stack = [[tree,-1]]
-			for (var i = 0; i < parts.length; i++) {
-				var cur = stack[stack.length-1][0]
-				var p = parts[i], s = p[0]
+			for (let i = 0; i < parts.length; i++) {
+				let cur = stack[stack.length-1][0],
+					p = parts[i], s = p[0];
 				if (s === OPEN && /^\//.test(p[1])) {
 					var ix = stack[stack.length-1][1]
 					if (stack.length > 1) {
@@ -122,12 +122,12 @@
 						)
 					}
 				} else if (s === OPEN) {
-					var c = [p[1],{},[]]
+					let c = [p[1],{},[]];
 					cur[2].push(c)
 					stack.push([c,cur[2].length-1])
 				} else if (s === ATTR_KEY || (s === VAR && p[1] === ATTR_KEY)) {
-					var key = ""
-					var copyKey
+					let key = "",
+						copyKey;
 					for (; i < parts.length; i++) {
 						if (parts[i][0] === ATTR_KEY) {
 							key = concat(key, parts[i][1])
@@ -140,7 +140,7 @@
 						} else break
 					}
 					if (parts[i][0] === ATTR_EQ) i++
-					var j = i
+					let j = i;
 					for (; i < parts.length; i++) {
 						if (parts[i][0] === ATTR_VALUE || parts[i][0] === ATTR_KEY) {
 							if (!cur[1][key]) {
@@ -172,7 +172,7 @@
 				else if (s === VAR && p[1] === ATTR_KEY) cur[1][p[2]] = true
 				else if (s === CLOSE) {
 					if (selfClosing(cur[0]) && stack.length) {
-						var ix = stack[stack.length-1][1]
+						let ix = stack[stack.length-1][1];
 						stack.pop()
 						stack[stack.length-1][0][2][ix] = h(
 								cur[0], cur[1], cur[2].length ? cur[2] : undefined

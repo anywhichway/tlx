@@ -24,11 +24,13 @@
 				} // walk tree
 				state[property] = value; // set property
 			}
-		}
+		};
 		return f.bind(tlx.getState(this)||(this.state={}));
 	};
 	tlx.activate = (object) => {
-		if(!object || typeof(object)!=="object" || object.tlxDependents) return object;
+		if(!object || typeof(object)!=="object" || object.tlxDependents) {
+			return object;
+		}
 		const dependents = {},
 			proxy = new Proxy(object,{
 				get: (target,property) => {
@@ -52,7 +54,9 @@
 							const olddependents = oldvalue.tlxDependents,
 								newdependents = value.tlxDependents;
 							if(olddependents) {
-								for(let key in olddependents) newdependents[key] = olddependents[key];
+								for(let key in olddependents) {
+									newdependents[key] = olddependents[key];
+								}
 							}
 						}
 						target[property] = value;
@@ -61,7 +65,6 @@
 								if(!dependent.ownerElement && !dependent.parentElement) {
 									dependents[property].delete(dependent);
 								} else {
-									//while(dependent.lastChild) dependent.removeChild(dependent.lastChild);
 									dependent.vnode.node = dependent;
 									tlx.render(dependent.vnode);
 									dependent.vnode.node = null;

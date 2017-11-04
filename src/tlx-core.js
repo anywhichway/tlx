@@ -92,29 +92,29 @@
 			var hasOwn = Object.prototype.hasOwnProperty;
 			function has (obj, key) { return hasOwn.call(obj, key) };
 
-			var closeRE = RegExp('^(' + [
-				'area', 'base', 'basefont', 'bgsound', 'br', 'col', 'command', 'embed',
-				'frame', 'hr', 'img', 'input', 'isindex', 'keygen', 'link', 'meta', 'param',
-				'source', 'track', 'wbr', '!--',
+			var closeRE = RegExp("^(" + [
+				"area", "base", "basefont", "bgsound", "br", "col", "command", "embed",
+				"frame", "hr", "img", "input", "isindex", "keygen", "link", "meta", "param",
+				"source", "track", "wbr", "!--",
 				// SVG TAGS
-				'animate', 'animateTransform', 'circle', 'cursor', 'desc', 'ellipse',
-				'feBlend', 'feColorMatrix', 'feComposite',
-				'feConvolveMatrix', 'feDiffuseLighting', 'feDisplacementMap',
-				'feDistantLight', 'feFlood', 'feFuncA', 'feFuncB', 'feFuncG', 'feFuncR',
-				'feGaussianBlur', 'feImage', 'feMergeNode', 'feMorphology',
-				'feOffset', 'fePointLight', 'feSpecularLighting', 'feSpotLight', 'feTile',
-				'feTurbulence', 'font-face-format', 'font-face-name', 'font-face-uri',
-				'glyph', 'glyphRef', 'hkern', 'image', 'line', 'missing-glyph', 'mpath',
-				'path', 'polygon', 'polyline', 'rect', 'set', 'stop', 'tref', 'use', 'view',
-				'vkern'
-				].join('|') + ')(?:[\.#][a-zA-Z0-9\u007F-\uFFFF_:-]+)*$');
+				"animate", "animateTransform", "circle", "cursor", "desc", "ellipse",
+				"feBlend", "feColorMatrix", "feComposite",
+				"feConvolveMatrix", "feDiffuseLighting", "feDisplacementMap",
+				"feDistantLight", "feFlood", "feFuncA", "feFuncB", "feFuncG", "feFuncR",
+				"feGaussianBlur", "feImage", "feMergeNode", "feMorphology",
+				"feOffset", "fePointLight", "feSpecularLighting", "feSpotLight", "feTile",
+				"feTurbulence", "font-face-format", "font-face-name", "font-face-uri",
+				"glyph", "glyphRef", "hkern", "image", "line", "missing-glyph", "mpath",
+				"path", "polygon", "polyline", "rect", "set", "stop", "tref", "use", "view",
+				"vkern"
+				].join("|") + ")(?:[\.#][a-zA-Z0-9\u007F-\uFFFF_:-]+)*$");
 			function selfClosing (tag) { return closeRE.test(tag) }
 			function strfn(x) {
-				if (typeof x === 'function') {
+				if (typeof x === "function") {
 					return x;
-				} else if (typeof x === 'string') {
+				} else if (typeof x === "string") {
 					return x;
-				} else if (x && typeof x === 'object') {
+				} else if (x && typeof x === "object") {
 					return x;
 				} else {
 					return concat("", x);
@@ -215,7 +215,7 @@
 						reg = "";
 						state = ATTR;
 					} else if (state === ATTR_VALUE || state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ) {
-						reg += c
+						reg += c;
 					}
 				}
 				if (state === TEXT && reg.length) {
@@ -294,7 +294,9 @@
 							break;
 						}
 					}
-					if (parts[i][0] === ATTR_EQ) i++
+					if (parts[i][0] === ATTR_EQ) {
+						i++;
+					}
 					let j = i;
 					for (; i < parts.length; i++) {
 						if (parts[i][0] === ATTR_VALUE || parts[i][0] === ATTR_KEY) {
@@ -388,7 +390,7 @@
 			if(h.children) {
 				for(let child of h.children) {
 					if(typeof(child)==="string") {
-						const text = child.replace(/[ \r\n\t]+/g," ");
+						let text = child.replace(/[ \r\n\t]+/g," ");
 						if(/\S/.test(text)) {
 							if(text[0]===" " && text[1]===" ") text = text.trimLeft() + " ";
 							if(text[text.length-1]===" " && text[text.length-2]===" ") text = text.trimRight() + " ";
@@ -417,8 +419,10 @@
 						if(typeof(f)==="string") { // convert on handler strings into functions
 							try {
 								f = Function("return " + f)();
-								if(typeof(f)==="function") attributes[name] = f;
-							} catch(e) { }
+								if(typeof(f)==="function") {
+									attributes[name] = f;
+								}
+							} catch(e) { ; }
 						}
 						if(typeof(f)==="function" && typeof(React)!=="undefined") {
 							delete attributes[name];

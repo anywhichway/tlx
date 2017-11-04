@@ -85,4 +85,4 @@
 	tlx.options || (tlx.options={});
 	tlx.options.reactive = true;
 		
-})(tlx);
+}(tlx));

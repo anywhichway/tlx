@@ -23,7 +23,7 @@
 						}
 					}
 					return element;
-				}
+				};
 			}
 		}
 		static registered(name) {
@@ -37,4 +37,4 @@
 			Object.assign(this.state,state);
 		}
 	}
-})(tlx);
+}(tlx));

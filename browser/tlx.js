@@ -98,7 +98,7 @@
 				return state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ;
 			}
 			var hasOwn = Object.prototype.hasOwnProperty;
-			function has (obj, key) { return hasOwn.call(obj, key) };
+			function has (obj, key) { return hasOwn.call(obj, key); }
 
 			var closeRE = RegExp("^(" + [
 				"area", "base", "basefont", "bgsound", "br", "col", "command", "embed",
@@ -116,7 +116,7 @@
 				"path", "polygon", "polyline", "rect", "set", "stop", "tref", "use", "view",
 				"vkern"
 				].join("|") + ")(?:[\.#][a-zA-Z0-9\u007F-\uFFFF_:-]+)*$");
-			function selfClosing (tag) { return closeRE.test(tag) }
+			function selfClosing (tag) { return closeRE.test(tag); }
 			function strfn(x) {
 				if (typeof x === "function") {
 					return x;
@@ -212,7 +212,7 @@
 						reg = "";
 						state = ATTR;
 					} else if (state === ATTR_VALUE_SQ && c === "'") {
-						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
+						res.push([ATTR_VALUE,reg],[ATTR_BREAK]);
 						reg = "";
 						state = ATTR;
 					} else if (state === ATTR_VALUE_W && !/\s/.test(c)) {
@@ -243,7 +243,7 @@
 					reg = "";
 				}
 				return res;
-			};
+			}
 			for (let i = 0; i < strings.length; i++) {
 				if (i < arglen - 1) {
 					let arg = arguments[i+1],
@@ -330,7 +330,7 @@
 							if (parts[i][0] === CLOSE) {
 								i--;
 							}
-							break
+							break;
 						}
 					}
 				} else if (s === ATTR_KEY) {
@@ -373,7 +373,7 @@
 				throw new Error("multiple root elements must be wrapped in an enclosing tag");
 			}
 
-			if (Array.isArray(tree[2][0]) && typeof tree[2][0][0] === 'string' && Array.isArray(tree[2][0][2])) {
+			if (Array.isArray(tree[2][0]) && typeof tree[2][0][0] === "string" && Array.isArray(tree[2][0][2])) {
 				tree[2][0] = h(tree[2][0][0], tree[2][0][1], tree[2][0][2]);
 			}
 			return tree[2][0];
@@ -392,7 +392,9 @@
 	}
 
 	const hCompress = (h) => {
-			if(!h || h.compressed) return h;
+			if(!h || h.compressed) {
+				return h;
+			}
 			h.compressed = true;
 			const children = [];
 			if(h.children) {
@@ -400,8 +402,12 @@
 					if(typeof(child)==="string") {
 						let text = child.replace(/[ \r\n\t]+/g," ");
 						if(/\S/.test(text)) {
-							if(text[0]===" " && text[1]===" ") text = text.trimLeft() + " ";
-							if(text[text.length-1]===" " && text[text.length-2]===" ") text = text.trimRight() + " ";
+							if(text[0]===" " && text[1]===" ") {
+								text = text.trimLeft() + " ";
+							}
+							if(text[text.length-1]===" " && text[text.length-2]===" ") {
+								text = text.trimRight() + " ";
+							}
 							children.push(new VText({text,parent:h}));
 						}
 					} else if(Array.isArray(child)) {
@@ -440,16 +446,20 @@
 					}
 				}
 			}
-				
-			if(typeof(React)!=="undefined") return React.createElement(nodeName,attributes,...args);
-			if(typeof(preact)!=="undefined") return preact.h(nodeName,attributes, ...args);
+
+			if(typeof(React)!=="undefined") {
+				return React.createElement(nodeName,attributes,...args);
+			}
+			if(typeof(preact)!=="undefined") {
+				return preact.h(nodeName,attributes, ...args);
+			}
 			let children = args.length ? [].concat(...args).filter(item => item!=null) : [];
-		    return new VNode({nodeName,attributes,children});
+			return new VNode({nodeName,attributes,children});
 		};
 	tlx = hyperx(h);
 	tlx.fromJSON = (value) => {
 		if(typeof(value)==="string") {
-			try { value = JSON.parse(value.replace(/&quot;/g,'"'));	} catch(e) { }
+			try { value = JSON.parse(value.replace(/&quot;/g,'"'));	} catch(e) { true; }
 		}
 		return value;
 	};
@@ -459,7 +469,9 @@
 	};
 	tlx.getAttributes = (element) => {
 		const attributes = {};
-		for(let attribute of [].slice.call(element.attributes)) attributes[attribute.name] = element[attribute.name] || tlx.fromJSON(attribute.value);
+		for(let attribute of [].slice.call(element.attributes)) {
+			attributes[attribute.name] = element[attribute.name] || tlx.fromJSON(attribute.value);
+		}
 		return attributes;
 	};
 	tlx.h = h;
@@ -472,24 +484,36 @@
 			value = value.split(",");
 			type = typeof(value);
 		}
-		if(value && type==="object") element[name] = value;
-		else if(type==="function") {
+		if(value && type==="object") {
+			element[name] = value;
+		} else if(type==="function") {
 			//if(name.indexOf("on")===0) element.addEventListener(name.substring(2).toLowerCase(name),value)
 			//else element[name] = value;
 			 element[name] = value;
-		} else if(!(element instanceof HTMLSelectElement) || name!=="value") element.setAttribute(name,value);
-		if(element.type==="checkbox" && name==="value" && value) requestAnimationFrame(() => element.checked = true);
-		else if(element.type==="select-one" && name==="value") {
-			for(let option of [].slice.call(element.options)) value!=tlx.fromJSON(option.value) || requestAnimationFrame(() => option.selected = true);
+		} else if(!(element instanceof HTMLSelectElement) || name!=="value") {
+			element.setAttribute(name,value);
+		}
+		if(element.type==="checkbox" && name==="value" && value) {
+			requestAnimationFrame(() => element.checked = true);
+		} else if(element.type==="select-one" && name==="value") {
+			for(let option of [].slice.call(element.options)) {
+				value!=tlx.fromJSON(option.value) || requestAnimationFrame(() => option.selected = true);
+			}
 		} else if(element.type==="select-multiple" && name==="value" && Array.isArray(value)) {
-			for(let option of [].slice.call(element.options)) !value.includes(tlx.fromJSON(option.value)) || requestAnimationFrame(() => option.selected = true);
+			for(let option of [].slice.call(element.options)) {
+				!value.includes(tlx.fromJSON(option.value)) || requestAnimationFrame(() => option.selected = true);
+			}
 		} 
 	}
 	tlx.VNode = VNode;
 	tlx.VText = VText;
 		
-	if(typeof(module)!=="undefined") module.exports = tlx;
-	if(typeof(window)!=="undefined") window.tlx = tlx;
+	if(typeof(module)!=="undefined") {
+		module.exports = tlx;
+	}
+	if(typeof(window)!=="undefined") {
+		window.tlx = tlx;
+	}
 }).call(this);
 },{}],3:[function(require,module,exports){
 (function(tlx) {

@@ -87,8 +87,28 @@
 				arglen = arguments.length,
 				parts = [];
 			function quot (state) {
-				return state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ
-			};
+				return state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ;
+			}
+			var hasOwn = Object.prototype.hasOwnProperty;
+			function has (obj, key) { return hasOwn.call(obj, key) };
+
+			var closeRE = RegExp('^(' + [
+				'area', 'base', 'basefont', 'bgsound', 'br', 'col', 'command', 'embed',
+				'frame', 'hr', 'img', 'input', 'isindex', 'keygen', 'link', 'meta', 'param',
+				'source', 'track', 'wbr', '!--',
+				// SVG TAGS
+				'animate', 'animateTransform', 'circle', 'cursor', 'desc', 'ellipse',
+				'feBlend', 'feColorMatrix', 'feComposite',
+				'feConvolveMatrix', 'feDiffuseLighting', 'feDisplacementMap',
+				'feDistantLight', 'feFlood', 'feFuncA', 'feFuncB', 'feFuncG', 'feFuncR',
+				'feGaussianBlur', 'feImage', 'feMergeNode', 'feMorphology',
+				'feOffset', 'fePointLight', 'feSpecularLighting', 'feSpotLight', 'feTile',
+				'feTurbulence', 'font-face-format', 'font-face-name', 'font-face-uri',
+				'glyph', 'glyphRef', 'hkern', 'image', 'line', 'missing-glyph', 'mpath',
+				'path', 'polygon', 'polyline', 'rect', 'set', 'stop', 'tref', 'use', 'view',
+				'vkern'
+				].join('|') + ')(?:[\.#][a-zA-Z0-9\u007F-\uFFFF_:-]+)*$');
+			function selfClosing (tag) { return closeRE.test(tag) }
 			function strfn(x) {
 				if (typeof x === 'function') {
 					return x;
@@ -99,14 +119,14 @@
 				} else {
 					return concat("", x);
 				}
-			};
+			}
 			function parse(str) {
 				var res = [];
 				if (state === ATTR_VALUE_W) {
 					state = ATTR;
 				}
 				for (var i = 0; i < str.length; i++) {
-					var c = str.charAt(i)
+					var c = str.charAt(i);
 					if (state === TEXT && c === "<") {
 						if (reg.length) {
 							res.push([TEXT, reg]);
@@ -168,7 +188,7 @@
 						res.push([ATTR_EQ]);
 						state = ATTR_VALUE_W;
 					} else if ((state === ATTR_KEY_W || state === ATTR) && !/\s/.test(c)) {
-						res.push([ATTR_BREAK])
+						res.push([ATTR_BREAK]);
 						if (/[\w-]/.test(c)) {
 							reg += c;
 							state = ATTR_KEY;
@@ -180,7 +200,7 @@
 					} else if (state === ATTR_VALUE_W && c === "'") {
 						state = ATTR_VALUE_SQ;
 					} else if (state === ATTR_VALUE_DQ && c === '"') {
-						res.push([ATTR_VALUE,reg],[ATTR_BREAK])
+						res.push([ATTR_VALUE,reg],[ATTR_BREAK]);
 						reg = "";
 						state = ATTR;
 					} else if (state === ATTR_VALUE_SQ && c === "'") {
@@ -194,7 +214,9 @@
 						res.push([ATTR_VALUE,reg],[ATTR_BREAK]);
 						reg = "";
 						state = ATTR;
-					} else if (state === ATTR_VALUE || state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ) reg += c
+					} else if (state === ATTR_VALUE || state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ) {
+						reg += c
+					}
 				}
 				if (state === TEXT && reg.length) {
 					res.push([TEXT,reg]);
@@ -241,7 +263,7 @@
 				let cur = stack[stack.length-1][0],
 					p = parts[i], s = p[0];
 				if (s === OPEN && /^\//.test(p[1])) {
-					var ix = stack[stack.length-1][1]
+					var ix = stack[stack.length-1][1];
 					if (stack.length > 1) {
 						stack.pop();
 						stack[stack.length-1][0][2][ix] = h(
@@ -250,8 +272,8 @@
 					}
 				} else if (s === OPEN) {
 					let c = [p[1],{},[]];
-					cur[2].push(c)
-					stack.push([c,cur[2].length-1])
+					cur[2].push(c);
+					stack.push([c,cur[2].length-1]);
 				} else if (s === ATTR_KEY || (s === VAR && p[1] === ATTR_KEY)) {
 					let key = "",
 						copyKey;
@@ -259,7 +281,7 @@
 						if (parts[i][0] === ATTR_KEY) {
 							key = concat(key, parts[i][1]);
 						} else if (parts[i][0] === VAR && parts[i][1] === ATTR_KEY) {
-							if (typeof parts[i][2] === 'object' && !key) {
+							if (typeof parts[i][2] === "object" && !key) {
 								for (copyKey in parts[i][2]) {
 									if (parts[i][2].hasOwnProperty(copyKey) && !cur[1][copyKey]) {
 										cur[1][copyKey] = parts[i][2][copyKey];
@@ -268,14 +290,16 @@
 							} else {
 								key = concat(key, parts[i][2]);
 							}
-						} else break
+						} else {
+							break;
+						}
 					}
 					if (parts[i][0] === ATTR_EQ) i++
 					let j = i;
 					for (; i < parts.length; i++) {
 						if (parts[i][0] === ATTR_VALUE || parts[i][0] === ATTR_KEY) {
 							if (!cur[1][key]) {
-								cur[1][key] = strfn(parts[i][1])
+								cur[1][key] = strfn(parts[i][1]);
 							} else {
 								parts[i][1]==="" ||(cur[1][key] = concat(cur[1][key], parts[i][1])); // AnyWhichWay added parts[i][1]===""
 							}
@@ -327,7 +351,7 @@
 				} else if (s === ATTR_EQ || s === ATTR_BREAK) {
 					// no-op
 				} else {
-					throw new Error('unhandled: ' + s);
+					throw new Error("unhandled: " + s);
 				}
 			}
 
@@ -336,7 +360,7 @@
 			}
 
 			if (tree[2].length > 2 || (tree[2].length === 2 && /\S/.test(tree[2][1]))) {
-				throw new Error('multiple root elements must be wrapped in an enclosing tag');
+				throw new Error("multiple root elements must be wrapped in an enclosing tag");
 			}
 
 			if (Array.isArray(tree[2][0]) && typeof tree[2][0][0] === 'string' && Array.isArray(tree[2][0][2])) {
@@ -345,27 +369,6 @@
 			return tree[2][0];
 		}
 	}
-
-	var hasOwn = Object.prototype.hasOwnProperty;
-	function has (obj, key) { return hasOwn.call(obj, key) };
-
-	var closeRE = RegExp('^(' + [
-		'area', 'base', 'basefont', 'bgsound', 'br', 'col', 'command', 'embed',
-		'frame', 'hr', 'img', 'input', 'isindex', 'keygen', 'link', 'meta', 'param',
-		'source', 'track', 'wbr', '!--',
-		// SVG TAGS
-		'animate', 'animateTransform', 'circle', 'cursor', 'desc', 'ellipse',
-		'feBlend', 'feColorMatrix', 'feComposite',
-		'feConvolveMatrix', 'feDiffuseLighting', 'feDisplacementMap',
-		'feDistantLight', 'feFlood', 'feFuncA', 'feFuncB', 'feFuncG', 'feFuncR',
-		'feGaussianBlur', 'feImage', 'feMergeNode', 'feMorphology',
-		'feOffset', 'fePointLight', 'feSpecularLighting', 'feSpotLight', 'feTile',
-		'feTurbulence', 'font-face-format', 'font-face-name', 'font-face-uri',
-		'glyph', 'glyphRef', 'hkern', 'image', 'line', 'missing-glyph', 'mpath',
-		'path', 'polygon', 'polyline', 'rect', 'set', 'stop', 'tref', 'use', 'view',
-		'vkern'
-		].join('|') + ')(?:[\.#][a-zA-Z0-9\u007F-\uFFFF_:-]+)*$')
-		function selfClosing (tag) { return closeRE.test(tag) }
 	
 	class VNode {
 		constructor(config) {

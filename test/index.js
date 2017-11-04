@@ -9,38 +9,100 @@ if(typeof(window)==="undefined") {
 	_ = require("lodash");
 }
 
-var primitiveUnion = unionizor(),
-	objectUnion = unionizor(true),
-	keyedObjectUnion = unionizor("o");
-
-var o1 = {o:1},
-	o2 = {o:2},
-	o3 = {o:3},
-	o4 = {o:4};
+var testobject = tlx.activate({name:"Joe",address:{city:"Seattle",state:"WA"},children:["Sara","Mike"],publicKey:{show:true,key:"a key"},privateKey:{show:false,key:"a key"}});
 
 describe("Test",function() {
-	it("primitive",function() {
-		var result = primitiveUnion([3,1,2,3],[3,"2",4]);
-		expect(result.length).to.equal(5);
+	it("primtive",function(done) {
+		const app = document.getElementById("app");
+		app.innerHTML = "${name}";
+		tlx.bind(testobject)(document.getElementById("app"));
+		setTimeout(() => {
+			expect(document.getElementById("app").innerHTML).to.equal("Joe");
+			done();
+		},20)
 	});
-	it("lodash primitive",function() {
-		var result = _.union([3,1,2],[3,"2",4]);
-		expect(result.length).to.equal(5);
+	it("object",function(done) {
+		const app = document.getElementById("app");
+		app.innerHTML = "${address.city}";
+		tlx.bind(testobject)(document.getElementById("app"));
+		setTimeout(() => {
+			expect(document.getElementById("app").innerHTML).to.equal("Seattle");
+			done();
+		},20)
 	});
-	it("object with primitives",function() {
-		var result = objectUnion([3,1,2,3],[3,"2",4]);
-		expect(result.length).to.equal(5);
+	it("t-foreach",function(done) {
+		const app = document.getElementById("app");
+		app.innerHTML = "<span id='result' t-foreach='${children}'>${value}</span>";
+		tlx.bind(testobject)(document.getElementById("app"));
+		setTimeout(() => {
+			expect(document.getElementById("result").innerHTML).to.equal("SaraMike");
+			done();
+		},20)
 	});
-	it("objects",function() {
-		var result = objectUnion([o3,o1,o2,o3],[o3,"2",o4]);
-		expect(result.length).to.equal(5);
+	it("t-for of",function(done) {
+		const app = document.getElementById("app");
+		app.innerHTML = "<span id='result' t-for='child of ${children}'>${child}</span>";
+		tlx.bind(testobject)(document.getElementById("app"));
+		setTimeout(() => {
+			expect(document.getElementById("result").innerHTML).to.equal("SaraMike");
+			done();
+		},20)
 	});
-	it("lodash objects",function() {
-		var result = _.union([o3,o1,o2,o3],[o3,"2",o4]);
-		expect(result.length).to.equal(5);
+	it("t-for in",function(done) {
+		const app = document.getElementById("app");
+		app.innerHTML = "<span id='result' t-for='property in ${address}'>${property}</span>";
+		tlx.bind(testobject)(document.getElementById("app"));
+		setTimeout(() => {
+			expect(document.getElementById("result").innerHTML).to.equal("citystate");
+			done();
+		},20)
 	});
-	it("keyed objects",function() {
-		var result = keyedObjectUnion([o3,o1,o2,o3],[o3,"2",o4]);
-		expect(result.length).to.equal(5);
+	it("t-if",function(done) {
+		const app = document.getElementById("app");
+		app.innerHTML = "<span id='result' t-if='${publicKey.show}'>${publicKey.key}</span>";
+		tlx.bind(testobject)(document.getElementById("app"));
+		setTimeout(() => {
+			expect(document.getElementById("result").innerHTML).to.equal("a key");
+			done();
+		},20)
+	});
+	it("t-if not",function(done) {
+		const app = document.getElementById("app");
+		app.innerHTML = "<span id='result' t-if='${privateKey.show}'>${privateKey.key}</span>";
+		tlx.bind(testobject)(document.getElementById("app"));
+		setTimeout(() => {
+			expect(document.getElementById("result").innerHTML).to.equal("");
+			done();
+		},20)
+	});
+	it("reactive primitive",function(done) {
+		const app = document.getElementById("app");
+		app.innerHTML = "${name}";
+		tlx.bind(testobject)(document.getElementById("app"));
+		testobject.name = "Mary";
+		setTimeout(() => {
+			expect(document.getElementById("app").innerHTML).to.equal("Mary");
+			done();
+		},20)
+	});
+	it("reactive object",function(done) {
+		const app = document.getElementById("app");
+		app.innerHTML = "${address.city}";
+		tlx.bind(testobject)(document.getElementById("app"));
+		testobject.address.city = "Portland";
+		setTimeout(() => {
+			expect(document.getElementById("app").innerHTML).to.equal("Portland");
+			done();
+		},20)
+	});
+	it("reactive object parent",function(done) {
+		const app = document.getElementById("app");
+		app.innerHTML = "${address.city}";
+		tlx.bind(testobject)(document.getElementById("app"));
+		testobject.address = {city: "Seattle"};
+		setTimeout(() => {
+			expect(document.getElementById("app").innerHTML).to.equal("Seattle");
+			done();
+		},20)
 	});
 });

@@ -1,6 +1,6 @@
 {
   "name": "tlx",
-  "version": "0.0.10-beta",
+  "version": "0.0.11-beta",
   "description": "Imagine a ligh weight combination of JSX, Vue, and React but using JavaScript template literals - No Preprocessor Required",
   "engines": {},
   "license": "MIT",

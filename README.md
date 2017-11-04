@@ -281,6 +281,8 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, and `Angula
 
 # Release History
 
+2017-11-04 v0.0.11-beta Added unit tests. Release candidate.
+
 2017-11-03 v0.0.10-beta Improved parsing of `t-for` directive. Optimized rendering and directives. The ordering of arguments for custom directives has been changed. `document.registerElement` was replaced with `document.registerTlxComponent` to avoid conflict with `registerElement` in Chrome. Added `dbmon` benchmark test.
 
 2017-10-30 v0.0.9-beta Added component support. Enhanced documentation. Centralized some repeated code patterns.

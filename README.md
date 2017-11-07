@@ -2,6 +2,8 @@
 
 # TLX 
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/35bd9c60d5714ff5844f7cac0fc8498c)](https://www.codacy.com/app/syblackwell/tlx?utm_source=github.com&utm_medium=referral&utm_content=anywhichway/tlx&utm_campaign=badger)
+
 Imagine a light weight combination of JSX, Vue, and React but using JavaScript template literals - No Preprocessor Required.
 
 Use just the parts you want (sizes are minified and GZipped):

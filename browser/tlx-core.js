@@ -369,12 +369,25 @@
 				tree[2][0] = h(tree[2][0][0], tree[2][0][1], tree[2][0][2]);
 			}
 			return tree[2][0];
-		}
+		};
 	}
 	
 	class VNode {
 		constructor(config) {
 			Object.assign(this,config);
+		}
+		getElementsByTagName(name) {
+			let elements = [];
+			if(this.nodeName===name) {
+				elements.push(this);
+			}
+			for(let child of this.children) {
+				const nodes = (Array.isArray(child) ? child : (child ? [child] : []));
+				for(let node of nodes) {
+					typeof(node)!=="object" || (elements = elements.concat(node.getElementsByTagName(name)));
+				}
+			}
+			return elements;
 		}
 	}
 	class VText extends VNode {
@@ -388,6 +401,11 @@
 				return h;
 			}
 			h.compressed = true;
+			if(h.attributes) {
+				for(let key in h.attributes) {
+					h.attributes[key] = tlx.fromJSON(h.attributes[key]);
+				}
+			}
 			const children = [];
 			if(h.children) {
 				for(let child of h.children) {
@@ -489,7 +507,7 @@
 			requestAnimationFrame(() => element.checked = true);
 		} else if(element.type==="select-one" && name==="value") {
 			for(let option of [].slice.call(element.options)) {
-				value!=tlx.fromJSON(option.value) || requestAnimationFrame(() => option.selected = true);
+				tlx.fromJSON(value)!==tlx.fromJSON(option.value) || requestAnimationFrame(() => option.selected = true);
 			}
 		} else if(element.type==="select-multiple" && name==="value" && Array.isArray(value)) {
 			for(let option of [].slice.call(element.options)) {

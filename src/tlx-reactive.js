@@ -3,7 +3,7 @@
 	HTMLElement.prototype.linkState = function(property) {
 		const f = function(event) {
 			const target = event.target;
-			if([HTMLInputElement,HTMLTextAreaElement,HTMLSelectElement].some(cls => target instanceof cls)) {
+			if([HTMLInputElement,HTMLTextAreaElement,HTMLSelectElement,HTMLAnchorElement].some(cls => target instanceof cls)) {
 				let value;
 				if(target.type==="checkbox") {
 					value = target.checked;

@@ -3,4 +3,5 @@
 	require("./src/tlx-render.js");
 	require("./src/tlx-directives.js");
 	require("./src/tlx-reactive.js");
+	require("./src/tlx-component.js");
 })();

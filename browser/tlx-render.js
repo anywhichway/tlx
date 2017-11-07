@@ -43,7 +43,9 @@ else e[p]=v;
 				if(typeof(value)==="undefined") {
 					parent && parent.removeChild(node); // should not happen, but does!
 				} else {
-					requestAnimationFrame(() => node.data = value);
+					requestAnimationFrame(() => node.data = value.replace(/&#(\d+);/g, function(match, dec) {
+						return String.fromCharCode(dec);
+					}));
 				}
 				return node;
 			}

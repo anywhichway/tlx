@@ -4,8 +4,50 @@
 	require("./src/tlx-render.js");
 	require("./src/tlx-directives.js");
 	require("./src/tlx-reactive.js");
+	require("./src/tlx-component.js");
 })();
-},{"./src/tlx-core.js":2,"./src/tlx-directives.js":3,"./src/tlx-reactive.js":4,"./src/tlx-render.js":5}],2:[function(require,module,exports){
+},{"./src/tlx-component.js":2,"./src/tlx-core.js":3,"./src/tlx-directives.js":4,"./src/tlx-reactive.js":5,"./src/tlx-render.js":6}],2:[function(require,module,exports){
+(function(tlx) {
+	"use strict";
+	const elements = {};
+	document.registerTlxComponent = function(name,cls) {
+		tlx.Component.register(cls,name);
+	};
+	tlx.Component = class Component extends HTMLElement {
+		static create(element) {
+			element = (element && element instanceof HTMLElement ? element : document.createElement(element));
+			return element;
+		}
+		static register(cls,name=cls.name) {
+			const cname = name.toUpperCase();
+			if(elements[cname]!==cls) {
+				elements[cname] = cls;
+				cls.create = (element) => {
+					element = Component.create(element);
+					Object.setPrototypeOf(element,cls.prototype);
+					if(cls.attributes) {
+						for(let name in cls.attributes) {
+							const value = tlx.getAttribute(element,name);
+							value!=null || tlx.setAttribute(element,name,tlx.resolve(cls.attributes[name],element,null,name==="value"));
+						}
+					}
+					return element;
+				};
+			}
+		}
+		static registered(name) {
+			return elements[name.toUpperCase()];
+		}
+		constructor() {
+			super();
+		}
+		setState(state) {
+			this.state || (tlx.options.active ? tlx.activate({}) : {});
+			Object.assign(this.state,state);
+		}
+	};
+}(tlx));
+},{}],3:[function(require,module,exports){
 (function() {
 
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -377,12 +419,25 @@
 				tree[2][0] = h(tree[2][0][0], tree[2][0][1], tree[2][0][2]);
 			}
 			return tree[2][0];
-		}
+		};
 	}
 	
 	class VNode {
 		constructor(config) {
 			Object.assign(this,config);
+		}
+		getElementsByTagName(name) {
+			let elements = [];
+			if(this.nodeName===name) {
+				elements.push(this);
+			}
+			for(let child of this.children) {
+				const nodes = (Array.isArray(child) ? child : (child ? [child] : []));
+				for(let node of nodes) {
+					typeof(node)!=="object" || (elements = elements.concat(node.getElementsByTagName(name)));
+				}
+			}
+			return elements;
 		}
 	}
 	class VText extends VNode {
@@ -396,6 +451,11 @@
 				return h;
 			}
 			h.compressed = true;
+			if(h.attributes) {
+				for(let key in h.attributes) {
+					h.attributes[key] = tlx.fromJSON(h.attributes[key]);
+				}
+			}
 			const children = [];
 			if(h.children) {
 				for(let child of h.children) {
@@ -497,7 +557,7 @@
 			requestAnimationFrame(() => element.checked = true);
 		} else if(element.type==="select-one" && name==="value") {
 			for(let option of [].slice.call(element.options)) {
-				value!=tlx.fromJSON(option.value) || requestAnimationFrame(() => option.selected = true);
+				tlx.fromJSON(value)!==tlx.fromJSON(option.value) || requestAnimationFrame(() => option.selected = true);
 			}
 		} else if(element.type==="select-multiple" && name==="value" && Array.isArray(value)) {
 			for(let option of [].slice.call(element.options)) {
@@ -515,7 +575,7 @@
 		window.tlx = tlx;
 	}
 }).call(this);
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
 	tlx.directives = {
@@ -593,13 +653,13 @@
 		}
 	};
 }(tlx));
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
 	HTMLElement.prototype.linkState = function(property) {
 		const f = function(event) {
 			const target = event.target;
-			if([HTMLInputElement,HTMLTextAreaElement,HTMLSelectElement].some(cls => target instanceof cls)) {
+			if([HTMLInputElement,HTMLTextAreaElement,HTMLSelectElement,HTMLAnchorElement].some(cls => target instanceof cls)) {
 				let value;
 				if(target.type==="checkbox") {
 					value = target.checked;
@@ -689,7 +749,7 @@
 	tlx.options.reactive = true;
 		
 }(tlx));
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 (function(tlx) {
 	
 const resolve = function(template,node,extras={},nonReactive) { // walk up the DOM tree for state data, n=node,p=property,e=extras
@@ -735,7 +795,9 @@ else e[p]=v;
 				if(typeof(value)==="undefined") {
 					parent && parent.removeChild(node); // should not happen, but does!
 				} else {
-					requestAnimationFrame(() => node.data = value);
+					requestAnimationFrame(() => node.data = value.replace(/&#(\d+);/g, function(match, dec) {
+						return String.fromCharCode(dec);
+					}));
 				}
 				return node;
 			}

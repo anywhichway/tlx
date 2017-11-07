@@ -281,9 +281,15 @@ Substantial portions of `tlx-core.js` are drawn from from [Hyperx](https://githu
 
 The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 
-Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, and `Angular`. We also got inspiration from `Ractive`, `moon`, and `hyperapp`. Portions of TLX were also drawn from another anywhichway codebase `fete`, which reached its architectural limits.
+Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, and `Angular`. We also got inspiration from `Ractive`, `moon`, and `hyperapp`. 
+
+Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reached its architectural limits.
 
 # Release History
+
+2017-11-06 v0.1.1 - Fixed packaging issues for tlx-components. Moved tlx-editor component to its own package.
+
+2017-11-05 v0.1.0 - Production release. Minor documentation and code style changes.
 
 2017-11-04 v0.0.11-beta Added unit tests. Release candidate. Codacy improvements.
 

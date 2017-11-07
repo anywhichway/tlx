@@ -287,6 +287,10 @@ Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reach
 
 # Release History
 
+2017-11-07 v0.1.3 - Fixed input focus issues for components.
+
+2017-11-07 v0.1.2 - Fixed input focus issues for components.
+
 2017-11-06 v0.1.1 - Fixed packaging issues for tlx-components. Moved tlx-editor component to its own package.
 
 2017-11-05 v0.1.0 - Production release. Minor documentation and code style changes.

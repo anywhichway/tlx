@@ -133,7 +133,7 @@ else e[p]=v;
 			}
 			if([HTMLInputElement,HTMLTextAreaElement].some(cls => node instanceof cls)) {
 				node.focus();
-				try { node.selectionStart = node.value.length; } catch(e) { true; }
+				try { node.selectionStart = node.selectionEnd; } catch(e) { true; }
 			}
 			return node;
 		}

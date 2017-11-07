@@ -43,9 +43,9 @@ else e[p]=v;
 				if(typeof(value)==="undefined") {
 					parent && parent.removeChild(node); // should not happen, but does!
 				} else {
-					requestAnimationFrame(() => node.data = value.replace(/&#(\d+);/g, function(match, dec) {
+					requestAnimationFrame(() => node.data = (typeof(value)==="string" ? value.replace(/&#(\d+);/g, function(match, dec) {
 						return String.fromCharCode(dec);
-					}));
+					}) : value));
 				}
 				return node;
 			}
@@ -130,6 +130,10 @@ else e[p]=v;
 						directive(handled[name] || resolve(attributes[name],node),vnode,node,extras);
 					}
 				}
+			}
+			if([HTMLInputElement,HTMLTextAreaElement].some(cls => node instanceof cls)) {
+				node.focus();
+				try { node.selectionStart = node.value.length; } catch(e) { true; }
 			}
 			return node;
 		}

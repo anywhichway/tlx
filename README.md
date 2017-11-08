@@ -287,6 +287,8 @@ Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reach
 
 # Release History
 
+2017-11-08 v0.1.4 - Adjusted VText to take booleans and numbers.
+
 2017-11-07 v0.1.3 - Fixed input focus issues for components.
 
 2017-11-07 v0.1.2 - Fixed input focus issues for components.

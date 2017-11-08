@@ -409,7 +409,8 @@
 			const children = [];
 			if(h.children) {
 				for(let child of h.children) {
-					if(typeof(child)==="string") {
+					const type = typeof(child);
+					if(type==="string") {
 						let text = child.replace(/[ \r\n\t]+/g," ");
 						if(/\S/.test(text)) {
 							if(text[0]===" " && text[1]===" ") {
@@ -418,8 +419,10 @@
 							if(text[text.length-1]===" " && text[text.length-2]===" ") {
 								text = text.trimRight() + " ";
 							}
-							children.push(new VText({text,parent:h}));
+							children.push(new VText(({text,parent:h})));
 						}
+					} else if(["boolean","number"].includes(type)) {
+						children.push(new VText({text:child+"",parent:h}));
 					} else if(Array.isArray(child)) {
 						for(let item of child) {
 							item.parent = h;

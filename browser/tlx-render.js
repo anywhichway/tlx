@@ -145,7 +145,7 @@ else e[p]=v;
 			}
 		}
 		node = renderVNode(vnode,node,parent);
-		if(target) {
+		if(target && target!==node) {
 			target.appendChild(node);
 		}
 		return node;
@@ -167,4 +167,9 @@ else e[p]=v;
 				return values;
 			}
 	};
+	document.tlxRender = (data,embedded,rerender) => {
+		!rerender || (document.tlxRender.rendered = false);
+		document.tlxRender.rendered || setTimeout(() => tlx.bind(data)(document.body,embedded));
+		document.tlxRender.rendered = true;
+	}
 }(tlx));

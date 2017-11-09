@@ -24,13 +24,13 @@ document.registerTlxComponent("x-message",Message);
 	
 	<div>
 	Name: <input value="${name}" oninput="${this.linkState('name')}">
-	City: <input value="${city}" state="${address}" oninput="${this.linkState('city')}">
+	City: <input state="${address}" value="${city}" oninput="${this.linkState('city')}">
 	State: <span state="${address}"><input value="${state}" oninput="${this.linkState('state')}"></span>
 	Opt In: <input value="${optin}" type="checkbox" onchange="${this.linkState('optin')}">
 	</div>
 	<div><select value="${preferences}" onchange="${this.linkState('preferences')}" multiple><option>1</option><option>2</option><option>3</option></select></div>
 	<div>${name}, ${address.city} ${address.state}, Optin: ${optin}, Preferences: ${preferences}</div>
-	<div state='{"name": "Bill"}'>${name}</div>
+	<div state="${{name: 'Bill'}}">${name}</div>
 	<div state="${{name: 'John'}}">${name}</div>
 	<div t-if="true">True</div>
 	<div t-if="false">False</div>

@@ -72,15 +72,22 @@
 				throw new TypeError("tlx must be called with an HTML Element or used to interploate a string literal.");
 			}
 			if(tlx.render && strings instanceof HTMLElement) {
-				// this ,makes everything depended on outtere scope, bad!!!
-				const vnode = Function("return tlx`"+strings.outerHTML.replace(/\${/g,"\\${")+"`")(),
-				node = document.createElement(vnode.nodeName);
+				// should improve to ensure &gt; and &lt; are inside ${ }
+				const node = strings;
+				let html = strings.outerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<");
+				if(values[0]!==true) html = html.replace(/\${/g,"\\${");//.replace(/`/g,"\\`")
+				//tlx.resolve.call(node,html,node,this);
+				//html = strings.outerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/\${/g,"\\${");//.replace(/`/g,"\\`"),
+				//const vnode = Function("return tlx`"+html+"`").call(node);
+				node.state = this;
+				const vnode = Function("scope","with(scope) { return tlx`"+html+"`; }").call(strings,this);
+				//node = document.createElement(vnode.nodeName);
 				if(this && this!==window) {
 					vnode.attributes.state = (tlx.options.reactive && tlx.activate ? tlx.activate(this) : this);
 				}
-				strings.parentElement.replaceChild(node,strings);
+				//strings.parentElement.replaceChild(node,strings);
 				vnode.node = node;
-				tlx.render(vnode);
+				tlx.render(vnode,node);
 				return;
 			}
 			var state = TEXT, reg = "",

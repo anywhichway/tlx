@@ -6,9 +6,9 @@ Imagine a light weight combination of JSX, Vue, and React but using JavaScript t
 
 Use just the parts you want (sizes are minified and GZipped):
 
-`tlx-core.js` - 3.2K Replaces JSX. Continue to use `React` or `preact`.
+`tlx-core.js` - 3.4K Replaces JSX. Continue to use `React` or `preact`.
 
-`tlx-render.js` - 1.4K Replaces non-component aspects of `React` and `preact`. Enables "inverted JSX", i.e. puts the focus on HTML while supporting the power of in-line template literals, e.g. `<div>${item.message}</div>`. Use for full SEO enablement and [multi-page apps](#multipage-apps).
+`tlx-render.js` - 1.5K Replaces non-component aspects of `React` and `preact`. Enables "inverted JSX", i.e. puts the focus on HTML while supporting the power of in-line template literals, e.g. `<div>${item.message}</div>`. Use for full SEO enablement and [multi-page apps](#multipage-apps).
 
 `tlx-reactive.js` - 0.8K Adds uni-directional and bi-directional state [reactivity](#reactivity) to templates in a manner similar to Vue and many other libraries.
 
@@ -286,6 +286,8 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, and `Angula
 Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reached its architectural limits.
 
 # Release History
+
+2017-11-09 v0.1.5 - Added `document.tlxRender(data,embeddedLiterals,rerender)` as shorthand to render an the entire `document.body`.
 
 2017-11-08 v0.1.4 - Adjusted VText to take booleans and numbers.
 

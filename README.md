@@ -217,7 +217,7 @@ New directives can be added by augmenting the objects `tlx.directives.VNode` or 
 Here the VDom is modified for efficiency, the DOM will never get populaed with child notes if `value` is falsy:
 
 ```js
-tlx.directives.VDom["t-if"] = (value,vnode) => {
+tlx.directives.VNode["t-if"] = (value,vnode) => {
 		if(!value) {
 			vnode.children = null;
 		}

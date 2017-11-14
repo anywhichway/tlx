@@ -207,7 +207,7 @@ Vue:
 
 ## Custom Directives
 
-New directives can be added by augmenting the objects `tlx.directives.VNode` or `tlx.directives.HTMLElement` with a key representing the directive name, e.g. `x-mydirective`, and a function as the value with the signature, `(vnode,htmlElement,value) ...`. The function is free to change the `vnode` and `htmlElement` as it sees fit, e.g.:
+New directives can be added by augmenting the objects `tlx.directives.VNode` or `tlx.directives.HTMLElement` with a key representing the directive name, e.g. `x-mydirective`, and a function as the value with the signature, `(value,vnode,htmlElement) ...`. The function is free to change the `vnode` and `htmlElement` as it sees fit, e.g.:
 
 `VNode` directives are processed after all attributes on the `vnode` have been interpolated and resolved but prior to adding sub-node to the real DOM node `htmlElement`. As a result, they can have a direct impact on the rendering of the `htmlElement`.
 

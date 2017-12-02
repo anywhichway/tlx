@@ -174,7 +174,7 @@ If you need to be able to reference the activated object outside of TLX code so 
 
 The following directives are built-in:
 
-`state`, which is a special directive in that it is not prefixed with a letter and a hyphen but supports interpolation, e.g. `state="[1,2,3]"` or `state="${[1,2,3]}"` are both valid. Interpolations are frequently useful in order to simplify the expression of JSON, e.g. `state="{name: 'Bill}"` is not valid JSON, where as `state="${{name: 'Bill'}}"` is valid JavaScript and will return the correct object, i.e. `{"name":"Bill"}`. Setting state also take priority over other attributes so that the state is available to the other attribute directives.
+`state`, which is a special directive in that it is not prefixed with a letter and a hyphen but supports interpolation, e.g. `state="[1,2,3]"` or `state="${[1,2,3]}"` are both valid. Interpolations are frequently useful in order to simplify the expression of JSON, e.g. `state="{name: 'Bill}"` is not valid JSON, where as `state="${{name: 'Bill'}}"` is valid JavaScript and will return the correct object, i.e. `{"name":"Bill"}`. Setting state also takes priority over other attributes so that the state is available to the other attribute directives.
 
 `t-for="<vname> of <array>"`, operates like its JavaScript counterpart, in addition the `<vname>`, the scoped variables `value`, `index`, and `array` (similar to `Array.prototype.forEach`) are available in nested HTML string literal expressions.
 
@@ -240,17 +240,17 @@ Although it may appear as if directives could be specialized by element class, t
 
 # Components
 
-Components work in a similar manner to `React` although `props` and lifecycle events are not currently supported.
+Components work in a similar manner to `React` although `props` are not currently supported. Components should be implemented like they are [custom HTML elements](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Custom_Elements). The standard lifecyle events are respected and invoked.
 
 Components only need to implement a single method, `render(attributes)`, which must return a `VNode` tree. The `attributes` argument is optional. It is used to pass to the component a map of the attributes associated with the custom tag actually in the HTML being processed. These will not be interpolated/resolved and in general do not need to be by `render`, unless it needs the values for its own processing. Once `render` has returned a `VNode`, the calling code will actually resolve the values.
 
-Components must also be registered using
+Components must be registered using `customElements.define(tagNane,classReference)`.
 
 Below is a basic example:
 
 ```html
 <script>
-class Message extends tlx.Component {
+class Message extends HTMLElement {
 	static get attributes() { // optionally define the default attributes for a component
 		return {
 			style: "font-weight:bold"
@@ -260,18 +260,33 @@ class Message extends tlx.Component {
 		return tlx`<div>\${message}</div>`;
 	}
 }
-document.registerTlxComponent("x-message",Message);
+customElements.define("x-message",Message);
 </script>
 <body onload="tlx.bind({})()">
 <x-message state="${{message:'Hello'}}"></x-message>
 </body>
 ```
 
-For a single component, `tlx-editor`, that combines several html editor types into one, see the `components/tlx-editor.js`.
+If you wish to be able to create your custom element from JavaScript, then add a static factory function called `create` with a signature like that below:
+
+```javascript
+	static create(config,el=document.createElement("x-message")) {
+		Object.setPrototypeOf(el,Message.prototype);
+		for(let key in prototype.attributes) {
+			tlx.setAttribute(el,key,prototype.attributes[key]);
+		}
+		Object.assign(el,config);
+		return el;
+	}
+```
+
+As of December 2017, trying to call `new Message()` in Chrome, Firefox, and Edge will produce an invalid constructor error. The factory function above avoids this error.
+
+There a single component, `tlx-editor`, that combines several html editor types into one available in a [separate package](https://github.com/anywhichway/tlx-editor). See its source code for a more detailed example.
 
 # Design Comments
 
-The `tlx` library has been designed so that converting code to standards compliant Web Components once all browsers support their use should be straight forward.
+The `tlx` library includes a lightweight polyfill for the [custom elements HTML standard](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Custom_Elements).
 
 # Acknowledgements
 
@@ -281,9 +296,11 @@ The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, and `Angular`. We also got inspiration from `Ractive`, `moon`, and `hyperapp`. 
 
-Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reached its architectural limits.
+Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reached its architectural limits and is no longer maintained.
 
 # Release History
+
+2017-12-02 v0.1.8 - Updated documentation for Components.
 
 2017-12-02 v0.1.7 - Fixed package scoping issue related to `customElements` and some Edge browser compatibility.
 

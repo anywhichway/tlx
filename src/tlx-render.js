@@ -58,21 +58,20 @@ else e[p]=v;
 				return node;
 			}
 			const attributes = vnode.attributes || {},
-			handled = {};
-			let component,value;
-			if(tlx.Component) { // does above need to happen when wer are doing a component? probably not
-				component = tlx.Component.registered(node.tagName);
-			}
-			if(attributes.state) {
-				const value = resolve(attributes.state,node,extras);
-				node.state = (tlx.options.reactive && tlx.options.activate ? tlx.options.activate(value) : value);
-				handled.state = node.state;
-			}
-			if(component) {
-				const attrs = Object.assign({},attributes);
-				!node.state || delete attrs.state;
-				tlx.render(tlx.hCompress(component.create(node).render(attrs)),null,node,extras);
-			} else {
+			handled = {},
+			component = (typeof(customElements)!=="undefined" ? customElements.get(node.localName) : null);
+		let value;
+		
+		if(attributes.state) {
+			const value = resolve(attributes.state,node,extras);
+			node.state = (tlx.options.reactive && tlx.options.activate ? tlx.options.activate(value) : value);
+			handled.state = node.state;
+		}
+		if(component) {
+			const attrs = Object.assign({},component.attributes,attributes);
+			!node.state || delete attrs.state;
+			tlx.render(tlx.hCompress(node.render(attrs)),null,node,extras); //component.create(node)
+		} else {
 				if(attributes.type) {
 					const value = resolve(attributes.type,node,extras);
 					tlx.setAttribute(node,"type",value);
@@ -98,12 +97,7 @@ else e[p]=v;
 				if(tlx.directives && tlx.directives.VNode) {
 					const directives =  tlx.directives.VNode;
 					for(let name in attributes) {
-						const directive = directives[name];
-						if(directive) {
-							if(!directive(handled[name],vnode,node)) {
-								return node;
-							}
-						}
+						!directives[name] || directives[name](handled[name],vnode,node);
 					}
 				}
 			}
@@ -125,10 +119,7 @@ else e[p]=v;
 			if(tlx.directives && tlx.directives.HTMLElement) {
 				const directives =  tlx.directives.HTMLElement;
 				for(let name in attributes) {
-					const directive = directives[name];
-					if(directive) {
-						directive(handled[name] || resolve(attributes[name],node),vnode,node,extras);
-					}
+					!directives[name] || directives[name](handled[name] || resolve(attributes[name],node),vnode,node,extras);
 				}
 			}
 			if([HTMLInputElement,HTMLTextAreaElement].some(cls => node instanceof cls)) {
@@ -150,7 +141,16 @@ else e[p]=v;
 		}
 		return node;
 	};
-	tlx.resolve = resolve;
+	tlx.resolve = (template,node,extras={},nonReactive) => {
+		if(template && typeof(template)=="object") {
+			for(let key in template) {
+				template[key] = tlx.resolve(template[key],node,Object.assign({},extras),nonReactive);
+			}
+			return template;
+		} else {
+			return resolve(template,node,extras={},nonReactive);
+		}
+	};
 	tlx._NODE = null;
 	tlx.$ = {
 			parse(strings,...values) {

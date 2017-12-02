@@ -6,7 +6,7 @@
 <script src="../src/tlx-directives.js"></script>
 <script src="../src/tlx-component.js"></script>
 <script>
-class Message extends tlx.Component {
+class Message extends HTMLElement {
 	static get attributes() {
 		return {
 			style: "font-weight:bold"
@@ -16,7 +16,7 @@ class Message extends tlx.Component {
 		return tlx`<div>\${message}</div>`;
 	}
 }
-document.registerTlxComponent("x-message",Message);
+customElements.define("x-message",Message);
 </script>
 </head>
 <body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'},optin:true,preferences:[1,3]})(document.getElementById('app'))">

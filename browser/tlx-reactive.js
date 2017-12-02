@@ -27,6 +27,10 @@
 		};
 		return f.bind(tlx.getState(this)||(this.state={}));
 	};
+	HTMLElement.prototype.setState = function(state) {
+		this.state || (tlx.options.active ? tlx.activate({}) : {});
+		Object.assign(this.state,state);
+	};
 	tlx.activate = (object) => {
 		if(!object || typeof(object)!=="object" || object.tlxDependents) {
 			return object;

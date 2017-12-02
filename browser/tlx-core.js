@@ -76,16 +76,11 @@
 				const node = strings;
 				let html = strings.outerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<");
 				if(values[0]!==true) html = html.replace(/\${/g,"\\${");//.replace(/`/g,"\\`")
-				//tlx.resolve.call(node,html,node,this);
-				//html = strings.outerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/\${/g,"\\${");//.replace(/`/g,"\\`"),
-				//const vnode = Function("return tlx`"+html+"`").call(node);
 				node.state = this;
 				const vnode = Function("scope","with(scope) { return tlx`"+html+"`; }").call(strings,this);
-				//node = document.createElement(vnode.nodeName);
 				if(this && this!==window) {
 					vnode.attributes.state = (tlx.options.reactive && tlx.activate ? tlx.activate(this) : this);
 				}
-				//strings.parentElement.replaceChild(node,strings);
 				vnode.node = node;
 				tlx.render(vnode,node);
 				return;
@@ -404,7 +399,10 @@
 	}
 
 	const hCompress = (h) => {
-			if(!h || h.compressed) {
+		if(!h) {
+			return {};
+		}
+			if(h.compressed) {
 				return h;
 			}
 			h.compressed = true;
@@ -484,7 +482,16 @@
 		return value;
 	};
 	tlx.getAttribute = (element,name) => {
-		const desc = Object.getOwnPropertyDescriptor(element,name);
+		let instancename = name;
+		if(name.indexOf("-")>=0) {
+			const parts = name.split("-");
+			instancename = parts[0];
+			for(let i=1;i<parts.length;i++) {
+				const part = parts[i];
+				instancename += (part[0].toUpperCase() + part.toLowerCase().substring(1))
+			}
+		}
+		const desc = Object.getOwnPropertyDescriptor(element,instancename);
 		return (desc ? desc.value : tlx.fromJSON(element.getAttribute(name)));
 	};
 	tlx.getAttributes = (element) => {
@@ -498,18 +505,28 @@
 	tlx.hCompress = hCompress;
 	tlx.options = {};
 	tlx.setAttribute = (element,name,value) => {
+		let instancename = name;
+		// camelcase name
+		if(name.indexOf("-")>=0) {
+			const parts = name.split("-");
+			instancename = parts[0];
+			for(let i=1;i<parts.length;i++) {
+				const part = parts[i];
+				instancename += (part[0].toUpperCase() + part.toLowerCase().substring(1))
+			}
+		}
 		value = tlx.fromJSON(value);
 		let type = typeof(value);
+		// assume all camelCase names need to be added directly to element
+		instancename===name || (element[instancename] = value);
 		if(name==="options" && type==="string") {
 			value = value.split(",");
 			type = typeof(value);
 		}
 		if(value && type==="object") {
-			element[name] = value;
+			element[instancename] = value;
 		} else if(type==="function") {
-			//if(name.indexOf("on")===0) element.addEventListener(name.substring(2).toLowerCase(name),value)
-			//else element[name] = value;
-			element[name] = value;
+			element[instancename] = value;
 		} else if(!(element instanceof HTMLSelectElement) || name!=="value") {
 			element.setAttribute(name,value);
 		}

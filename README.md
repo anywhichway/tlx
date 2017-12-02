@@ -214,14 +214,13 @@ New directives can be added by augmenting the objects `tlx.directives.VNode` or 
 `HTMLElement` directives are processed after the `htmlElement` has been fully populated and added to the DOM. As a result they are lessefficient. Also, any changes to the `vdom` will effectively be ignored until the next time the `htmlElement` is rendered.
 
 
-Here the VDom is modified for efficiency, the DOM will never get populaed with child notes if `value` is falsy:
+Here the VDom is modified for efficiency, the DOM will never get populated with child nodes because they are nulled out:
 
 ```js
 tlx.directives.VNode["t-if"] = (value,vnode) => {
 		if(!value) {
 			vnode.children = null;
 		}
-		return value;
 	}
 }
 ```
@@ -233,7 +232,6 @@ tlx.directives.HTMLElement["t-if"] = (value,htmlElement) => {
 		if(!value) {
 			while(htmlElement.lastChild) htmlElement.removeChild(htmlElement.lastChild);
 		}
-		return value;
 	};
 ```
 
@@ -258,7 +256,7 @@ class Message extends tlx.Component {
 			style: "font-weight:bold"
 		}
 	}
-	render(attributes) { // required, should return VNode tree ... which tlx template processor does
+	render(attributes) { // required, should return VNode tree ... which the tlx template processor does
 		return tlx`<div>\${message}</div>`;
 	}
 }
@@ -273,7 +271,7 @@ For a single component, `tlx-editor`, that combines several html editor types in
 
 # Design Comments
 
-The `tlx` library has been designed so that converting to code to standards compliant Web Components once all browsers support their use should be straight forward.
+The `tlx` library has been designed so that converting code to standards compliant Web Components once all browsers support their use should be straight forward.
 
 # Acknowledgements
 
@@ -286,6 +284,8 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, and `Angula
 Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reached its architectural limits.
 
 # Release History
+
+2017-12-02 v0.1.6 - Modified component support to also support custom elements per HTML spec.
 
 2017-11-09 v0.1.5 - Added `document.tlxRender(data,embeddedLiterals,rerender)` as shorthand to render an the entire `document.body`.
 

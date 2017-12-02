@@ -6,7 +6,6 @@
 				if(!value) {
 					vnode.children = null;
 				}
-				return true;
 			},
 			"t-for": (value,vnode,node) => {
 				if(typeof(value)==="string") {
@@ -63,7 +62,6 @@
 						node.removeChild(node.lastChild);
 					}
 				}
-				return true;
 			},
 			"t-on": (value,vnode,node) => {
 				node.removeAttribute("t-on");

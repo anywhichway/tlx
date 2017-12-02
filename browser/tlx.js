@@ -7,46 +7,111 @@
 	require("./src/tlx-component.js");
 })();
 },{"./src/tlx-component.js":2,"./src/tlx-core.js":3,"./src/tlx-directives.js":4,"./src/tlx-reactive.js":5,"./src/tlx-render.js":6}],2:[function(require,module,exports){
-(function(tlx) {
-	"use strict";
-	const elements = {};
-	document.registerTlxComponent = function(name,cls) {
-		tlx.Component.register(cls,name);
-	};
-	tlx.Component = class Component extends HTMLElement {
-		static create(element) {
-			element = (element && element instanceof HTMLElement ? element : document.createElement(element));
-			return element;
-		}
-		static register(cls,name=cls.name) {
-			const cname = name.toUpperCase();
-			if(elements[cname]!==cls) {
-				elements[cname] = cls;
-				cls.create = (element) => {
-					element = Component.create(element);
-					Object.setPrototypeOf(element,cls.prototype);
-					if(cls.attributes) {
-						for(let name in cls.attributes) {
-							const value = tlx.getAttribute(element,name);
-							value!=null || tlx.setAttribute(element,name,tlx.resolve(cls.attributes[name],element,null,name==="value"));
-						}
+var customElements;
+if(!customElements) {
+	function getConstructorText(cls) {
+		if(cls.prototype.constructor) {
+			let source = (cls.prototype.constructor+"").replace(/\n/g," "),
+				start = source.indexOf("constructor"),
+				count = 1,
+				end = 0;
+			if(start>=0) {
+				source = source.substring(start+11).trim();
+				start = source.indexOf("{");
+				source = source.substring(start+1);
+				while(count!=0 && end<source.length) {
+					if(source[end]==="{") {
+						count++;
+					} else if(source[end]==="}") {
+						count--;
 					}
-					return element;
-				};
+					end++;
+				}
+				return source.substring(0,--end);
 			}
 		}
-		static registered(name) {
-			return elements[name.toUpperCase()];
+		return "";
+	}
+	customElements = {};
+	const promises = {};
+	Object.defineProperty(customElements,"define",{enumerable:false,configurable:true,writable:true,value:(name,constructor,options={}) => {
+		const promise = (customElements[name] && customElements[name] instanceof Promise ?  customElements[name] : null);
+		customElements[name] = constructor;
+		!promise || promise.resolve();
+	}});
+	Object.defineProperty(customElements,"get",{enumerable:false,configurable:true,writable:true,value:(name) => {
+		if(!customElements[name] || customElements[name] instanceof Promise) {
+			return;
 		}
-		constructor() {
-			super();
+		return customElements[name];
+	}});
+	Object.defineProperty(customElements,"when",{enumerable:false,configurable:true,writable:true,value:(name) => {
+		if(!promises[name]) {
+			let resolver;
+			promises[name] = new Promise((resolve) => resolver = resolve);
+			promises[name].resolve = resolver;
 		}
-		setState(state) {
-			this.state || (tlx.options.active ? tlx.activate({}) : {});
-			Object.assign(this.state,state);
+		customElements[name] || (customElements[name] = promises[name]);
+		return promises[name];
+	}});
+	__createElement = document.createElement;
+	document.createElement = (tagName,options={}) => {
+		const ctor = customElements.get(tagName),
+			el = __createElement.call(document,tagName);
+		if(ctor) {
+			if(ctor.create) {
+				ctor.create(null,el);
+			} else {
+				Object.setPrototypeOf(el,ctor.prototype);
+				const source = getConstructorText(ctor);
+				!source || (Function(source.replace("super()","true"))).call(el);
+			}
 		}
+		!el.adoptedCallback || el.adoptedCallback(null,document);
+		return el;
+	}
+	__adoptNode = document.adoptNode;
+	document.adoptNode = function(node) {
+		const owner = node.ownerDocument;
+		__adoptNode.call(document,node);
+		!node.adoptedCallback || node.adoptedCallback(owner,document);
+		return node;
 	};
-}(tlx));
+	//window.addEventListener("load", () => {
+	//var tlx = (typeof(tlx)==="undefined" ? {} : tlx);
+	(function() {
+		const observer = new MutationObserver(mutations => {
+			for(let mutation of mutations) {
+				const target = mutation.target;
+				if(mutation.type==="childList") {
+					for(let child of [].slice.call(mutation.addedNodes)) {
+						const ctor = customElements.get(child.localName);
+						if(ctor && !(child instanceof ctor)) {
+							if(ctor.create) {
+								ctor.create(null,child);
+							} else {
+								Object.setPrototypeOf(el,ctor.prototype);
+								const source = getConstructorText(ctor);
+								!source || (Function(source.replace("super()","true"))).call(child);
+							}
+							//tlx.bind({},child);
+							//!child.render || child.render([].slice.call(child.attributes).reduce((accum,attribute) => accum[attribute.name] = attribute.value,{});
+						}
+						!child.connectedCallback || child.connectedCallback.call(child);
+					}
+					for(let child of [].slice.call(mutation.removedNodes)) {
+						!child.disconnectedCallback || child.disconnectedCallback.call(child);
+					}
+				} else if(mutation.type==="attributes" && target.attributeChangedCallback) {
+					target.attributeChangedCallback(target.attributeName,target.oldValue,target.getAttribute(target.attributeName),target.attributeNamespace);
+				}
+			}
+		});
+		observer.observe(document,{childList: true, subtree: true, attributes: true});
+	})();
+	//});	
+}
+document.registerTlxComponent = function(tagName,cls) { customElements.define(tagName,cls); } // deprecating Nov 2017, v0.1.6
 },{}],3:[function(require,module,exports){
 (function() {
 
@@ -126,16 +191,11 @@
 				const node = strings;
 				let html = strings.outerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<");
 				if(values[0]!==true) html = html.replace(/\${/g,"\\${");//.replace(/`/g,"\\`")
-				//tlx.resolve.call(node,html,node,this);
-				//html = strings.outerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/\${/g,"\\${");//.replace(/`/g,"\\`"),
-				//const vnode = Function("return tlx`"+html+"`").call(node);
 				node.state = this;
 				const vnode = Function("scope","with(scope) { return tlx`"+html+"`; }").call(strings,this);
-				//node = document.createElement(vnode.nodeName);
 				if(this && this!==window) {
 					vnode.attributes.state = (tlx.options.reactive && tlx.activate ? tlx.activate(this) : this);
 				}
-				//strings.parentElement.replaceChild(node,strings);
 				vnode.node = node;
 				tlx.render(vnode,node);
 				return;
@@ -454,7 +514,10 @@
 	}
 
 	const hCompress = (h) => {
-			if(!h || h.compressed) {
+		if(!h) {
+			return {};
+		}
+			if(h.compressed) {
 				return h;
 			}
 			h.compressed = true;
@@ -534,7 +597,16 @@
 		return value;
 	};
 	tlx.getAttribute = (element,name) => {
-		const desc = Object.getOwnPropertyDescriptor(element,name);
+		let instancename = name;
+		if(name.indexOf("-")>=0) {
+			const parts = name.split("-");
+			instancename = parts[0];
+			for(let i=1;i<parts.length;i++) {
+				const part = parts[i];
+				instancename += (part[0].toUpperCase() + part.toLowerCase().substring(1))
+			}
+		}
+		const desc = Object.getOwnPropertyDescriptor(element,instancename);
 		return (desc ? desc.value : tlx.fromJSON(element.getAttribute(name)));
 	};
 	tlx.getAttributes = (element) => {
@@ -548,18 +620,28 @@
 	tlx.hCompress = hCompress;
 	tlx.options = {};
 	tlx.setAttribute = (element,name,value) => {
+		let instancename = name;
+		// camelcase name
+		if(name.indexOf("-")>=0) {
+			const parts = name.split("-");
+			instancename = parts[0];
+			for(let i=1;i<parts.length;i++) {
+				const part = parts[i];
+				instancename += (part[0].toUpperCase() + part.toLowerCase().substring(1))
+			}
+		}
 		value = tlx.fromJSON(value);
 		let type = typeof(value);
+		// assume all camelCase names need to be added directly to element
+		instancename===name || (element[instancename] = value);
 		if(name==="options" && type==="string") {
 			value = value.split(",");
 			type = typeof(value);
 		}
 		if(value && type==="object") {
-			element[name] = value;
+			element[instancename] = value;
 		} else if(type==="function") {
-			//if(name.indexOf("on")===0) element.addEventListener(name.substring(2).toLowerCase(name),value)
-			//else element[name] = value;
-			element[name] = value;
+			element[instancename] = value;
 		} else if(!(element instanceof HTMLSelectElement) || name!=="value") {
 			element.setAttribute(name,value);
 		}
@@ -594,7 +676,6 @@
 				if(!value) {
 					vnode.children = null;
 				}
-				return true;
 			},
 			"t-for": (value,vnode,node) => {
 				if(typeof(value)==="string") {
@@ -651,7 +732,6 @@
 						node.removeChild(node.lastChild);
 					}
 				}
-				return true;
 			},
 			"t-on": (value,vnode,node) => {
 				node.removeAttribute("t-on");
@@ -692,6 +772,10 @@
 			}
 		};
 		return f.bind(tlx.getState(this)||(this.state={}));
+	};
+	HTMLElement.prototype.setState = function(state) {
+		this.state || (tlx.options.active ? tlx.activate({}) : {});
+		Object.assign(this.state,state);
 	};
 	tlx.activate = (object) => {
 		if(!object || typeof(object)!=="object" || object.tlxDependents) {
@@ -820,21 +904,20 @@ else e[p]=v;
 				return node;
 			}
 			const attributes = vnode.attributes || {},
-			handled = {};
-			let component,value;
-			if(tlx.Component) { // does above need to happen when wer are doing a component? probably not
-				component = tlx.Component.registered(node.tagName);
-			}
-			if(attributes.state) {
-				const value = resolve(attributes.state,node,extras);
-				node.state = (tlx.options.reactive && tlx.options.activate ? tlx.options.activate(value) : value);
-				handled.state = node.state;
-			}
-			if(component) {
-				const attrs = Object.assign({},attributes);
-				!node.state || delete attrs.state;
-				tlx.render(tlx.hCompress(component.create(node).render(attrs)),null,node,extras);
-			} else {
+			handled = {},
+			component = (typeof(customElements)!=="undefined" ? customElements.get(node.localName) : null);
+		let value;
+		
+		if(attributes.state) {
+			const value = resolve(attributes.state,node,extras);
+			node.state = (tlx.options.reactive && tlx.options.activate ? tlx.options.activate(value) : value);
+			handled.state = node.state;
+		}
+		if(component) {
+			const attrs = Object.assign({},component.attributes,attributes);
+			!node.state || delete attrs.state;
+			tlx.render(tlx.hCompress(node.render(attrs)),null,node,extras); //component.create(node)
+		} else {
 				if(attributes.type) {
 					const value = resolve(attributes.type,node,extras);
 					tlx.setAttribute(node,"type",value);
@@ -860,12 +943,7 @@ else e[p]=v;
 				if(tlx.directives && tlx.directives.VNode) {
 					const directives =  tlx.directives.VNode;
 					for(let name in attributes) {
-						const directive = directives[name];
-						if(directive) {
-							if(!directive(handled[name],vnode,node)) {
-								return node;
-							}
-						}
+						!directives[name] || directives[name](handled[name],vnode,node);
 					}
 				}
 			}
@@ -887,10 +965,7 @@ else e[p]=v;
 			if(tlx.directives && tlx.directives.HTMLElement) {
 				const directives =  tlx.directives.HTMLElement;
 				for(let name in attributes) {
-					const directive = directives[name];
-					if(directive) {
-						directive(handled[name] || resolve(attributes[name],node),vnode,node,extras);
-					}
+					!directives[name] || directives[name](handled[name] || resolve(attributes[name],node),vnode,node,extras);
 				}
 			}
 			if([HTMLInputElement,HTMLTextAreaElement].some(cls => node instanceof cls)) {
@@ -912,7 +987,16 @@ else e[p]=v;
 		}
 		return node;
 	};
-	tlx.resolve = resolve;
+	tlx.resolve = (template,node,extras={},nonReactive) => {
+		if(template && typeof(template)=="object") {
+			for(let key in template) {
+				template[key] = tlx.resolve(template[key],node,Object.assign({},extras),nonReactive);
+			}
+			return template;
+		} else {
+			return resolve(template,node,extras={},nonReactive);
+		}
+	};
 	tlx._NODE = null;
 	tlx.$ = {
 			parse(strings,...values) {

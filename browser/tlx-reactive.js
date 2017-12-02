@@ -10,7 +10,7 @@
 				}
 				else if(target.type==="select-multiple") {
 					value = [];
-					for(let option of target.options) {
+					for(let option of [].slice.call(target.options)) {
 						!option.selected || value.push(tlx.fromJSON(option.value));
 					}
 				} else {

@@ -285,6 +285,8 @@ Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reach
 
 # Release History
 
+2017-12-02 v0.1.7 - Fixed package scoping issue related to `customElements` and some Edge browser compatibility.
+
 2017-12-02 v0.1.6 - Modified component support to also support custom elements per HTML spec.
 
 2017-11-09 v0.1.5 - Added `document.tlxRender(data,embeddedLiterals,rerender)` as shorthand to render an the entire `document.body`.

@@ -1,5 +1,4 @@
-var customElements;
-if(!customElements) {
+if(!window.customElements) {
 	function getConstructorText(cls) {
 		if(cls.prototype.constructor) {
 			let source = (cls.prototype.constructor+"").replace(/\n/g," "),
@@ -23,7 +22,7 @@ if(!customElements) {
 		}
 		return "";
 	}
-	customElements = {};
+	const customElements = window.customElements = {};
 	const promises = {};
 	Object.defineProperty(customElements,"define",{enumerable:false,configurable:true,writable:true,value:(name,constructor,options={}) => {
 		const promise = (customElements[name] && customElements[name] instanceof Promise ?  customElements[name] : null);
@@ -68,8 +67,7 @@ if(!customElements) {
 		!node.adoptedCallback || node.adoptedCallback(owner,document);
 		return node;
 	};
-	//window.addEventListener("load", () => {
-	//var tlx = (typeof(tlx)==="undefined" ? {} : tlx);
+
 	(function() {
 		const observer = new MutationObserver(mutations => {
 			for(let mutation of mutations) {
@@ -85,8 +83,6 @@ if(!customElements) {
 								const source = getConstructorText(ctor);
 								!source || (Function(source.replace("super()","true"))).call(child);
 							}
-							//tlx.bind({},child);
-							//!child.render || child.render([].slice.call(child.attributes).reduce((accum,attribute) => accum[attribute.name] = attribute.value,{});
 						}
 						!child.connectedCallback || child.connectedCallback.call(child);
 					}
@@ -100,6 +96,5 @@ if(!customElements) {
 		});
 		observer.observe(document,{childList: true, subtree: true, attributes: true});
 	})();
-	//});	
 }
 document.registerTlxComponent = function(tagName,cls) { customElements.define(tagName,cls); } // deprecating Nov 2017, v0.1.6

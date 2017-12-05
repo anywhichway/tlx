@@ -684,7 +684,7 @@ document.registerTlxComponent = function(tagName,cls) { customElements.define(ta
 							extras.value = array[index];
 							extras[key] = array[index];
 							for(let child of vnode.children) {
-								tlx.render(child,null,node,extras);
+								child.attributes.state = extras;
 							}
 						}
 					} else if(op==="in") {
@@ -695,7 +695,7 @@ document.registerTlxComponent = function(tagName,cls) { customElements.define(ta
 							for(let child of vnode.children) {
 								extras.key = property;
 								extras[key] = property;
-								tlx.render(child,null,node,extras);
+								child.attributes.state = extras;
 							}
 						}
 					}
@@ -707,14 +707,14 @@ document.registerTlxComponent = function(tagName,cls) { customElements.define(ta
 					for(let key=0;key<object.length;key++) {
 						const value = object[key];
 						for(let child of vnode.children) {
-							tlx.render(child,null,node,{value,key,object});
+							child.attributes.state = {value,key,object};
 						}
 					}
 				} else {
 					for(let key in object) {
 						const value = object[key];
 						for(let child of vnode.children) {
-							tlx.render(child,null,node,{value,key,object});
+							child.attributes.state = {value,key,object};
 						}
 					}
 				}
@@ -731,8 +731,12 @@ document.registerTlxComponent = function(tagName,cls) { customElements.define(ta
 			"t-on": (value,vnode,node) => {
 				node.removeAttribute("t-on");
 				for(let event in value) {
-					//node.addEventListener(event,value[event]);
-					node["on"+event] = value[event];
+					//node.addEventListener(event,(event) => {
+					//	value[event](event);
+					//});
+					node["on"+event] = (e) => {
+						setTimeout(() => value[event](e));
+					}
 				}
 			}
 		}
@@ -932,7 +936,9 @@ else e[p]=v;
 				for(let name in attributes) {
 					if(typeof(handled[name])==="undefined") {
 						const value = handled[name] = resolve(attributes[name],node,extras);
-						tlx.setAttribute(node,name,value,extras);
+						if(!tlx.directives || !tlx.directives.VNode || !(tlx.directives.VNode[name] || tlx.directives.HTMLElement[name])) {
+							tlx.setAttribute(node,name,value,extras);
+						}
 					}
 				}
 				if(tlx.directives && tlx.directives.VNode) {
@@ -1008,7 +1014,7 @@ else e[p]=v;
 				return values;
 			}
 	};
-	document.tlxRender = (data,embedded,rerender) => {
+	document.tlxRender = (data={},embedded,rerender) => {
 		!rerender || (document.tlxRender.rendered = false);
 		document.tlxRender.rendered || setTimeout(() => tlx.bind(data)(document.body,embedded));
 		document.tlxRender.rendered = true;

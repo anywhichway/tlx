@@ -19,7 +19,7 @@ describe("Test",function() {
 		setTimeout(() => {
 			expect(document.getElementById("app").innerHTML).to.equal("Joe");
 			done();
-		},20)
+		},30)
 	});
 	it("object",function(done) {
 		const app = document.getElementById("app");
@@ -28,7 +28,7 @@ describe("Test",function() {
 		setTimeout(() => {
 			expect(document.getElementById("app").innerHTML).to.equal("Seattle");
 			done();
-		},20)
+		},30)
 	});
 	it("t-foreach",function(done) {
 		const app = document.getElementById("app");
@@ -37,7 +37,7 @@ describe("Test",function() {
 		setTimeout(() => {
 			expect(document.getElementById("result").innerHTML).to.equal("SaraMike");
 			done();
-		},20)
+		},30)
 	});
 	it("t-for of",function(done) {
 		const app = document.getElementById("app");
@@ -46,7 +46,7 @@ describe("Test",function() {
 		setTimeout(() => {
 			expect(document.getElementById("result").innerHTML).to.equal("SaraMike");
 			done();
-		},20)
+		},30)
 	});
 	it("t-for in",function(done) {
 		const app = document.getElementById("app");
@@ -55,7 +55,7 @@ describe("Test",function() {
 		setTimeout(() => {
 			expect(document.getElementById("result").innerHTML).to.equal("citystate");
 			done();
-		},20)
+		},30)
 	});
 	it("t-if",function(done) {
 		const app = document.getElementById("app");
@@ -64,7 +64,7 @@ describe("Test",function() {
 		setTimeout(() => {
 			expect(document.getElementById("result").innerHTML).to.equal("a key");
 			done();
-		},20)
+		},30)
 	});
 	it("t-if not",function(done) {
 		const app = document.getElementById("app");
@@ -73,7 +73,7 @@ describe("Test",function() {
 		setTimeout(() => {
 			expect(document.getElementById("result").innerHTML).to.equal("");
 			done();
-		},20)
+		},30)
 	});
 	it("reactive primitive",function(done) {
 		const app = document.getElementById("app");
@@ -83,7 +83,7 @@ describe("Test",function() {
 		setTimeout(() => {
 			expect(document.getElementById("app").innerHTML).to.equal("Mary");
 			done();
-		},20)
+		},30)
 	});
 	it("reactive object",function(done) {
 		const app = document.getElementById("app");
@@ -93,7 +93,7 @@ describe("Test",function() {
 		setTimeout(() => {
 			expect(document.getElementById("app").innerHTML).to.equal("Portland");
 			done();
-		},20)
+		},30)
 	});
 	it("reactive object parent",function(done) {
 		const app = document.getElementById("app");
@@ -103,6 +103,6 @@ describe("Test",function() {
 		setTimeout(() => {
 			expect(document.getElementById("app").innerHTML).to.equal("Seattle");
 			done();
-		},20)
+		},30)
 	});
 });

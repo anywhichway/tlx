@@ -91,7 +91,9 @@ else e[p]=v;
 				for(let name in attributes) {
 					if(typeof(handled[name])==="undefined") {
 						const value = handled[name] = resolve(attributes[name],node,extras);
-						tlx.setAttribute(node,name,value,extras);
+						if(!tlx.directives || !tlx.directives.VNode || !(tlx.directives.VNode[name] || tlx.directives.HTMLElement[name])) {
+							tlx.setAttribute(node,name,value,extras);
+						}
 					}
 				}
 				if(tlx.directives && tlx.directives.VNode) {
@@ -167,7 +169,7 @@ else e[p]=v;
 				return values;
 			}
 	};
-	document.tlxRender = (data,embedded,rerender) => {
+	document.tlxRender = (data={},embedded,rerender) => {
 		!rerender || (document.tlxRender.rendered = false);
 		document.tlxRender.rendered || setTimeout(() => tlx.bind(data)(document.body,embedded));
 		document.tlxRender.rendered = true;

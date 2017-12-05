@@ -19,7 +19,7 @@
 							extras.value = array[index];
 							extras[key] = array[index];
 							for(let child of vnode.children) {
-								tlx.render(child,null,node,extras);
+								child.attributes.state = extras;
 							}
 						}
 					} else if(op==="in") {
@@ -30,7 +30,7 @@
 							for(let child of vnode.children) {
 								extras.key = property;
 								extras[key] = property;
-								tlx.render(child,null,node,extras);
+								child.attributes.state = extras;
 							}
 						}
 					}
@@ -42,14 +42,14 @@
 					for(let key=0;key<object.length;key++) {
 						const value = object[key];
 						for(let child of vnode.children) {
-							tlx.render(child,null,node,{value,key,object});
+							child.attributes.state = {value,key,object};
 						}
 					}
 				} else {
 					for(let key in object) {
 						const value = object[key];
 						for(let child of vnode.children) {
-							tlx.render(child,null,node,{value,key,object});
+							child.attributes.state = {value,key,object};
 						}
 					}
 				}
@@ -66,8 +66,12 @@
 			"t-on": (value,vnode,node) => {
 				node.removeAttribute("t-on");
 				for(let event in value) {
-					//node.addEventListener(event,value[event]);
-					node["on"+event] = value[event];
+					//node.addEventListener(event,(event) => {
+					//	value[event](event);
+					//});
+					node["on"+event] = (e) => {
+						setTimeout(() => value[event](e));
+					}
 				}
 			}
 		}

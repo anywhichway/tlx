@@ -36,6 +36,7 @@ else e[p]=v;
 			if(vnode instanceof tlx.VText) {
 				const text = vnode.text;
 				node || (node = document.createTextNode(text));
+				!vnode.state || (node.state = vnode.state);
 				!extras || (node.tlxExtras = extras);
 				extras = node.tlxExtras;
 				!parent || node.parentNode===parent || parent.appendChild(node);

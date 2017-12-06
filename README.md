@@ -300,6 +300,8 @@ Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reach
 
 # Release History
 
+2017-12-06 v0.1.10 - Further work on iterating directives
+
 2017-12-05 v0.1.9 - Corrected issue with `t-on` needing to delay event handling to cover all use cases and iterating directives creating duplicate DOM nodes.
 
 2017-12-02 v0.1.8 - Updated documentation for Components.

@@ -674,50 +674,83 @@ document.registerTlxComponent = function(tagName,cls) { customElements.define(ta
 			},
 			"t-for": (value,vnode,node) => {
 				if(typeof(value)==="string") {
-					const [key,op] = value.replace(/\</g,"\\<").split(" ");
+					const [key,op] = value.replace(/\</g,"\\<").split(" "),
+						newchildren = [];
 					if(op==="of") {
 						const target = value.substring(value.indexOf(" of ")+4),
-							array = JSON.parse(target),
-							extras = {array};
+							array = JSON.parse(target);
+						let extras = {array};
 						for(let index=0;index<array.length;index++) {
+							extras = Object.assign({},extras);
 							extras.index = index;
 							extras.value = array[index];
 							extras[key] = array[index];
 							for(let child of vnode.children) {
-								child.attributes.state = extras;
+								const newchild = Object.assign(Object.create(Object.getPrototypeOf(child)),child);
+								if(child.attributes) {
+									newchild.attributes = Object.assign({},child.attributes);
+									newchild.attributes.state = extras
+								} else {
+									newchild.state = extras;
+								}
+								newchildren.push(newchild);
 							}
 						}
 					} else if(op==="in") {
 						const target = value.substring(value.indexOf(" in ")+4),
 							object = JSON.parse(target);
 						for(let property in object) {
-							const extras = {object};
+							let extras = {object};
 							for(let child of vnode.children) {
+								extras = Object.assign({},extras);
 								extras.key = property;
 								extras[key] = property;
-								child.attributes.state = extras;
+								const newchild = Object.assign(Object.create(Object.getPrototypeOf(child)),child);
+								if(child.attributes) {
+									newchild.attributes = Object.assign({},child.attributes);
+									newchild.attributes.state = extras
+								} else {
+									newchild.state = extras;
+								}
+								newchildren.push(newchild);
 							}
 						}
 					}
+					vnode.children = newchildren;
 				}
 			},
 			"t-foreach": (value,vnode,node) => {
-				const object = value;
+				const object = value,
+					newchildren = [];
 				if(Array.isArray(value)) {
 					for(let key=0;key<object.length;key++) {
 						const value = object[key];
 						for(let child of vnode.children) {
-							child.attributes.state = {value,key,object};
+							const newchild = Object.assign(Object.create(Object.getPrototypeOf(child)),child);
+							if(child.attributes) {
+								newchild.attributes = Object.assign({},child.attributes);
+								newchild.attributes.state = {value,key,object};
+							} else {
+								newchild.state = {value,key,object};
+							}
+							newchildren.push(newchild);
 						}
 					}
 				} else {
 					for(let key in object) {
 						const value = object[key];
 						for(let child of vnode.children) {
-							child.attributes.state = {value,key,object};
+							const newchild = Object.assign(Object.create(Object.getPrototypeOf(child)),child);
+							if(child.attributes) {
+								newchild.attributes = Object.assign({},child.attributes);
+								newchild.attributes.state = {value,key,object};
+							}  else {
+								newchild.state = {value,key,object};
+							}
 						}
 					}
 				}
+				vnode.children = newchildren;
 			}
 		},
 		HTMLElement: {
@@ -881,6 +914,7 @@ else e[p]=v;
 			if(vnode instanceof tlx.VText) {
 				const text = vnode.text;
 				node || (node = document.createTextNode(text));
+				!vnode.state || (node.state = vnode.state);
 				!extras || (node.tlxExtras = extras);
 				extras = node.tlxExtras;
 				!parent || node.parentNode===parent || parent.appendChild(node);

@@ -1,0 +1,75 @@
+<html>
+<head>
+<script src="../src/tlx-core.js"></script>
+<script>
+
+const ToDo = function({title="",listid="",done=false},innerHTML="",el = document.createElement(tlx.getTagName(ToDo))) {
+	Object.assign(el,tlx.Mixin);
+	el.initialize({title,listid,done,...arguments[0]});
+	el.remove = () => {
+		el.parentElement.removeChild(el);
+	}
+	el.render = (attributes) => el.innerHTML = el.resolve(`
+		${innerHTML}<li id="\${id}">\${title} <input type="checkbox" \${(done ? "checked" : "")} onclick="(()=>{ \${listid||id}.remove('\${id}')})()"></li>
+	`,attributes);
+	return el;
+}
+tlx.register("todo",ToDo);
+
+const ToDoList = function({title="",todos=[]},innerHTML="",el = document.createElement(tlx.getTagName(ToDoList))) {
+	const genId = () => "tid" + (Math.random()+"").substring(2); // not a great id generator, but fine for demo
+	Object.assign(el,tlx.Mixin);
+	el.initialize({title,todos,...arguments[0]});
+	el.todos.forEach(todo => todo.id || (todo.id = genId())); 
+	el.add = () => {
+		const title = prompt("ToDo Name");
+		if(title) {
+			el.todos.push({title,id:genId()});
+			el.render();
+		}
+	}
+	el.remove = (id) => {
+		const i = el.todos.findIndex((item) => item.id===id);
+		if(i>=0) {
+			el.todos.splice(i,1);
+			el.render();
+		}
+	}
+	el.render = (attributes) => el.innerHTML = el.resolve(`
+			<p>\${title}</p>
+			${innerHTML}
+			<button onclick="\${id}.add()">Add Task</button>
+			<ul>
+			\${el.todos.reduce((accum,todo) => accum += ToDo(todo).render({listid:el.id}),"")}
+			</ul>
+	`,attributes);
+	return el;
+}
+tlx.register("todolist",ToDoList);
+
+
+tlx.enable({reactive:true});
+</script>
+</head>
+<body>
+
+<todo state="${{name:'Joe',age:27}}" id="one" value="one" done="true" ><b>${state.age}</b></todo>
+
+<todolist title="My Tasks" todos="${[{title:'Task One'}]}"></todolist>
+
+<script>
+const todos = ToDoList({todos:[{title:"one"}]})
+console.log(todos+"")
+</script>
+
+<script>
+setTimeout(() => {
+	const el = document.getElementById("one"),
+		state = el.getAttribute("state");
+	state.age = 30;
+});
+	
+</script>
+
+</body>
+</html>

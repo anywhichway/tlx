@@ -1,4 +1,4 @@
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/35bd9c60d5714ff5844f7cac0fc8498c)](https://www.codacy.com/app/syblackwell/tlx?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=anywhichway/tlx&amp;utm_campaign=Badge_Grade)
+
 
 # TLX 
 

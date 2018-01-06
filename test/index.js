@@ -1,11 +1,9 @@
 var chai,
 	expect,
-	unionizor,
 	_;
 if(typeof(window)==="undefined") {
 	chai = require("chai");
 	expect = chai.expect;
-	unionizor = require("../index.js");
 	_ = require("lodash");
 }
 
@@ -30,7 +28,7 @@ describe("Test",function() {
 			done();
 		},30)
 	});
-	it("t-foreach",function(done) {
+	/*it("t-foreach",function(done) {
 		const app = document.getElementById("app");
 		app.innerHTML = "<span id='result' t-foreach='${children}'>${value}</span>";
 		tlx.bind(testobject)(document.getElementById("app"));
@@ -104,5 +102,5 @@ describe("Test",function() {
 			expect(document.getElementById("app").innerHTML).to.equal("Seattle");
 			done();
 		},30)
-	});
+	});*/
 });

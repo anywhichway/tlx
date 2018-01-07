@@ -2,14 +2,33 @@
 
 # TLX 
 
-Imagine a light weight combination of JSX, Vue, and React but using JavaScript template literals - No Preprocessor Required.
+Imagine a light weight combination of JSX, Vue, React, and Riot but using JavaScript template literals - No Preprocessor Required.
 
+Use just the parts you want (sizes are minified and GZipped):
+
+`tlx-core.js` - 1K Enables "inverted JSX", i.e. puts the focus on HTML while supporting the power of in-line template literals, e.g. `<div>${item.message}</div>`. Use for full SEO enablement and [multi-page apps](#multipage-apps). Continue to use React or Preact.
+
+`tlx-component.js` - 0.8K Enables components.
+
+`tlx-reactive.js` - 0.9K Adds uni-directional and bi-directional state [reactivity](#reactivity) to templates in a manner similar to Vue and many other libraries.
+
+`tlx-template.js` -  0.7k Adds the abiliy to define components using HTML template tags similar to Riot. Includes support for scoped styles.
+
+`tlx-directives.js` - 0.5K If you like Vue or Angular, you can also use the built-in [directives](#directives) `t-if`, `t-foreach`, `t-for`, and `t-on`. Or, [add your own directives](#directives). However, many directives are un-necessary due to the power of in-line template literals embedded in your HTML.
+
+Watch for `tlx-router.js` coming soon.
+
+Or, include everything with `tlx.js` at just 3.5K minified + Gzipped, 18.6K minified, 28K raw.
+
+***Don't forget***, give us a star if you like what you see!
 
 # Contents
 
 [Installation](#installation)
 
 [API](#api)
+
+[Components](#components)
 
 [Acknowledgements](#acknowledgements)
 
@@ -28,7 +47,7 @@ Call `tlx.enable()` before you try to use anything else.
 
 # API
 
-If you want to templatize regular HTML outside of a script, bind`tlx` to an object and call it with an HTMLElement as an argument, e.g. `tlx.bind({<some data>})(document.getElementbyId(<some id>));` Think of it as inverted JSX, i.e. JSX with focus on HTML rather than JavaScript. This is useful for SEO dependent sites or where layout needs to be put directly in the hands of a visual designer.
+If you want to templatize regular HTML outside of a script, bind an object to an HTMLElement with `tlx.bind`, e.g. `tlx.bind({<some data>},document.getElementbyId(<some id>));` Think of it as inverted JSX, i.e. JSX with focus on HTML rather than JavaScript. This is useful for SEO dependent sites or where layout needs to be put directly in the hands of a visual designer.
 
 Examples are best!
 
@@ -37,7 +56,7 @@ Don't forget call `tlx.enable()` before you try to use anything else.
 Use to templatize regular HTML:
 
 ```html
-<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'}})()">
+<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'}},document.getElementByTagName('body')">
 <div>
 	<div>
 	Name: ${name}
@@ -48,6 +67,8 @@ Use to templatize regular HTML:
 </div>
 </body>
 ```
+
+## Components
 
 See the examples directory and the Medium article pending further documentation.
 
@@ -61,6 +82,8 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, and `Angula
 Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reached its architectural limits and is no longer maintained.
 
 # Release History
+
+2018-01-06 v0.2.2a - ALPHA Started unit testing. Split reactivity and components into their own files. Added Riot like HTML template definition of components.
 
 2018-01-06 v0.2.1a - ALPHA This is a complete re-write with a dramtic size reduction. Many API end-points have not yet been re-established, but we expect 90% compatibility with v0.1.10. Directives have not yet been implemented but will be fully supported. The most dramatic change is elimination of the hyperx code and a mandatory VDom. React and Preact interoperability will be mainatined and a polyfill for [custom elements HTML standard](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Custom_Elements) will be provided via optional modules.
 

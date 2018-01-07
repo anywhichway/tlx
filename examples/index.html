@@ -1,10 +1,14 @@
 <html>
 <head>
 <script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-component.js"></script>
+<script src="../src/tlx-reactive.js"></script>
+<script src="../src/tlx-template.js"></script>
 <script>
 
-const ToDo = function({title="",listid="",done=false},innerHTML="",el = document.createElement(tlx.getTagName(ToDo))) {
+const ToDo = function({title="",listid="",done=false},el = document.createElement(tlx.getTagName(ToDo))) {
 	Object.assign(el,tlx.Mixin);
+	const innerHTML = el.innerHTML;
 	el.initialize({title,listid,done,...arguments[0]});
 	el.remove = () => {
 		el.parentElement.removeChild(el);
@@ -16,9 +20,10 @@ const ToDo = function({title="",listid="",done=false},innerHTML="",el = document
 }
 tlx.register("todo",ToDo);
 
-const ToDoList = function({title="",todos=[]},innerHTML="",el = document.createElement(tlx.getTagName(ToDoList))) {
+const ToDoList = function({title="",todos=[]},el = document.createElement(tlx.getTagName(ToDoList))) {
 	const genId = () => "tid" + (Math.random()+"").substring(2); // not a great id generator, but fine for demo
 	Object.assign(el,tlx.Mixin);
+	const innerHTML = el.innerHTML;
 	el.initialize({title,todos,...arguments[0]});
 	el.todos.forEach(todo => todo.id || (todo.id = genId())); 
 	el.add = () => {
@@ -48,8 +53,33 @@ const ToDoList = function({title="",todos=[]},innerHTML="",el = document.createE
 tlx.register("todolist",ToDoList);
 
 
-tlx.enable({reactive:true});
+tlx.enable();
 </script>
+
+<template t-tagname="x-todo" title="Untitled Tasks">
+	<h3 onclick="${id}.changeTitle(event)">${title}</h3>
+  	<ul onclick="${id}.addTask()" >${tasks.reduce((accum,item) => accum += (`<li>${item}</li>`),"")}</ul>
+	<style>
+		h3 { font-size: 120% }
+		font-style: italic;
+	</style>
+  
+	<script>
+		//this.state.name = "Test Name"
+		this.tasks = ["Task One"];
+		this.addTask = function() { 
+			this.tasks.push(prompt("Task Name:")); 
+			this.render();
+		};
+		this.changeTitle = function(event) { 
+			const title = prompt("New Title:");
+			if(title) {
+				this.setAttribute("title",title);
+			}
+			event.stopPropagation();
+		}
+	</script>
+</template>
 </head>
 <body>
 
@@ -68,8 +98,10 @@ setTimeout(() => {
 		state = el.getAttribute("state");
 	state.age = 30;
 });
-	
 </script>
+
+<x-todo id="mytodos" title="My Tasks"></x-todo>
+
 
 </body>
 </html>

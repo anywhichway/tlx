@@ -7,26 +7,30 @@ if(typeof(window)==="undefined") {
 	_ = require("lodash");
 }
 
-var testobject = tlx.activate({name:"Joe",address:{city:"Seattle",state:"WA"},children:["Sara","Mike"],publicKey:{show:true,key:"a key"},privateKey:{show:false,key:"a key"}});
+tlx.enable();
+
+var testobject = {name:"Joe",address:{city:"Seattle",state:"WA"},children:["Sara","Mike"],publicKey:{show:true,key:"a key"},privateKey:{show:false,key:"a key"}};
 
 describe("Test",function() {
-	it("primtive",function(done) {
+	it("primtive",function() {
 		const app = document.getElementById("app");
 		app.innerHTML = "${name}";
-		tlx.bind(testobject)(document.getElementById("app"));
-		setTimeout(() => {
+		tlx.bind(testobject,document.getElementById("app"));
+		app.render();
+		//setTimeout(() => {
 			expect(document.getElementById("app").innerHTML).to.equal("Joe");
-			done();
-		},30)
+		//	done();
+		//},30)
 	});
-	it("object",function(done) {
+	it("object",function() {
 		const app = document.getElementById("app");
 		app.innerHTML = "${address.city}";
-		tlx.bind(testobject)(document.getElementById("app"));
-		setTimeout(() => {
+		tlx.bind(testobject,document.getElementById("app"));
+		app.render();
+		//setTimeout(() => {
 			expect(document.getElementById("app").innerHTML).to.equal("Seattle");
-			done();
-		},30)
+		//	done();
+		//},30)
 	});
 	/*it("t-foreach",function(done) {
 		const app = document.getElementById("app");
@@ -72,35 +76,38 @@ describe("Test",function() {
 			expect(document.getElementById("result").innerHTML).to.equal("");
 			done();
 		},30)
-	});
-	it("reactive primitive",function(done) {
+	});*/
+	it("reactive primitive",function() {
 		const app = document.getElementById("app");
 		app.innerHTML = "${name}";
-		tlx.bind(testobject)(document.getElementById("app"));
-		testobject.name = "Mary";
-		setTimeout(() => {
+		const object = tlx.bind(testobject,document.getElementById("app"));
+		app.render();
+		object.name = "Mary";
+		//setTimeout(() => {
 			expect(document.getElementById("app").innerHTML).to.equal("Mary");
-			done();
-		},30)
+		//	done();
+		//},30)
 	});
-	it("reactive object",function(done) {
+	it("reactive object",function() {
 		const app = document.getElementById("app");
 		app.innerHTML = "${address.city}";
-		tlx.bind(testobject)(document.getElementById("app"));
-		testobject.address.city = "Portland";
-		setTimeout(() => {
+		const object = tlx.bind(testobject,document.getElementById("app"));
+		app.render();
+		object.address.city = "Portland";
+		//setTimeout(() => {
 			expect(document.getElementById("app").innerHTML).to.equal("Portland");
-			done();
-		},30)
+		//	done();
+		//},30)
 	});
-	it("reactive object parent",function(done) {
+	it("reactive object parent",function() {
 		const app = document.getElementById("app");
 		app.innerHTML = "${address.city}";
-		tlx.bind(testobject)(document.getElementById("app"));
-		testobject.address = {city: "Seattle"};
-		setTimeout(() => {
+		const object = tlx.bind(testobject,document.getElementById("app"));
+		app.render();
+		object.address = {city: "Seattle"};
+		//setTimeout(() => {
 			expect(document.getElementById("app").innerHTML).to.equal("Seattle");
-			done();
-		},30)
-	});*/
+			//done();
+		//},30)
+	});
 });

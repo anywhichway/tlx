@@ -4,6 +4,9 @@
 
 Imagine a light weight combination of JSX, Vue, and React but using JavaScript template literals - No Preprocessor Required.
 
+***NEWS***: We are hard at work on v2. At the moment it looks like the code base will be just 2/3 the size but have far more power, including Riot like component definiton in HTM templates and scoped styles. 
+Take a look at the [edge branch](https://github.com/anywhichway/tlx/tree/edge) for a preview. Or, see the Medium article [Little ToDo: JavaScript Components Without Frameworks](https://medium.com/@anywhichway/little-todo-javascript-html-components-without-frameworks-87914d6dd2e) to get a handle on the internal architecture and how we reduced the code size.
+
 Use just the parts you want (sizes are minified and GZipped):
 
 `tlx-core.js` - 3.4K Replaces JSX. Continue to use `React` or `preact`.
@@ -21,6 +24,8 @@ Watch for `tlx-router.js` coming soon.
 Or, include everything with `tlx.js` at just 5.5K minified + Gzipped, 18.6K minified, 28K raw.
 
 ***Don't forget***, give us a star if you like what you see!
+
+
 
 
 

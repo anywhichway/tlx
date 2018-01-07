@@ -96,15 +96,6 @@
 		};
 		return f.bind(tlx.getState(this)||(this.state={}));
 	}
-	Node.prototype.getAncestorWithState = function() {
-		const parentNode = this.parentNode;
-		if(parentNode && parentNode instanceof HTMLElement) {
-			const state = parentNode.getAttribute("state");
-			if(state) return {parentNode,state};
-			return parentNode.getAncestorWithState();
-		}
-		return {}
-	}
 	tlx.options || (tlx.options={});
 	tlx.options.reactive = true;
 }(tlx));

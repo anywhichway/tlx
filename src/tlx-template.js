@@ -25,9 +25,9 @@
 		if(!tagname) return;
 		const clone = document.createElement(tagname);
 		clone.innerHTML = template.innerHTML;
-		const	styles = clone.querySelectorAll("style"),
-			scripts = clone.querySelectorAll("script");
-		for(let style of [...styles]) {
+		const	styles = clone.querySelectorAll("style")||[],
+			scripts = clone.querySelectorAll("script")||[];
+		for(let style of [].slice.call(styles)) {
 			let spec = style.innerText,
 				matches = spec.match(/.*\{.+\}/g),
 				text = (matches ? matches.reduce((accum,item) => accum += `${tagname} ${item.trim()} `,"") : "");
@@ -37,9 +37,9 @@
 			style.innerText = text.trim();
 			document.head.appendChild(style);
 		}
-		const scope = [...template.attributes].reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
-		for(let script of [...scripts]) {
-			const newscope = Function(`with(this) { ${script.innerText} }`).call(scope);
+		const scope = [].slice.call(template.attributes).reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
+		for(let script of [].slice.call(scripts)) {
+			const newscope = Function(`with(this) { ${script.innerText}; }`).call(scope);
 			!newscope || (scope = newscope);
 			clone.removeChild(script);
 		}
@@ -49,7 +49,7 @@
 		}
 		const component = Function("defaults",`return function(attributes={},el=document.createElement("${tagname}")) {
 					Object.assign(el,tlx.Mixin);
-					el.initialize({...defaults,...attributes});
+					el.initialize(Object.assign({},defaults,attributes));
 					}`)(scope);
 		this.register(tagname,component);
 	}

@@ -1,11 +1,12 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 (function() {
 	const tlx = require("./src/tlx-core.js");
+	require("./src/tlx-directives.js");
 	require("./src/tlx-component.js");
 	require("./src/tlx-reactive.js");
 	require("./src/tlx-template.js");
 })();
-},{"./src/tlx-component.js":2,"./src/tlx-core.js":3,"./src/tlx-reactive.js":4,"./src/tlx-template.js":5}],2:[function(require,module,exports){
+},{"./src/tlx-component.js":2,"./src/tlx-core.js":3,"./src/tlx-directives.js":4,"./src/tlx-reactive.js":5,"./src/tlx-template.js":6}],2:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -32,8 +33,8 @@
 		tagNames.length>0 || (tagNames = Object.keys(this.components));
 		for(let tagName of tagNames) {
 			const component = this.components[tagName];
-			for(let element of document.getElementsByTagName(tagName)||[]) {
-				const attributes = [...element.attributes].reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum; },{});
+			for(let element of [].slice.call(document.getElementsByTagName(tagName)||[])) {
+				const attributes = [].slice.call(element.attributes).reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum; },{});
 				component(attributes,element);
 				element.render();
 			}
@@ -66,8 +67,6 @@
 			for(let name in attributes) this.setAttribute(name,(typeof(attributes[name])==="string" ? this.parse(attributes[name]): attributes[name]),true);
 			this.id || this.setAttribute("id",`rid${String(Math.random()).substring(2)}`,true);
 		},
-		resolve(template,attributes) {
-			return Function("el","a","with(el) { with(a) { return `" + template + "`} }")(this,Object.assign({},this.getAttributes(),attributes)); },
 		toString() { 
 			const stringify = (v) => {
 					const type = typeof(v);
@@ -115,8 +114,8 @@
 				if(this.options.components || this.options.templates) {
 					window.addEventListener("load",() => {
 						if(this.options.templates) {
-							for(let element of document.getElementsByTagName("template")||[]) {
-								this.compile(element)
+							for(let element of [].slice.call(document.getElementsByTagName("template")||[])) {
+								this.compile(element);
 							}
 						}
 						if(this.options.components) this.mount();
@@ -124,11 +123,40 @@
 						document.body.render();
 					});
 				}
-				HTMLElement.prototype.render = function() {
-					for(let child of [...this.childNodes]) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
-				}
 				HTMLElement.prototype.getAttributes = function() {
 					return [].slice.call(this.attributes).reduce((accum,attribute) => { accum[attribute.name] = this.getAttribute(attribute.name); return accum;},{});
+				}
+				HTMLElement.prototype.render = function() {
+					for(let attribute of [].slice.call(this.attributes)) attribute.render();
+					for(let attribute of [].slice.call(this.attributes)) {
+						const directive = (tlx.directives ? tlx.directives[attribute.name] : null);
+						if(directive) {
+							const template = this.innerHTML || this.textContent,
+								name = attribute.name,
+								render = (this.render===HTMLElement.prototype.render ? null : this.render);
+				  		this.render = function()  {
+				  			!render || render.call(this);
+				  			const html = directive(this.getAttribute(name),template,this);
+				  			if(typeof(html)==="undefined") {
+				  				this.innerHTML = "";
+				  			} else {
+				  				this.innerHTML = html;
+					  			for(let child of [].slice.call(this.childNodes)) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
+				  			}
+				  			return this.innerHTML;
+				  		}
+				  	}
+					}
+					if(this.render===HTMLElement.prototype.render) {
+						for(let child of [].slice.call(this.childNodes)) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
+						return this.innerHTML;
+					} else {
+						return this.render();
+					}
+				}
+				HTMLElement.prototype.resolve = function(template,attributes) {
+					const as = this.getAncestorWithState();
+					return Function("el","state","attr","with(el) { with(state) { with(attr) { return `" + template + "`}}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes)); 
 				}
 				const _HTMLElement_getAttribute = HTMLElement.prototype.getAttribute;
 				HTMLElement.prototype.getAttribute = function(name) {
@@ -163,16 +191,23 @@
 					if(typeof(value)==="string" && value.indexOf("${")===0) return this.parse(Function("return (function() { return arguments[arguments.length-1]; })`" + value + "`")());
 					try { return JSON.parse(value)	} catch(error) { return value }
 				}
+			  Attr.prototype.render = function() {
+			  	if(this.value.indexOf("${")>=0 && !Object.getOwnPropertyDescriptor(this,"render")) {
+			  		const template = this.value;
+			  		this.render = function() { const value = this.parse(template); this.ownerElement.setAttribute(this.name,value,true); return value; }
+			  		this.render();
+			  	}
+			  }
 				Text.prototype.render = function() {
 					if(this.textContent.indexOf("${")>=0) {
 						const template = this.textContent;
 						this.render = function() {
-							const {_,state} = this.getAncestorWithState();
-							this.textContent = Function("state","with(state) { return `" + template + "` }")(state||{});
+							const as = this.getAncestorWithState();
+							return this.textContent = Function("el","state","attr","with(el) { with(state) { with(attr) { return `" + template + "` }}}")(this.parentNode,as.state||{},Object.assign({},this.parentNode.getAttributes()));
 						}
-						this.render();
+						return this.render();
 					}
-					this.textContent = this.parse(this.textContent)
+					return this.textContent;
 				}
 				Node.prototype.getAncestorWithState = function() {
 					const parentNode = this.parentNode;
@@ -194,6 +229,34 @@
 	}
 }).call(this);
 },{}],4:[function(require,module,exports){
+(function(tlx) {
+	"use strict";
+	tlx.directives = {
+			"t-if": (value,template,element) => {
+				if(value) {
+					return element.resolve(template,{value})
+				}
+			},
+			"t-for": (spec,template,element) => {
+	  			if(spec.of) {
+	  				return spec.of.reduce((accum,value,index,array) => accum += element.resolve(template,{[spec.let||spec.var]:value,value,index,array}),"");
+	  			} else {
+	  				return Object.keys(spec.in).reduce((accum,key) => accum += element.resolve(template,{[spec.let||spec.var]:spec.in[key],value:spec.in[key],key,object:spec.in}),"");
+	  			}
+			},
+			"t-foreach": (value,template,element) => {
+				if(Array.isArray(value)) return tlx.directives["t-for"]({of:value,let:'value'},template,element);
+				return tlx.directives["t-for"]({in:value,let:'key'},template,element);
+			},
+			"t-on": (value,template,element) => {
+				for(let key in value) {
+					element["on"+key] = value[key];
+				}
+				return template;
+			}
+	};
+}(tlx));
+},{}],5:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -292,19 +355,10 @@
 		};
 		return f.bind(tlx.getState(this)||(this.state={}));
 	}
-	Node.prototype.getAncestorWithState = function() {
-		const parentNode = this.parentNode;
-		if(parentNode && parentNode instanceof HTMLElement) {
-			const state = parentNode.getAttribute("state");
-			if(state) return {parentNode,state};
-			return parentNode.getAncestorWithState();
-		}
-		return {}
-	}
 	tlx.options || (tlx.options={});
 	tlx.options.reactive = true;
 }(tlx));
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -332,9 +386,9 @@
 		if(!tagname) return;
 		const clone = document.createElement(tagname);
 		clone.innerHTML = template.innerHTML;
-		const	styles = clone.querySelectorAll("style"),
-			scripts = clone.querySelectorAll("script");
-		for(let style of [...styles]) {
+		const	styles = clone.querySelectorAll("style")||[],
+			scripts = clone.querySelectorAll("script")||[];
+		for(let style of [].slice.call(styles)) {
 			let spec = style.innerText,
 				matches = spec.match(/.*\{.+\}/g),
 				text = (matches ? matches.reduce((accum,item) => accum += `${tagname} ${item.trim()} `,"") : "");
@@ -344,9 +398,9 @@
 			style.innerText = text.trim();
 			document.head.appendChild(style);
 		}
-		const scope = [...template.attributes].reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
-		for(let script of [...scripts]) {
-			const newscope = Function(`with(this) { ${script.innerText} }`).call(scope);
+		const scope = [].slice.call(template.attributes).reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
+		for(let script of [].slice.call(scripts)) {
+			const newscope = Function(`with(this) { ${script.innerText}; }`).call(scope);
 			!newscope || (scope = newscope);
 			clone.removeChild(script);
 		}
@@ -356,7 +410,7 @@
 		}
 		const component = Function("defaults",`return function(attributes={},el=document.createElement("${tagname}")) {
 					Object.assign(el,tlx.Mixin);
-					el.initialize({...defaults,...attributes});
+					el.initialize(Object.assign({},defaults,attributes));
 					}`)(scope);
 		this.register(tagname,component);
 	}

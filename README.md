@@ -1,24 +1,26 @@
 
 
-# TLX 
+# TLX v1.0.0
 
-Imagine a light weight combination of JSX, Vue, React, and Riot but using JavaScript template literals - No Preprocessor Required.
+Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.
+
+At 3.5K minified + Gzipped, 11K minified, 18K raw TLX v1.0.0 is just 80% of the size of v0.1.10 and faster.
 
 Use just the parts you want (sizes are minified and GZipped):
 
-`tlx-core.js` - 1K Enables "inverted JSX", i.e. puts the focus on HTML while supporting the power of in-line template literals, e.g. `<div>${item.message}</div>`. Use for full SEO enablement and [multi-page apps](#multipage-apps). Continue to use React or Preact.
+`tlx-core.min.js` - 1.1K Enables "inverted JSX", i.e. puts the focus on HTML while supporting the power of in-line template literals, e.g. `<div>${item.message}</div>`. Use for full SEO enablement and [multi-page apps](#multipage-apps). Continue to use React or Preact.
 
-`tlx-component.js` - 0.8K Enables components.
+`tlx-component.min.js` - 0.75K Enables components.
 
-`tlx-reactive.js` - 0.9K Adds uni-directional and bi-directional state [reactivity](#reactivity) to templates in a manner similar to Vue and many other libraries.
+`tlx-reactive.min.js` - 0.9K Adds uni-directional and bi-directional state [reactivity](#reactivity) to templates in a manner similar to Vue and many other libraries.
 
-`tlx-template.js` -  0.7k Adds the abiliy to define components using HTML template tags similar to Riot. Includes support for scoped styles.
+`tlx-template.min.js` -  0.7k Adds the abiliy to define components using HTML template tags similar to Riot. Includes support for scoped styles.
 
-`tlx-directives.js` - 0.5K If you like Vue or Angular, you can also use the built-in [directives](#directives) `t-if`, `t-foreach`, `t-for`, and `t-on`. Or, [add your own directives](#directives). However, many directives are un-necessary due to the power of in-line template literals embedded in your HTML.
+`tlx-directives.min.js` - 0.3K If you like Vue or Angular, you can also use the built-in [directives](#directives) `t-if`, `t-foreach`, `t-for`, and `t-on`. Or, [add your own directives](#directives). However, many directives are un-necessary due to the power of in-line template literals embedded in your HTML.
 
 Watch for `tlx-router.js` coming soon.
 
-Or, include everything with `tlx.js` at just 3.5K minified + Gzipped, 18.6K minified, 28K raw.
+Or, include everything with `tlx.min.js` at just 3.5K minified + Gzipped, 11K minified, 18K raw.
 
 ***Don't forget***, give us a star if you like what you see!
 
@@ -82,6 +84,8 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, and `Angula
 Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reached its architectural limits and is no longer maintained.
 
 # Release History
+
+2018-01-06 v0.2.3a - ALPHA Re-introduced and dramatically simplified attribute directives.
 
 2018-01-06 v0.2.2a - ALPHA Started unit testing. Split reactivity and components into their own files. Added Riot like HTML template definition of components.
 

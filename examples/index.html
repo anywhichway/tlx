@@ -1,6 +1,8 @@
+<!DOCTYPE html>
 <html>
 <head>
 <script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-directives.js"></script>
 <script src="../src/tlx-component.js"></script>
 <script src="../src/tlx-reactive.js"></script>
 <script src="../src/tlx-template.js"></script>
@@ -9,7 +11,7 @@
 const ToDo = function({title="",listid="",done=false},el = document.createElement(tlx.getTagName(ToDo))) {
 	Object.assign(el,tlx.Mixin);
 	const innerHTML = el.innerHTML;
-	el.initialize({title,listid,done,...arguments[0]});
+	el.initialize(Object.assign({title,listid,done},arguments[0]));
 	el.remove = () => {
 		el.parentElement.removeChild(el);
 	}
@@ -24,7 +26,7 @@ const ToDoList = function({title="",todos=[]},el = document.createElement(tlx.ge
 	const genId = () => "tid" + (Math.random()+"").substring(2); // not a great id generator, but fine for demo
 	Object.assign(el,tlx.Mixin);
 	const innerHTML = el.innerHTML;
-	el.initialize({title,todos,...arguments[0]});
+	el.initialize(Object.assign({title,todos},arguments[0]));
 	el.todos.forEach(todo => todo.id || (todo.id = genId())); 
 	el.add = () => {
 		const title = prompt("ToDo Name");
@@ -88,8 +90,8 @@ tlx.enable();
 <todolist title="My Tasks" todos="${[{title:'Task One'}]}"></todolist>
 
 <script>
-const todos = ToDoList({todos:[{title:"one"}]})
-console.log(todos+"")
+const todos = ToDoList({todos:[{title:"one"}]});
+console.log(todos+"");
 </script>
 
 <script>
@@ -102,6 +104,17 @@ setTimeout(() => {
 
 <x-todo id="mytodos" title="My Tasks"></x-todo>
 
+<ul t-for="${{let:'item',of:[1,2,3]}}"><li>${value}</li></ul>
+
+<ul t-for="${{let:'value',in:{name:'Joe',age:27}}}"><li>${key}: ${value}</li></ul>
+
+<ul t-foreach="${[1,2,3]}"><li>${value}</li></ul>
+
+<ul t-foreach="${{name:'Joe',age:27}}"><li>${key}: ${value}</li></ul>
+
+<div t-if="${3}">${value}</div>
+
+<div t-if="${false}">${value}</div>
 
 </body>
 </html>

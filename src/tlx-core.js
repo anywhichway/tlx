@@ -27,8 +27,8 @@
 				if(this.options.components || this.options.templates) {
 					window.addEventListener("load",() => {
 						if(this.options.templates) {
-							for(let element of document.getElementsByTagName("template")||[]) {
-								this.compile(element)
+							for(let element of [].slice.call(document.getElementsByTagName("template")||[])) {
+								this.compile(element);
 							}
 						}
 						if(this.options.components) this.mount();
@@ -36,11 +36,40 @@
 						document.body.render();
 					});
 				}
-				HTMLElement.prototype.render = function() {
-					for(let child of [...this.childNodes]) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
-				}
 				HTMLElement.prototype.getAttributes = function() {
 					return [].slice.call(this.attributes).reduce((accum,attribute) => { accum[attribute.name] = this.getAttribute(attribute.name); return accum;},{});
+				}
+				HTMLElement.prototype.render = function() {
+					for(let attribute of [].slice.call(this.attributes)) attribute.render();
+					for(let attribute of [].slice.call(this.attributes)) {
+						const directive = (tlx.directives ? tlx.directives[attribute.name] : null);
+						if(directive) {
+							const template = this.innerHTML || this.textContent,
+								name = attribute.name,
+								render = (this.render===HTMLElement.prototype.render ? null : this.render);
+				  		this.render = function()  {
+				  			!render || render.call(this);
+				  			const html = directive(this.getAttribute(name),template,this);
+				  			if(typeof(html)==="undefined") {
+				  				this.innerHTML = "";
+				  			} else {
+				  				this.innerHTML = html;
+					  			for(let child of [].slice.call(this.childNodes)) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
+				  			}
+				  			return this.innerHTML;
+				  		}
+				  	}
+					}
+					if(this.render===HTMLElement.prototype.render) {
+						for(let child of [].slice.call(this.childNodes)) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
+						return this.innerHTML;
+					} else {
+						return this.render();
+					}
+				}
+				HTMLElement.prototype.resolve = function(template,attributes) {
+					const as = this.getAncestorWithState();
+					return Function("el","state","attr","with(el) { with(state) { with(attr) { return `" + template + "`}}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes)); 
 				}
 				const _HTMLElement_getAttribute = HTMLElement.prototype.getAttribute;
 				HTMLElement.prototype.getAttribute = function(name) {
@@ -75,16 +104,23 @@
 					if(typeof(value)==="string" && value.indexOf("${")===0) return this.parse(Function("return (function() { return arguments[arguments.length-1]; })`" + value + "`")());
 					try { return JSON.parse(value)	} catch(error) { return value }
 				}
+			  Attr.prototype.render = function() {
+			  	if(this.value.indexOf("${")>=0 && !Object.getOwnPropertyDescriptor(this,"render")) {
+			  		const template = this.value;
+			  		this.render = function() { const value = this.parse(template); this.ownerElement.setAttribute(this.name,value,true); return value; }
+			  		this.render();
+			  	}
+			  }
 				Text.prototype.render = function() {
 					if(this.textContent.indexOf("${")>=0) {
 						const template = this.textContent;
 						this.render = function() {
-							const {_,state} = this.getAncestorWithState();
-							this.textContent = Function("state","with(state) { return `" + template + "` }")(state||{});
+							const as = this.getAncestorWithState();
+							return this.textContent = Function("el","state","attr","with(el) { with(state) { with(attr) { return `" + template + "` }}}")(this.parentNode,as.state||{},Object.assign({},this.parentNode.getAttributes()));
 						}
-						this.render();
+						return this.render();
 					}
-					this.textContent = this.parse(this.textContent)
+					return this.textContent;
 				}
 				Node.prototype.getAncestorWithState = function() {
 					const parentNode = this.parentNode;

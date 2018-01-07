@@ -24,8 +24,8 @@
 		tagNames.length>0 || (tagNames = Object.keys(this.components));
 		for(let tagName of tagNames) {
 			const component = this.components[tagName];
-			for(let element of document.getElementsByTagName(tagName)||[]) {
-				const attributes = [...element.attributes].reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum; },{});
+			for(let element of [].slice.call(document.getElementsByTagName(tagName)||[])) {
+				const attributes = [].slice.call(element.attributes).reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum; },{});
 				component(attributes,element);
 				element.render();
 			}
@@ -58,8 +58,6 @@
 			for(let name in attributes) this.setAttribute(name,(typeof(attributes[name])==="string" ? this.parse(attributes[name]): attributes[name]),true);
 			this.id || this.setAttribute("id",`rid${String(Math.random()).substring(2)}`,true);
 		},
-		resolve(template,attributes) {
-			return Function("el","a","with(el) { with(a) { return `" + template + "`} }")(this,Object.assign({},this.getAttributes(),attributes)); },
 		toString() { 
 			const stringify = (v) => {
 					const type = typeof(v);

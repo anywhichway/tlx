@@ -1,13 +1,14 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 (function() {
 	const tlx = require("./src/tlx-core.js");
+	require("./src/tlx-html.js");
 	require("./src/tlx-directives.js");
 	require("./src/tlx-component.js");
 	require("./src/tlx-reactive.js");
 	require("./src/tlx-template.js");
 	require("./src/tlx-polyfill.js");
 })();
-},{"./src/tlx-component.js":2,"./src/tlx-core.js":3,"./src/tlx-directives.js":4,"./src/tlx-polyfill.js":5,"./src/tlx-reactive.js":6,"./src/tlx-template.js":7}],2:[function(require,module,exports){
+},{"./src/tlx-component.js":2,"./src/tlx-core.js":3,"./src/tlx-directives.js":4,"./src/tlx-html.js":5,"./src/tlx-polyfill.js":6,"./src/tlx-reactive.js":7,"./src/tlx-template.js":8}],2:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -35,10 +36,8 @@
 		for(let tagName of tagNames) {
 			const component = this.components[tagName];
 			for(let element of [].slice.call(document.getElementsByTagName(tagName)||[])) {
-				//if(element instanceof HTMLUnknownElement) {
 					const attributes = [].slice.call(element.attributes).reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum; },{});
 					component(attributes,element);
-				//}
 			}
 		}
 	}
@@ -66,7 +65,7 @@
 	}
 	tlx.Mixin = {
 		initialize(attributes) {
-			for(let name in attributes) this.setAttribute(name,(typeof(attributes[name])==="string" ? this.parse(attributes[name]): attributes[name]),true);
+			for(let name in attributes) this.setAttribute(name,attributes[name],true); //(typeof(attributes[name])==="string" ? this.parse(attributes[name]): attributes[name])
 			this.id || this.setAttribute("id",`rid${String(Math.random()).substring(2)}`,true);
 		},
 		toString() { 
@@ -109,20 +108,21 @@
 	SOFTWARE.
 	*/
 	
-	const global = window;
+	const global = this;
 	
 	const tlx = {
 			components:{},
 			enable(options={}) {
 				this.options = Object.assign({},this.options,options);
 				
-				if(options.sanitize!==false) {
+				if(this.options.sanitize!==false) {
 					const _prompt = global.prompt.bind(global);
 					if(_prompt) {
 						global.prompt = function(title) {
-							const result = tlx.escape(_prompt(title));
+							const input = _prompt(title),
+								result = tlx.escape(input);
 							if(typeof(result)=="undefined") {
-								global.alert("Invalid input: " + result);
+								global.alert("Invalid input: " + input);
 							} else {
 								return result;
 							} 
@@ -136,29 +136,7 @@
 				const _render = HTMLElement.prototype.render = function() {
 					for(let attribute of [].slice.call(this.attributes)) {
 						attribute.render();
-						if(attribute.name==="t-on") {
-							for(let key in this["t-on"]) {
-								this["on"+key] = this["t-on"][key];
-							}
-						} else {
-							const directive = (tlx.directives ? tlx.directives[attribute.name] : null);
-							if(directive) {
-								const template = this.innerHTML || this.textContent,
-									name = attribute.name,
-									render = (this.render===HTMLElement.prototype.render ? null : this.render);
-					  		this.render = function()  {
-					  			!render || render.call(this);
-					  			const html = directive(this.getAttribute(name),template,this);
-					  			if(typeof(html)==="undefined") {
-					  				this.innerHTML = "";
-					  			} else {
-					  				this.innerHTML = html;
-						  			for(let child of [].slice.call(this.childNodes)) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
-					  			}
-					  			return this.innerHTML;
-					  		}
-					  	}
-						}
+						!tlx.renderDirective || tlx.renderDirective(this,attribute);
 					}
 					if(this.render===_render) {
 						for(let child of [].slice.call(this.childNodes)) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
@@ -166,10 +144,6 @@
 					} else {
 						return this.render();
 					}
-				}
-				HTMLElement.prototype.resolve = function(template,attributes) {
-					const as = this.getAncestorWithState();
-					return Function("el","state","attr","with(el) { with(state) { with(attr) { return `" + template + "`}}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes)); 
 				}
 				const _HTMLElement_getAttribute = HTMLElement.prototype.getAttribute;
 				HTMLElement.prototype.getAttribute = function(name) {
@@ -189,13 +163,18 @@
 							(Array.isArray(a) && Array.isArray(b) && a.length===b.length && a.every((item,i) => b[i]===item)) ||
 							(a && b && typea==="object" && Object.keys(a).every(key => equal(a[key],b[key])) && Object.keys(b).every(key => equal(a[key],b[key]))))	
 					}
-					let type = typeof(value),
-						oldvalue = this.getAttribute(name);
+					let type = typeof(value);
+					if(type==="string") {
+						if(this.resolve) {
+							value = this.resolve(value);
+						} else if(name.indexOf("on")!==0) {
+							value = tlx.escape(value);
+						}
+						type = typeof(value);
+					}
 					
-					// sanitize
-					type!=="string" || tlx.options.sanitize===false || (value = tlx.escape(value));
-					
-					const neq = !equal(oldvalue,value);
+					const oldvalue = this.getAttribute(name),
+						neq = !equal(oldvalue,value);
 					if(neq || lazy) {
 						if(value==null) { delete this[name]; this.removeAttribute(name); }
 						if(type==="object" || type==="function") this[name] = value;
@@ -207,71 +186,77 @@
 					}
 					if(tlx.options.reactive && !lazy && this.render && neq) this.render();
 				}
-			  Node.prototype.parse = function(value) {
-					if(typeof(value)==="string" && value.indexOf("${")===0) return this.parse(Function("return (function() { return arguments[arguments.length-1]; })`" + value + "`")());
-					try { return JSON.parse(value)	} catch(error) { return value }
-				}
-			  Attr.prototype.render = function() {
-			  	if(this.value.indexOf("${")>=0 && !Object.getOwnPropertyDescriptor(this,"render")) {
+			  Node.prototype.render = function() {
+			  	const owner = this.ownerElement;
+			  	if(this.value.indexOf("${")>=0 && !Object.getOwnPropertyDescriptor(this,"render")  && owner.resolve) {
 			  		const template = this.value;
 			  		this.render = function() { 
-			  			const as = this.getAncestorWithState(),
-			  				value = Function("el","state","with(el) { with(state) { return (function() { return arguments[arguments.length-1]; })`" + template + "` }}")(this.ownerElement,as.state||{});
-			  			this.ownerElement.setAttribute(this.name,value,true); return value; }
-			  		this.render();
+			  			const value = owner.resolve(template);
+			  			owner.setAttribute(this.name,value,true); return value; }
+			  		return this.render();
 			  	}
+			  	return this.value;
 			  }
 				Text.prototype.render = function() {
-					if(this.textContent.indexOf("${")>=0) {
+					const parent = this.parentElement;
+					if(this.textContent.indexOf("${")>=0 && !Object.getOwnPropertyDescriptor(this,"render") && parent.resolve) {
 						const template = this.textContent;
 						this.render = function() {
-							const as = this.getAncestorWithState();
-							return this.textContent = Function("el","state","attr","with(el) { with(state) { with(attr) { return `" + template + "` }}}")(this.parentNode,as.state||{},Object.assign({},this.parentNode.getAttributes()));
+							this.textContent = parent.resolve(template);
 						}
 						return this.render();
 					}
 					return this.textContent;
 				}
-				Node.prototype.getAncestorWithState = function() {
-					const parentNode = this.parentNode || this.ownerElement;
-					if(parentNode && parentNode instanceof HTMLElement) {
-						const state = parentNode.getAttribute("state");
-						if(state) return {parentNode,state};
-						return parentNode.getAncestorWithState();
-					}
-					return {}
-				}
-				
+			
 				if(this.options.polyfill==="force") {
 					this.options.components = true;
+					// add warning is not loaded
 				}
 				window.addEventListener("load",() => {
+					const doc = document;
 					if(this.options.templates) {
-						for(let element of [].slice.call(document.getElementsByTagName("template")||[])) {
+						for(let element of [].slice.call(doc.getElementsByTagName("template")||[])) {
 							this.compile(element);
 						}
 					}
 					if(this.options.components) this.mount();
-					document.head.render();
-					document.body.render();
+					doc.head.render();
+					doc.body.render();
 				});
 				if(this.options.polyfill && this.polyfill) {
 					this.polyfill(this.options.polyfill==="force" || false);
 				}
 			},
-			escape(str) {
+			escape(data) {
+				const type = typeof(data);
+				if(type==="function") return;
+				if(["number","boolean"].includes(type) || !data) {
+					return data;
+				}
+				if(Array.isArray(data)) {
+					for(let i=0;i<data.length;i++) {
+						data[i] = this.escape(data[i]);
+					}
+					return data;
+				}
+				if(data && type==="object") {
+					for(let key in data) {
+						data[key] = this.escape(data[key]);
+					}
+					return data;
+				}
 		    const div = document.createElement('div');
-		    div.appendChild(document.createTextNode(str));
-		    str = div.innerHTML;
+		    div.appendChild(document.createTextNode(data));
+		    data = div.innerHTML;
 		    try {
-		    	JSON.parse(`${str}`)==str;
+		    	JSON.parse(`${data}`)==data;
 		    	return str; // string is boolean, number, undefined, or null
 		    } catch(error) {
 		    	try {
-		    		Function("return " + str)();
-		    		return undefined; // string is executable!
+		    		return this.escape(Function("return " + data)());
 		    	} catch(error) {
-		    		return str;
+		    		return data;
 		    	}
 		    }
 		  }
@@ -283,7 +268,7 @@
 	if(typeof(window)!=="undefined") {
 		window.tlx = tlx;
 	}
-}).call(this);
+}).call(typeof(window)!=="undefined" ? window : this);
 },{}],4:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
@@ -304,9 +289,81 @@
 				if(Array.isArray(value)) return tlx.directives["t-for"]({of:value,let:'value'},template,element);
 				return tlx.directives["t-for"]({in:value,let:'key'},template,element);
 			}
-	};
+	}
+	tlx.renderDirective = function(element,attribute) {
+		if(attribute.name==="t-on") {
+			for(let key in element["t-on"]) {
+				element["on"+key] = element["t-on"][key];
+			}
+		} else {
+			const directive = (tlx.directives ? tlx.directives[attribute.name] : null);
+			if(directive) {
+				const template = element.innerHTML || element.textContent,
+					name = attribute.name,
+					render = (element.render===HTMLElement.prototype.render ? null : element.render);
+	  		element.render = function()  {
+	  			!render || render.call(element);
+	  			const html = directive(element.getAttribute(name),template,element);
+	  			if(typeof(html)==="undefined") {
+	  				element.innerHTML = "";
+	  			} else {
+	  				element.innerHTML = html;
+		  			for(let child of [].slice.call(element.childNodes)) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
+	  			}
+	  			return element.innerHTML;
+	  		}
+	  	}
+		}
+	}
 }(tlx));
 },{}],5:[function(require,module,exports){
+(function() {
+	"use strict";
+	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+	*/
+	
+		HTMLElement.prototype.resolve = function(template,attributes={}) {
+				const as = this.getAncestorWithState(),
+					first = template.indexOf("${"),
+					second = (first>=0 ? template.indexOf("${",first+1) : -1);
+				if(first>=0) {
+					if(second>=0 || first>0) {
+						return Function("el","state","attr","with(el) { with(state) { with(attr) { return `" + template + "`}}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes)); 
+					}
+					const value =  Function("el","state","attr","with(el) { with(state) { with(attr) { return (function() { return arguments[arguments.length-1]; })`" + template + "` }}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes));
+					return (tlx.options.sanitize===false ? value : tlx.escape(value));
+				}
+				return template;
+			}
+		Node.prototype.getAncestorWithState = function() {
+				const parentNode = this.parentNode || this.ownerElement;
+				if(parentNode && parentNode instanceof HTMLElement) {
+					const state = parentNode.getAttribute("state");
+					if(state) return {parentNode,state};
+					return parentNode.getAncestorWithState();
+				}
+				return {};
+			}
+				
+})(tlx);
+},{}],6:[function(require,module,exports){
 (function(tlx) {
 	"use strict"
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -415,7 +472,7 @@
 	tlx.options.polyfill = polyfill;
 	typeof(global.customElements)!=="undefined" || (tlx.options.components = true);
 }).call(this,tlx);
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -517,7 +574,7 @@
 	tlx.options || (tlx.options={});
 	tlx.options.reactive = true;
 }(tlx));
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License

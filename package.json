@@ -1,11 +1,11 @@
 {
   "name": "tlx",
-  "version": "v0.2.4a",
+  "version": "v0.2.5a",
   "description": "Imagine a light weight combination of JSX, Vue, and React but using JavaScript template literals - No Preprocessor Required",
   "engines": {},
   "license": "MIT",
   "scripts": {
-    "prepare": "cp ./src/*.js ./browser/ && browserify index.js -o browser/tlx.js && uglifyjs browser/tlx.js -o browser/tlx.min.js && uglifyjs src/tlx-core.js -o browser/tlx-core.min.js && uglifyjs src/tlx-directives.js -o browser/tlx-directives.min.js && uglifyjs src/tlx-component.js -o browser/tlx-component.min.js && uglifyjs src/tlx-reactive.js -o browser/tlx-reactive.min.js && uglifyjs src/tlx-template.js -o browser/tlx-template.min.js && uglifyjs src/tlx-polyfill.js -o browser/tlx-polyfill.min.js"
+    "prepare": "cp ./src/*.js ./browser/ && browserify index.js -o browser/tlx.js && uglifyjs browser/tlx.js -o browser/tlx.min.js && uglifyjs src/tlx-core.js -o browser/tlx-core.min.js && uglifyjs src/tlx-html.js -o browser/tlx-html.min.js&& uglifyjs src/tlx-directives.js -o browser/tlx-directives.min.js && uglifyjs src/tlx-component.js -o browser/tlx-component.min.js && uglifyjs src/tlx-reactive.js -o browser/tlx-reactive.min.js && uglifyjs src/tlx-template.js -o browser/tlx-template.min.js && uglifyjs src/tlx-polyfill.js -o browser/tlx-polyfill.min.js"
   },
   "repository": {
     "type": "git",
@@ -18,7 +18,9 @@
     "hyperhtml",
     "hyperapp",
     "CustomElements",
-    "VUE"
+    "VUE",
+    "Riot",
+    "polyfill"
   ],
   "author": "Simon Y. Blackwell <syblackwell@anywhichway.com> (http://www.github.com/anywhichway)",
   "bugs": {

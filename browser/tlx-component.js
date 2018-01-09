@@ -25,10 +25,8 @@
 		for(let tagName of tagNames) {
 			const component = this.components[tagName];
 			for(let element of [].slice.call(document.getElementsByTagName(tagName)||[])) {
-				//if(element instanceof HTMLUnknownElement) {
 					const attributes = [].slice.call(element.attributes).reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum; },{});
 					component(attributes,element);
-				//}
 			}
 		}
 	}
@@ -56,7 +54,7 @@
 	}
 	tlx.Mixin = {
 		initialize(attributes) {
-			for(let name in attributes) this.setAttribute(name,(typeof(attributes[name])==="string" ? this.parse(attributes[name]): attributes[name]),true);
+			for(let name in attributes) this.setAttribute(name,attributes[name],true); //(typeof(attributes[name])==="string" ? this.parse(attributes[name]): attributes[name])
 			this.id || this.setAttribute("id",`rid${String(Math.random()).substring(2)}`,true);
 		},
 		toString() { 

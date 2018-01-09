@@ -8,21 +8,23 @@ TLX is a tiny multi-paradigm front-end toolkit that lets you use core aspects of
 
 Use just the parts you want (sizes are minified and GZipped):
 
-`tlx-core.min.js` - 1.1K Enables "inverted JSX", i.e. puts the focus on HTML while supporting the power of in-line template literals, e.g. `<div>${item.message}</div>`. Use for full SEO enablement and [multi-page apps](#multipage-apps). Continue to use React or Preact.
+`tlx-core.min.js` - 1.5K Supports objects as attribute values. Provides input/attribute escape protection. All other modules depend on this.
 
-`tlx-component.min.js` - 0.75K Enables components.
+`tlx-html.min.js` - 0.5K Enables "inverted JSX", i.e. puts the focus on HTML while supporting the power of in-line template literals, e.g. `<div>${item.message}</div>`. Continue to use React or Preact.
+
+`tlx-component.min.js` - 0.7K Enables components.
 
 `tlx-reactive.min.js` - 0.9K Adds uni-directional and bi-directional state [reactivity](#reactivity) to a manner similar to Vue and many other libraries.
 
-`tlx-template.min.js` -  0.7k Adds the ability to define components using HTML template tags similar to Riot. Includes support for scoped styles.
+`tlx-template.min.js` -  0.7k Adds the ability to define components using HTML template tags similar to Riot. Includes support for scoped styles. Depends on tlx-components.
 
-`tlx-directives.min.js` - 0.3K If you like Vue or Angular, you can also use the built-in [directives](#directives) `t-if`, `t-foreach`, `t-for`, and `t-on`. Or, [add your own directives](#directives). However, many directives are un-necessary due to the power of in-line template literals embedded in your HTML.
+`tlx-directives.min.js` - 0.6K If you like Vue or Angular, you can also use the built-in [directives](#directives) `t-if`, `t-foreach`, `t-for`, and `t-on`. Or, [add your own directives](#directives). Depends on tlx-html.
 
-`tlx-polyfill.min.js` - 1.0K A polyfill for [Custom Elements](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Custom_Elements). The standard lifecyle events are respected and invoked.
+`tlx-polyfill.min.js` - 1.0K A polyfill for [Custom Elements](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Custom_Elements). The standard lifecyle events are respected and invoked. Depends on tlx-components.
 
 Watch for `tlx-router.js` coming soon.
 
-`tlx.min.js` - 4K minifed and Gzipped, Includes everything ... 15.5K minified, 24K raw TLX v1.0.0 is just 90% of the size of v0.1.10, faster and more powerful.
+`tlx.min.js` - 4.8K minifed and Gzipped, includes everything ... 16.7K minified, 27.5K raw.
 
 
 ***Don't forget***, give us a star if you like what you see!
@@ -87,6 +89,8 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, and `Angula
 Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reached its architectural limits and is no longer maintained.
 
 # Release History (reverse chronological order)
+
+2018-01-08 v0.2.5a - ALPHA Split HTML rendering into its own file.
 
 2018-01-08 v0.2.4a - ALPHA Re-introduced Custom Element polyfill. The polyfill requires the use of the tlx-components module, except on platforms that support Custom Elements natively. Also added automatic escaping/sanitizing of attribute values.
 

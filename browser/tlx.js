@@ -109,7 +109,7 @@
 	SOFTWARE.
 	*/
 	
-	const global = this;
+	const global = window;
 	
 	const tlx = {
 			components:{},

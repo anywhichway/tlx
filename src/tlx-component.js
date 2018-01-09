@@ -25,13 +25,14 @@
 		for(let tagName of tagNames) {
 			const component = this.components[tagName];
 			for(let element of [].slice.call(document.getElementsByTagName(tagName)||[])) {
-				const attributes = [].slice.call(element.attributes).reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum; },{});
-				component(attributes,element);
-				element.render();
+				//if(element instanceof HTMLUnknownElement) {
+					const attributes = [].slice.call(element.attributes).reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum; },{});
+					component(attributes,element);
+				//}
 			}
 		}
 	}
-	tlx.register = function(tagName,component) {
+	tlx.define = function(tagName,component) {
 		this.components[tagName] = component;
 		if(this.promises && this.promises[tagName]) {
 			this.promises[tagName](component);

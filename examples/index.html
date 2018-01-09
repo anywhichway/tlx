@@ -20,7 +20,7 @@ const ToDo = function({title="",listid="",done=false},el = document.createElemen
 	`,attributes);
 	return el;
 }
-tlx.register("todo",ToDo);
+tlx.define("todo",ToDo);
 
 const ToDoList = function({title="",todos=[]},el = document.createElement(tlx.getTagName(ToDoList))) {
 	const genId = () => "tid" + (Math.random()+"").substring(2); // not a great id generator, but fine for demo
@@ -52,7 +52,7 @@ const ToDoList = function({title="",todos=[]},el = document.createElement(tlx.ge
 	`,attributes);
 	return el;
 }
-tlx.register("todolist",ToDoList);
+tlx.define("todolist",ToDoList);
 
 
 tlx.enable();
@@ -112,7 +112,7 @@ setTimeout(() => {
 
 <ul t-foreach="${{name:'Joe',age:27}}"><li>${key}: ${value}</li></ul>
 
-<div t-if="${3}">${value}</div>
+<div t-on="${{click: function(event) { alert('ok'); }}}" t-if="${3}">${value}</div>
 
 <div t-if="${false}">${value}</div>
 

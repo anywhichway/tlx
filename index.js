@@ -4,4 +4,5 @@
 	require("./src/tlx-component.js");
 	require("./src/tlx-reactive.js");
 	require("./src/tlx-template.js");
+	require("./src/tlx-polyfill.js");
 })();

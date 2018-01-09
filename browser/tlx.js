@@ -5,8 +5,9 @@
 	require("./src/tlx-component.js");
 	require("./src/tlx-reactive.js");
 	require("./src/tlx-template.js");
+	require("./src/tlx-polyfill.js");
 })();
-},{"./src/tlx-component.js":2,"./src/tlx-core.js":3,"./src/tlx-directives.js":4,"./src/tlx-reactive.js":5,"./src/tlx-template.js":6}],2:[function(require,module,exports){
+},{"./src/tlx-component.js":2,"./src/tlx-core.js":3,"./src/tlx-directives.js":4,"./src/tlx-polyfill.js":5,"./src/tlx-reactive.js":6,"./src/tlx-template.js":7}],2:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -34,13 +35,14 @@
 		for(let tagName of tagNames) {
 			const component = this.components[tagName];
 			for(let element of [].slice.call(document.getElementsByTagName(tagName)||[])) {
-				const attributes = [].slice.call(element.attributes).reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum; },{});
-				component(attributes,element);
-				element.render();
+				//if(element instanceof HTMLUnknownElement) {
+					const attributes = [].slice.call(element.attributes).reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum; },{});
+					component(attributes,element);
+				//}
 			}
 		}
 	}
-	tlx.register = function(tagName,component) {
+	tlx.define = function(tagName,component) {
 		this.components[tagName] = component;
 		if(this.promises && this.promises[tagName]) {
 			this.promises[tagName](component);
@@ -107,47 +109,58 @@
 	SOFTWARE.
 	*/
 	
+	const global = this;
+	
 	const tlx = {
 			components:{},
 			enable(options={}) {
 				this.options = Object.assign({},this.options,options);
-				if(this.options.components || this.options.templates) {
-					window.addEventListener("load",() => {
-						if(this.options.templates) {
-							for(let element of [].slice.call(document.getElementsByTagName("template")||[])) {
-								this.compile(element);
-							}
+				
+				if(options.sanitize!==false) {
+					const _prompt = global.prompt.bind(global);
+					if(_prompt) {
+						global.prompt = function(title) {
+							const result = tlx.escape(_prompt(title));
+							if(typeof(result)=="undefined") {
+								global.alert("Invalid input: " + result);
+							} else {
+								return result;
+							} 
 						}
-						if(this.options.components) this.mount();
-						document.head.render();
-						document.body.render();
-					});
+					}
 				}
+
 				HTMLElement.prototype.getAttributes = function() {
 					return [].slice.call(this.attributes).reduce((accum,attribute) => { accum[attribute.name] = this.getAttribute(attribute.name); return accum;},{});
 				}
-				HTMLElement.prototype.render = function() {
-					for(let attribute of [].slice.call(this.attributes)) attribute.render();
+				const _render = HTMLElement.prototype.render = function() {
 					for(let attribute of [].slice.call(this.attributes)) {
-						const directive = (tlx.directives ? tlx.directives[attribute.name] : null);
-						if(directive) {
-							const template = this.innerHTML || this.textContent,
-								name = attribute.name,
-								render = (this.render===HTMLElement.prototype.render ? null : this.render);
-				  		this.render = function()  {
-				  			!render || render.call(this);
-				  			const html = directive(this.getAttribute(name),template,this);
-				  			if(typeof(html)==="undefined") {
-				  				this.innerHTML = "";
-				  			} else {
-				  				this.innerHTML = html;
-					  			for(let child of [].slice.call(this.childNodes)) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
-				  			}
-				  			return this.innerHTML;
-				  		}
-				  	}
+						attribute.render();
+						if(attribute.name==="t-on") {
+							for(let key in this["t-on"]) {
+								this["on"+key] = this["t-on"][key];
+							}
+						} else {
+							const directive = (tlx.directives ? tlx.directives[attribute.name] : null);
+							if(directive) {
+								const template = this.innerHTML || this.textContent,
+									name = attribute.name,
+									render = (this.render===HTMLElement.prototype.render ? null : this.render);
+					  		this.render = function()  {
+					  			!render || render.call(this);
+					  			const html = directive(this.getAttribute(name),template,this);
+					  			if(typeof(html)==="undefined") {
+					  				this.innerHTML = "";
+					  			} else {
+					  				this.innerHTML = html;
+						  			for(let child of [].slice.call(this.childNodes)) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
+					  			}
+					  			return this.innerHTML;
+					  		}
+					  	}
+						}
 					}
-					if(this.render===HTMLElement.prototype.render) {
+					if(this.render===_render) {
 						for(let child of [].slice.call(this.childNodes)) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
 						return this.innerHTML;
 					} else {
@@ -162,9 +175,9 @@
 				HTMLElement.prototype.getAttribute = function(name) {
 					let value = this[name],
 						type = typeof(value);
-					if(type==="undefined") value = this.parse(_HTMLElement_getAttribute.call(this,name)); type = typeof(value);
+					if(type==="undefined") { value = _HTMLElement_getAttribute.call(this,name); type = typeof(value); }
 					if(value && type==="object" && value instanceof HTMLElement) return value.getAttributes();
-					return value;
+					try { return JSON.parse(value)	} catch(error) { return value };
 				}
 				const _HTMLElement_setAttribute = HTMLElement.prototype.setAttribute;
 				HTMLElement.prototype.setAttribute = function(name,value,lazy) {
@@ -178,12 +191,19 @@
 					}
 					let type = typeof(value),
 						oldvalue = this.getAttribute(name);
+					
+					// sanitize
+					type!=="string" || tlx.options.sanitize===false || (value = tlx.escape(value));
+					
 					const neq = !equal(oldvalue,value);
 					if(neq || lazy) {
 						if(value==null) { delete this[name]; this.removeAttribute(name); }
 						if(type==="object" || type==="function") this[name] = value;
 						else _HTMLElement_setAttribute.call(this,name,value);
 						name!=="state" || !this.bind || this.bind(value);
+					}
+					if(!lazy && this.constructor.observedAttributes && this.constructor.observedAttributes.includes[name] && this.attributeChangedCallback) {
+						this.attributeChangedCallback(name,oldvalue,value,null);
 					}
 					if(tlx.options.reactive && !lazy && this.render && neq) this.render();
 				}
@@ -194,7 +214,10 @@
 			  Attr.prototype.render = function() {
 			  	if(this.value.indexOf("${")>=0 && !Object.getOwnPropertyDescriptor(this,"render")) {
 			  		const template = this.value;
-			  		this.render = function() { const value = this.parse(template); this.ownerElement.setAttribute(this.name,value,true); return value; }
+			  		this.render = function() { 
+			  			const as = this.getAncestorWithState(),
+			  				value = Function("el","state","with(el) { with(state) { return (function() { return arguments[arguments.length-1]; })`" + template + "` }}")(this.ownerElement,as.state||{});
+			  			this.ownerElement.setAttribute(this.name,value,true); return value; }
 			  		this.render();
 			  	}
 			  }
@@ -210,7 +233,7 @@
 					return this.textContent;
 				}
 				Node.prototype.getAncestorWithState = function() {
-					const parentNode = this.parentNode;
+					const parentNode = this.parentNode || this.ownerElement;
 					if(parentNode && parentNode instanceof HTMLElement) {
 						const state = parentNode.getAttribute("state");
 						if(state) return {parentNode,state};
@@ -218,7 +241,40 @@
 					}
 					return {}
 				}
-			}
+				
+				if(this.options.polyfill==="force") {
+					this.options.components = true;
+				}
+				window.addEventListener("load",() => {
+					if(this.options.templates) {
+						for(let element of [].slice.call(document.getElementsByTagName("template")||[])) {
+							this.compile(element);
+						}
+					}
+					if(this.options.components) this.mount();
+					document.head.render();
+					document.body.render();
+				});
+				if(this.options.polyfill && this.polyfill) {
+					this.polyfill(this.options.polyfill==="force" || false);
+				}
+			},
+			escape(str) {
+		    const div = document.createElement('div');
+		    div.appendChild(document.createTextNode(str));
+		    str = div.innerHTML;
+		    try {
+		    	JSON.parse(`${str}`)==str;
+		    	return str; // string is boolean, number, undefined, or null
+		    } catch(error) {
+		    	try {
+		    		Function("return " + str)();
+		    		return undefined; // string is executable!
+		    	} catch(error) {
+		    		return str;
+		    	}
+		    }
+		  }
 		}
 		
 	if(typeof(module)!=="undefined") {
@@ -241,22 +297,125 @@
 	  			if(spec.of) {
 	  				return spec.of.reduce((accum,value,index,array) => accum += element.resolve(template,{[spec.let||spec.var]:value,value,index,array}),"");
 	  			} else {
-	  				return Object.keys(spec.in).reduce((accum,key) => accum += element.resolve(template,{[spec.let||spec.var]:spec.in[key],value:spec.in[key],key,object:spec.in}),"");
+	  				return Object.keys(spec.in).reduce((accum,key) => accum += element.resolve(template,{[spec.let||spec.var]:key,value:spec.in[key],key,object:spec.in}),"");
 	  			}
 			},
 			"t-foreach": (value,template,element) => {
 				if(Array.isArray(value)) return tlx.directives["t-for"]({of:value,let:'value'},template,element);
 				return tlx.directives["t-for"]({in:value,let:'key'},template,element);
-			},
-			"t-on": (value,template,element) => {
-				for(let key in value) {
-					element["on"+key] = value[key];
-				}
-				return template;
 			}
 	};
 }(tlx));
 },{}],5:[function(require,module,exports){
+(function(tlx) {
+	"use strict"
+	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+	*/
+	const global = this;
+	let polyfill = (typeof(global.customElements)==="undefined" ? "force" : true);
+	tlx.polyfill = function(force) {
+		if(typeof(global.customElements)==="undefined" || force) {
+			const _document_createElement = document.createElement.bind(document);
+			document.createElement = function(tagName,options) {
+				const ctor = tlx.customElementRegistry.get(tagName);
+				const el = _document_createElement(tagName,options);
+				if(ctor) {
+					ctor(el);
+					!el.adoptedCallback || setTimeout(() => el.adoptedCallback(null,document));
+				}
+				return el;
+			}
+			const document_adoptNode = document.adoptNode.bind(document);
+			document.adoptNode = function(node) {
+				const olddocument = node.ownerDocument;
+				node = _document_adoptNode(node);
+				!node.adoptedCallback || document===olddocument || setTimeout(() => node.adoptedCallback(olddocument,document));
+				return node
+			}
+			const node_appendChild = Node.prototype.appendChild;
+			Node.prototype.appendChild = function(node) {
+				!node.connectedCallback || node.ownerDocument || setTimeout(() => node.connectedCallback());
+				return node_appendChild.call(this,node);
+			}
+			const node_insertBefore = Node.prototype.insertBefore;
+			Node.prototype.insertBefore = function(newChild,referenceChild) {
+				!newChild.connectedCallback || newChild.ownerDocument || setTimeout(() => newChild.connectedCallback());
+				return node_insertBefore.call(this,newChild,referenceChild);
+			}
+			const node_removeChild = Node.prototype.removeChild;
+			Node.prototype.removeChild = function(node) {
+				!node.disconnectedCallback || setTimeout(() => node.disconnectedCallback());
+				return node_removeChild.call(this,node);
+			}
+			const node_replaceChild = Node.prototype.replaceChild;
+			Node.prototype.replaceChild = function(newChild,oldChild) {
+				!newChild.connectedCallback || newChild.ownerDocument || setTimeout(() => newChild.connectedCallback());
+				!oldChild.disconnectedCallback || setTimeout(() => oldChild.disconnectedCallback());
+				return node_replaceChild.call(this,newChild,oldChild);
+			}
+			
+			const _HTMLElement = HTMLElement;
+			global.HTMLElement = class HTMLElement { 
+				constructor(tagName) {
+					const el =  _document_createElement(tagName);
+					Object.defineProperty(this,"__el__",{enumerable:false,configurable:true,writable:true,value:el});
+					const prototype = Object.getPrototypeOf(this),
+						descriptors = Object.getOwnPropertyDescriptors(prototype);
+					for(let key in descriptors) {
+						key==="constructor" || (el[key] = prototype[key]);
+					}
+				}
+			}
+			tlx.customElementRegistry = {
+					define(name,cls,options) {
+							const ctor = function(attributes={},el=_document_createElement(name)) {
+								Object.defineProperty(el,"constructor",{enumerable:false,configurable:true,writeable:true,value:cls});
+								const instance = new cls(name),
+									proto = Object.create(cls.prototype);
+								Object.keys(instance).forEach(key => (el[key] = instance[key]));
+								for(let key in attributes) {
+									el.setAttribute(key,attributes[key],true);
+									if(cls.observedAttributes && cls.observedAttributes.includes(key) && el.attributeChangedCallback) {
+										el.attributeChangedCallback(key,null,attributes[key],null);
+									}
+								}
+								return el;
+							}
+							tlx.define(name,ctor);
+					},
+					get(name) {
+						return tlx.get(name);
+					},
+					whenDefined(name) {
+						return tlx.whenDefined(name);
+					}
+			}
+			Object.defineProperty(global,"customElements",{enumerable:true,configurable:true,writable:false,value:tlx.customElementRegistry});
+		}
+	}
+	
+	tlx.options || (tlx.options={});
+	tlx.options.polyfill = polyfill;
+	typeof(global.customElements)!=="undefined" || (tlx.options.components = true);
+}).call(this,tlx);
+},{}],6:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -358,7 +517,7 @@
 	tlx.options || (tlx.options={});
 	tlx.options.reactive = true;
 }(tlx));
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -412,7 +571,7 @@
 					Object.assign(el,tlx.Mixin);
 					el.initialize(Object.assign({},defaults,attributes));
 					}`)(scope);
-		this.register(tagname,component);
+		this.define(tagname,component);
 	}
 	tlx.options || (tlx.options={});
 	tlx.options.templates = true;

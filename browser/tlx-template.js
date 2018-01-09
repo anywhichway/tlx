@@ -51,7 +51,7 @@
 					Object.assign(el,tlx.Mixin);
 					el.initialize(Object.assign({},defaults,attributes));
 					}`)(scope);
-		this.register(tagname,component);
+		this.define(tagname,component);
 	}
 	tlx.options || (tlx.options={});
 	tlx.options.templates = true;

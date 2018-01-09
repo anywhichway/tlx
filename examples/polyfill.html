@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-component.js"></script>
+<script src="../src/tlx-polyfill.js"></script>
+<script>tlx.enable({polyfill:"force"})</script>
+
+<script>
+class XTodo extends HTMLElement {
+	constructor() { 
+		super("x-todo");
+		// If the polyfill if being used, then super creates a native element and assigns it to el.
+		// The property '__el__' should be used as a replacement for 'this', if it exists, and returned.
+		const el = this.__el__ || this;
+		
+		// Define tasks local to the instance
+		el.tasks = ["Task One"];
+		
+		return el;
+	}
+	// Custom methods for the Todo component.
+	addTask(event) {
+		const task = prompt("Task Name:");
+		if(task) {
+			this.tasks.push(task);
+			event.currentTarget.innerHTML = this.buildList();
+		} 
+		event.stopPropagation();
+	}
+	buildList() {
+		return this.tasks.reduce((accum,item) => accum += `<li>${item}</li>`,"");
+	}
+	changeTitle(event) {
+		const title = prompt("New Title:");
+		if(title) {
+			this.setAttribute("title",title);
+			event.target.innerHTML = title;
+		}
+		event.stopPropagation();
+	}
+	render(attributes) { // Always define a render function that takes an attribute map, i.e. {<name>:<value>,...}, as an argument.
+		this.innerHTML = "";
+		const h3 = document.createElement("h3"),
+			ul = document.createElement("ul"),
+			title = (attributes ? attributes.title : this.title || "Untitled Tasks");
+		h3.innerHTML = title;
+		ul.innerHTML = this.buildList();
+		h3.onclick = (event) => this.changeTitle(event);
+		ul.onclick = (event) => this.addTask(event);
+		this.appendChild(h3);
+		this.appendChild(ul);
+	}
+	connectedCallback() {
+		console.log("Connected");
+	}
+	attributeChangedCallback(name,oldValue,newValue) {
+		console.log(arguments);
+	}
+	static get observedAttributes() { return ["title"]; }
+}
+customElements.define("x-todo",XTodo);
+
+</script>
+
+</head>
+<body>
+
+<x-todo id="mytodos" title="My Tasks"></x-todo>
+
+</body>
+</html>

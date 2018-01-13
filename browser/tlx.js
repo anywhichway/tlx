@@ -182,7 +182,7 @@
 				}
 
 				HTMLElement.prototype.getAttributes = function() {
-					return [].slice.call(this.attributes).reduce((accum,attribute) => { attribute.name==="state" || (accum[attribute.name] = this.getAttribute(attribute.name)); return accum;},{});
+					return [].slice.call(this.attributes).reduce((accum,attribute) => { (accum[attribute.name] = this.getAttribute(attribute.name)); return accum;},{});
 				}
 				const _render = HTMLElement.prototype.render = function() {
 					for(let attribute of [].slice.call(this.attributes)) {
@@ -230,10 +230,10 @@
 						if(value==null) { delete this[name]; this.removeAttribute(name); }
 						if(type==="object" || type==="function") {
 							this[name] = value;
+							name!=="state" || !this.bind || this.bind(value);
 							type==="function" || (value = "${" + JSON.stringify(value) + "}");
 						}
-						_HTMLElement_setAttribute.call(this,name,value);
-						name!=="state" || !this.bind || this.bind(value);
+						name==="state" || _HTMLElement_setAttribute.call(this,name,value);
 					}
 					if(!lazy && this.constructor.observedAttributes && this.constructor.observedAttributes.includes[name] && this.attributeChangedCallback) {
 						this.attributeChangedCallback(name,oldvalue,value,null);
@@ -399,9 +399,9 @@
 					second = (first>=0 ? template.indexOf("${",first+1) : -1);
 				if(first>=0) {
 					if(second>=0 || first>0) {
-						return Function("el","__state__","__attr__","with(el) { with(__state__) { with(__attr__) { return `" + template + "`}}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes)); 
+						return Function("el","__state__","__attr__","with(el) { with(__state__) { with(el.state||{}) { with(__attr__) { return `" + template + "`}}}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes)); 
 					}
-					const value =  Function("el","__state__","__attr__","with(el) { with(__state__) { with(__attr__) { return (function() { return arguments[arguments.length-1]; })`" + template + "` }}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes));
+					const value =  Function("el","__state__","__attr__","with(el) { with(__state__) { with(el.state||{}) { with(__attr__) { return (function() { return arguments[arguments.length-1]; })`" + template + "` }}}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes));
 					return (tlx.options.sanitize===false ? value : tlx.escape(value));
 				}
 				return template;

@@ -94,7 +94,7 @@
 				}
 
 				HTMLElement.prototype.getAttributes = function() {
-					return [].slice.call(this.attributes).reduce((accum,attribute) => { attribute.name==="state" || (accum[attribute.name] = this.getAttribute(attribute.name)); return accum;},{});
+					return [].slice.call(this.attributes).reduce((accum,attribute) => { (accum[attribute.name] = this.getAttribute(attribute.name)); return accum;},{});
 				}
 				const _render = HTMLElement.prototype.render = function() {
 					for(let attribute of [].slice.call(this.attributes)) {
@@ -142,10 +142,10 @@
 						if(value==null) { delete this[name]; this.removeAttribute(name); }
 						if(type==="object" || type==="function") {
 							this[name] = value;
+							name!=="state" || !this.bind || this.bind(value);
 							type==="function" || (value = "${" + JSON.stringify(value) + "}");
 						}
-						_HTMLElement_setAttribute.call(this,name,value);
-						name!=="state" || !this.bind || this.bind(value);
+						name==="state" || _HTMLElement_setAttribute.call(this,name,value);
 					}
 					if(!lazy && this.constructor.observedAttributes && this.constructor.observedAttributes.includes[name] && this.attributeChangedCallback) {
 						this.attributeChangedCallback(name,oldvalue,value,null);

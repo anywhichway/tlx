@@ -41,9 +41,60 @@
 						}
 					}
 				}
+				
+				tlx.bind = function(object,node,path="") {
+					if(node.state===object && object.__boundNodes__) return object;
+					for(let key in object) {
+						const value = object[key];
+						if(value && typeof(value)==="object") object[key] = this.bind(value,node,`${path}${key}.`);
+					}
+					let proxy = (node.attributes.state ? node.attributes.state.data : null);
+					if(!proxy) {
+						const nodes = new Map();
+						proxy = new Proxy(object,{
+							get(target,property) {
+								if(property==="__boundNodes__") return nodes;
+								let value = target[property];
+								if(typeof(property)!=="string") return value;
+								if(typeof(value)==="undefined") {
+									let {ancestorNode,state} = node.getAncestorWithState();
+									while(ancestorNode) {
+										value = state[property];
+										if(typeof(value)!=="undefined") break;
+										let next = ancestorNode.getAncestorWithState();
+										ancestorNode = next.ancestorNode;
+										state = next.state;
+									}
+								}
+								let activations = nodes.get(node);
+								if(!activations) nodes.set(node,activations={});
+								activations[path+property] = true;
+								return (typeof(value)==="undefined" ? "" : value);
+							},
+							set(target,property,value) {
+								if(property==="toJSON") return target[property].bind(target);
+								if(target[property]!==value) {
+									target[property]=value;
+									if(tlx.options.reactive) {
+										nodes.forEach((activations,node) => {
+											!activations[path+property] || node.render();
+										})
+									}
+								}
+								return true;
+							}
+						});
+						node.setAttribute("state",proxy,true);
+					}
+					return proxy;
+				}
+				HTMLElement.prototype.bind = function(object) {
+					tlx.bind(object,this);
+					return this;
+				}
 
 				HTMLElement.prototype.getAttributes = function() {
-					return [].slice.call(this.attributes).reduce((accum,attribute) => { accum[attribute.name] = this.getAttribute(attribute.name); return accum;},{});
+					return [].slice.call(this.attributes).reduce((accum,attribute) => { attribute.name==="state" || (accum[attribute.name] = this.getAttribute(attribute.name)); return accum;},{});
 				}
 				const _render = HTMLElement.prototype.render = function() {
 					for(let attribute of [].slice.call(this.attributes)) {
@@ -89,8 +140,11 @@
 						neq = !equal(oldvalue,value);
 					if(neq || lazy) {
 						if(value==null) { delete this[name]; this.removeAttribute(name); }
-						if(type==="object" || type==="function") this[name] = value;
-						else _HTMLElement_setAttribute.call(this,name,value);
+						if(type==="object" || type==="function") {
+							this[name] = value;
+							type==="function" || (value = "${" + JSON.stringify(value) + "}");
+						}
+						_HTMLElement_setAttribute.call(this,name,value);
 						name!=="state" || !this.bind || this.bind(value);
 					}
 					if(!lazy && this.constructor.observedAttributes && this.constructor.observedAttributes.includes[name] && this.attributeChangedCallback) {

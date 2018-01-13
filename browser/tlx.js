@@ -31,6 +31,15 @@
 	SOFTWARE.
 	*/
 	tlx.components = {};
+	tlx.define = function(tagName,component) {
+		this.components[tagName] = component;
+		if(this.promises && this.promises[tagName]) {
+			this.promises[tagName](component);
+		}
+	}
+	tlx.get = function(tagName) {
+		return this.components[tagName];
+	}
 	tlx.mount = function(...tagNames) {
 		tagNames.length>0 || (tagNames = Object.keys(this.components));
 		for(let tagName of tagNames) {
@@ -40,15 +49,6 @@
 					component(attributes,element);
 			}
 		}
-	}
-	tlx.define = function(tagName,component) {
-		this.components[tagName] = component;
-		if(this.promises && this.promises[tagName]) {
-			this.promises[tagName](component);
-		}
-	}
-	tlx.get = function(tagName) {
-		return this.components[tagName];
 	}
 	tlx.whenDefined = function(tagName) {
 		this.promises || (this.promises = {});
@@ -129,9 +129,60 @@
 						}
 					}
 				}
+				
+				tlx.bind = function(object,node,path="") {
+					if(node.state===object && object.__boundNodes__) return object;
+					for(let key in object) {
+						const value = object[key];
+						if(value && typeof(value)==="object") object[key] = this.bind(value,node,`${path}${key}.`);
+					}
+					let proxy = (node.attributes.state ? node.attributes.state.data : null);
+					if(!proxy) {
+						const nodes = new Map();
+						proxy = new Proxy(object,{
+							get(target,property) {
+								if(property==="__boundNodes__") return nodes;
+								let value = target[property];
+								if(typeof(property)!=="string") return value;
+								if(typeof(value)==="undefined") {
+									let {ancestorNode,state} = node.getAncestorWithState();
+									while(ancestorNode) {
+										value = state[property];
+										if(typeof(value)!=="undefined") break;
+										let next = ancestorNode.getAncestorWithState();
+										ancestorNode = next.ancestorNode;
+										state = next.state;
+									}
+								}
+								let activations = nodes.get(node);
+								if(!activations) nodes.set(node,activations={});
+								activations[path+property] = true;
+								return (typeof(value)==="undefined" ? "" : value);
+							},
+							set(target,property,value) {
+								if(property==="toJSON") return target[property].bind(target);
+								if(target[property]!==value) {
+									target[property]=value;
+									if(tlx.options.reactive) {
+										nodes.forEach((activations,node) => {
+											!activations[path+property] || node.render();
+										})
+									}
+								}
+								return true;
+							}
+						});
+						node.setAttribute("state",proxy,true);
+					}
+					return proxy;
+				}
+				HTMLElement.prototype.bind = function(object) {
+					tlx.bind(object,this);
+					return this;
+				}
 
 				HTMLElement.prototype.getAttributes = function() {
-					return [].slice.call(this.attributes).reduce((accum,attribute) => { accum[attribute.name] = this.getAttribute(attribute.name); return accum;},{});
+					return [].slice.call(this.attributes).reduce((accum,attribute) => { attribute.name==="state" || (accum[attribute.name] = this.getAttribute(attribute.name)); return accum;},{});
 				}
 				const _render = HTMLElement.prototype.render = function() {
 					for(let attribute of [].slice.call(this.attributes)) {
@@ -177,8 +228,11 @@
 						neq = !equal(oldvalue,value);
 					if(neq || lazy) {
 						if(value==null) { delete this[name]; this.removeAttribute(name); }
-						if(type==="object" || type==="function") this[name] = value;
-						else _HTMLElement_setAttribute.call(this,name,value);
+						if(type==="object" || type==="function") {
+							this[name] = value;
+							type==="function" || (value = "${" + JSON.stringify(value) + "}");
+						}
+						_HTMLElement_setAttribute.call(this,name,value);
 						name!=="state" || !this.bind || this.bind(value);
 					}
 					if(!lazy && this.constructor.observedAttributes && this.constructor.observedAttributes.includes[name] && this.attributeChangedCallback) {
@@ -345,9 +399,9 @@
 					second = (first>=0 ? template.indexOf("${",first+1) : -1);
 				if(first>=0) {
 					if(second>=0 || first>0) {
-						return Function("el","state","attr","with(el) { with(state) { with(attr) { return `" + template + "`}}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes)); 
+						return Function("el","__state__","__attr__","with(el) { with(__state__) { with(__attr__) { return `" + template + "`}}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes)); 
 					}
-					const value =  Function("el","state","attr","with(el) { with(state) { with(attr) { return (function() { return arguments[arguments.length-1]; })`" + template + "` }}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes));
+					const value =  Function("el","__state__","__attr__","with(el) { with(__state__) { with(__attr__) { return (function() { return arguments[arguments.length-1]; })`" + template + "` }}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes));
 					return (tlx.options.sanitize===false ? value : tlx.escape(value));
 				}
 				return template;
@@ -494,56 +548,6 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 	SOFTWARE.
 	*/
-	tlx.bind = function(object,node,path="") {
-		if(node.state===object && object.__boundNodes__) return object;
-		for(let key in object) {
-			const value = object[key];
-			if(value && typeof(value)==="object") object[key] = this.bind(value,node,`${path}${key}.`);
-		}
-		let proxy = (node.attributes.state ? node.attributes.state.data : null);
-		if(!proxy) {
-			const nodes = new Map();
-			proxy = new Proxy(object,{
-				get(target,property) {
-					if(property==="__boundNodes__") return nodes;
-					let value = target[property];
-					if(typeof(property)!=="string") return value;
-					if(typeof(value)==="undefined") {
-						let {ancestorNode,state} = node.getAncestorWithState();
-						while(ancestorNode) {
-							value = state[property];
-							if(typeof(value)!=="undefined") break;
-							let next = ancestorNode.getAncestorWithState();
-							ancestorNode = next.ancestorNode;
-							state = next.state;
-						}
-					}
-					let activations = nodes.get(node);
-					if(!activations) nodes.set(node,activations={});
-					activations[path+property] = true;
-					return (typeof(value)==="undefined" ? "" : value);
-				},
-				set(target,property,value) {
-					if(property==="toJSON") return target[property].bind(target);
-					if(target[property]!==value) {
-						target[property]=value;
-						if(tlx.options.reactive) {
-							nodes.forEach((activations,node) => {
-								!activations[path+property] || node.render();
-							})
-						}
-					}
-					return true;
-				}
-			});
-			node.setAttribute("state",proxy,true);
-		}
-		return proxy;
-	}
-	HTMLElement.prototype.bind = function(object) {
-		tlx.bind(object,this);
-		return this;
-	}
 	HTMLElement.prototype.linkState = function(property) {
 		const f = function(event) {
 			const target = event.target;

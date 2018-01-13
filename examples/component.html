@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-html.js"></script>
+<script src="../src/tlx-component.js"></script>
+<script>
+
+const ToDo = function({title="",listid="",done=false},el = document.createElement(tlx.getTagName(ToDo))) {
+	Object.assign(el,tlx.Mixin);
+	// Note the use of default destructuring to provide both define time defaults and runtime overrides
+	el.initialize(Object.assign({title,listid,done},arguments[0])); 
+	
+	el.remove = () => {
+		el.parentElement.removeChild(el);
+	}
+	
+	// Note how we assign and return innerHTML. You could also build the DOM and then return innerHTML
+	// The escaped template literals are why we need the html module for this example.
+	el.render = (attributes) => el.innerHTML = el.resolve(`
+		<li id="\${id}">\${title} <input type="checkbox" \${(done ? "checked" : "")} onclick="(()=>{ \${listid||id}.remove('\${id}')})()"></li>
+	`,attributes);
+	return el;
+}
+tlx.define("todo",ToDo);
+
+const ToDoList = function({title="",todos=[]},el = document.createElement(tlx.getTagName(ToDoList))) {
+	const genId = () => "tid" + (Math.random()+"").substring(2); // not a great id generator, but fine for demo
+	Object.assign(el,tlx.Mixin);
+	el.initialize(Object.assign({title,todos},arguments[0]));
+	el.todos.forEach(todo => todo.id || (todo.id = genId())); 
+	el.add = () => {
+		const title = prompt("ToDo Name");
+		if(title) {
+			el.todos.push({title,id:genId()});
+			el.render();
+		}
+	}
+	el.remove = (id) => {
+		const i = el.todos.findIndex((item) => item.id===id);
+		if(i>=0) {
+			el.todos.splice(i,1);
+			el.render();
+		}
+	}
+	el.render = (attributes) => el.innerHTML = el.resolve(`
+			<p>\${title}</p>
+			<button onclick="\${id}.add()">Add Task</button>
+			<ul>
+			\${el.todos.reduce((accum,todo) => accum += ToDo(todo).render({listid:el.id}),"")}
+			</ul>
+	`,attributes);
+	return el;
+}
+tlx.define("todolist",ToDoList);
+
+
+tlx.enable();
+</script>
+</head>
+<body>
+
+<todolist title="My Tasks" todos="${[{title:'Task One'}]}"></todolist>
+
+<div id="yourtasks"></div>
+
+<script>
+const todos = ToDoList({title:"Your Tasks",todos:[{title:"Task One"}]});
+document.getElementById("yourtasks").appendChild(todos);
+</script>
+</body>
+</html>

@@ -20,6 +20,15 @@
 	SOFTWARE.
 	*/
 	tlx.components = {};
+	tlx.define = function(tagName,component) {
+		this.components[tagName] = component;
+		if(this.promises && this.promises[tagName]) {
+			this.promises[tagName](component);
+		}
+	}
+	tlx.get = function(tagName) {
+		return this.components[tagName];
+	}
 	tlx.mount = function(...tagNames) {
 		tagNames.length>0 || (tagNames = Object.keys(this.components));
 		for(let tagName of tagNames) {
@@ -29,15 +38,6 @@
 					component(attributes,element);
 			}
 		}
-	}
-	tlx.define = function(tagName,component) {
-		this.components[tagName] = component;
-		if(this.promises && this.promises[tagName]) {
-			this.promises[tagName](component);
-		}
-	}
-	tlx.get = function(tagName) {
-		return this.components[tagName];
 	}
 	tlx.whenDefined = function(tagName) {
 		this.promises || (this.promises = {});

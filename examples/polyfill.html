@@ -11,7 +11,7 @@
 <script>
 class XTodo extends HTMLElement {
 	constructor() { 
-		super("x-todo");
+		super(tlx.getTagName(XTodo));
 		// If the polyfill if being used, then super creates a native element and assigns it to el.
 		// The property '__el__' should be used as a replacement for 'this', if it exists, and returned.
 		const el = this.__el__ || this;

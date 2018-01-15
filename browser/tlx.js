@@ -1,6 +1,7 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 (function() {
 	const tlx = require("./src/tlx-core.js");
+	require("./src/tlx-sanitize.js");
 	require("./src/tlx-html.js");
 	require("./src/tlx-directives.js");
 	require("./src/tlx-component.js");
@@ -8,7 +9,7 @@
 	require("./src/tlx-template.js");
 	require("./src/tlx-polyfill.js");
 })();
-},{"./src/tlx-component.js":2,"./src/tlx-core.js":3,"./src/tlx-directives.js":4,"./src/tlx-html.js":5,"./src/tlx-polyfill.js":6,"./src/tlx-reactive.js":7,"./src/tlx-template.js":8}],2:[function(require,module,exports){
+},{"./src/tlx-component.js":2,"./src/tlx-core.js":3,"./src/tlx-directives.js":4,"./src/tlx-html.js":5,"./src/tlx-polyfill.js":6,"./src/tlx-reactive.js":7,"./src/tlx-sanitize.js":8,"./src/tlx-template.js":9}],2:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -115,26 +116,26 @@
 			enable(options={}) {
 				this.options = Object.assign({},this.options,options);
 				
-				if(this.options.sanitize!==false) {
-					const _prompt = global.prompt.bind(global);
-					if(_prompt) {
-						global.prompt = function(title) {
-							const input = _prompt(title),
-								result = tlx.escape(input);
-							if(typeof(result)=="undefined") {
-								global.alert("Invalid input: " + input);
-							} else {
-								return result;
-							} 
-						}
-					}
+				if(this.options.sanitize && !tlx.escape) {
+					console.warn("Sanitizing on but tlx-santize.js does not appear to be loaded.")
 				}
 				
-				tlx.bind = function(object,node,path="") {
+				tlx.bind = function(object,htmlOrElement,controller,path="") {
+					let node = htmlOrElement;
+					if(typeof(htmlOrElement)==="string") {
+						const el = document.createElement("div");
+						div.innerHTML = htmlOrElement;
+						node = el.firstChild;
+					}
+					if(controller) {
+						node.addEventListener(controller);
+					}
 					if(node.state===object && object.__boundNodes__) return object;
 					for(let key in object) {
 						const value = object[key];
-						if(value && typeof(value)==="object") object[key] = this.bind(value,node,`${path}${key}.`);
+						if(value && typeof(value)==="object") {
+							object[key] = this.bind(value,node,controller,`${path}${key}.`).object;
+						}
 					}
 					let proxy = (node.attributes.state ? node.attributes.state.data : null);
 					if(!proxy) {
@@ -143,8 +144,9 @@
 							get(target,property) {
 								if(property==="__boundNodes__") return nodes;
 								let value = target[property];
-								if(typeof(property)!=="string") return value;
-								if(typeof(value)==="undefined") {
+								const type = typeof(value);
+								if(typeof(property)!=="string" || type==="function") return value;
+								if(type==="undefined") {
 									let {ancestorNode,state} = node.getAncestorWithState();
 									while(ancestorNode) {
 										value = state[property];
@@ -174,15 +176,24 @@
 						});
 						node.setAttribute("state",proxy,true);
 					}
-					return proxy;
+					return {object:proxy,el:node,controller};
 				}
-				HTMLElement.prototype.bind = function(object) {
-					tlx.bind(object,this);
-					return this;
+				HTMLElement.prototype.bind = function(object,controller) {
+					return tlx.bind(object,this,controller);
 				}
-
-				HTMLElement.prototype.getAttributes = function() {
-					return [].slice.call(this.attributes).reduce((accum,attribute) => { (accum[attribute.name] = this.getAttribute(attribute.name)); return accum;},{});
+				HTMLElement.prototype.getAttributes = function(ignore={}) {
+					return [].slice.call(this.attributes).reduce((accum,attribute) => {
+						if(typeof(ignore[attribute.name])==="undefined") {
+							let name = attribute.name,
+								value = this.getAttribute(name),
+								type = typeof(value);
+							if(type==="function" && name.indexOf("on")===0) {
+								name = "on" + name.substring(2,3).toUpperCase() + name.substring(3);
+								value = value.bind(this);
+							}
+							value==null || (accum[name] = value); 
+						}
+						return accum;},{});
 				}
 				const _render = HTMLElement.prototype.render = function() {
 					for(let attribute of [].slice.call(this.attributes)) {
@@ -190,7 +201,7 @@
 						!tlx.renderDirective || tlx.renderDirective(this,attribute);
 					}
 					if(this.render===_render) {
-						for(let child of [].slice.call(this.childNodes)) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
+						for(let child of [].slice.call(this.childNodes)) !child.render || child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
 						return this.innerHTML;
 					} else {
 						return this.render();
@@ -198,10 +209,19 @@
 				}
 				const _HTMLElement_getAttribute = HTMLElement.prototype.getAttribute;
 				HTMLElement.prototype.getAttribute = function(name) {
-					let value = this[name],
+					const desc = Object.getOwnPropertyDescriptor(this,name);
+					let value = (desc ? desc.value : desc),
 						type = typeof(value);
-					if(type==="undefined") { value = _HTMLElement_getAttribute.call(this,name); type = typeof(value); }
+					if(type==="undefined") {
+						value = _HTMLElement_getAttribute.call(this,name);
+						type = typeof(value);
+					}
+					if(type==="string" && value.indexOf("${")>=0) {
+						value = this.setAttribute(name,value,true);
+						type = typeof(value);
+					}
 					if(value && type==="object" && value instanceof HTMLElement) return value.getAttributes();
+					if(value==null) return;
 					try { return JSON.parse(value)	} catch(error) { return value };
 				}
 				const _HTMLElement_setAttribute = HTMLElement.prototype.setAttribute;
@@ -217,35 +237,56 @@
 					let type = typeof(value);
 					if(type==="string") {
 						if(this.resolve) {
-							value = this.resolve(value);
+							value = this.resolve(value,this.attributes);
 						} else if(name.indexOf("on")!==0) {
-							value = tlx.escape(value);
+							!tlx.options.sanitize || (value = tlx.escape(value));
 						}
 						type = typeof(value);
 					}
 					
-					const oldvalue = this.getAttribute(name),
-						neq = !equal(oldvalue,value);
-					if(neq || lazy) {
+					const oldvalue = lazy || this.getAttribute(name),
+						neq = lazy || !equal(oldvalue,value);
+					if(neq) {
 						if(value==null) { delete this[name]; this.removeAttribute(name); }
 						if(type==="object" || type==="function") {
 							this[name] = value;
-							name!=="state" || !this.bind || this.bind(value);
-							type==="function" || (value = "${" + JSON.stringify(value) + "}");
+							name!=="state" || !this.bind || type==="function" || this.bind(value);
+							name==="state" || type==="function" || (value = "${" + JSON.stringify(value) + "}");
 						}
-						name==="state" || _HTMLElement_setAttribute.call(this,name,value);
+						name==="state" || type==="function" || _HTMLElement_setAttribute.call(this,name,value);
 					}
 					if(!lazy && this.constructor.observedAttributes && this.constructor.observedAttributes.includes[name] && this.attributeChangedCallback) {
 						this.attributeChangedCallback(name,oldvalue,value,null);
 					}
 					if(tlx.options.reactive && !lazy && this.render && neq) this.render();
+					return value;
 				}
-			  Node.prototype.render = function() {
+				if(this.options.h) {
+					const __element__ = this.options.h,
+						getChildren = (el) => {
+							const result = [];
+					    for(let i=0;i<el.childNodes.length;i++) {
+					      const child = el.childNodes[i].vDOM();
+					     !child || result.push(child);
+					    }
+					    return result;
+						};
+					Node.prototype.vDOM = function() {
+						if(this.tagName) {
+							return __element__(this.tagName,this.getAttributes(),getChildren(this));
+						}
+						if(this instanceof Text) {
+							return this.data;
+						}
+					}
+				}
+
+			 Attr.prototype.render = function() {
 			  	const owner = this.ownerElement;
 			  	if(this.value.indexOf("${")>=0 && !Object.getOwnPropertyDescriptor(this,"render")  && owner.resolve) {
-			  		const template = this.value;
+			  		const template = this.value.trim();
 			  		this.render = function() { 
-			  			const value = owner.resolve(template);
+			  			const value = (this.name==="state" && owner.state ? owner.state : owner.resolve(template,owner.attributes));
 			  			owner.setAttribute(this.name,value,true); return value; }
 			  		return this.render();
 			  	}
@@ -254,7 +295,7 @@
 				Text.prototype.render = function() {
 					const parent = this.parentElement;
 					if(this.textContent.indexOf("${")>=0 && !Object.getOwnPropertyDescriptor(this,"render") && parent.resolve) {
-						const template = this.textContent;
+						const template = this.textContent.trim();
 						this.render = function() {
 							this.textContent = parent.resolve(template);
 						}
@@ -264,8 +305,9 @@
 				}
 			
 				if(this.options.polyfill==="force") {
-					this.options.components = true;
-					// add warning is not loaded
+					if(this.options.components!==true || !tlx.define) {
+						console.warn("Attempting to force polyfill when tlx-component.js module not activated or loaded.");
+					}
 				}
 				window.addEventListener("load",() => {
 					const doc = document;
@@ -281,39 +323,8 @@
 				if(this.options.polyfill && this.polyfill) {
 					this.polyfill(this.options.polyfill==="force" || false);
 				}
-			},
-			escape(data) {
-				const type = typeof(data);
-				if(type==="function") return;
-				if(["number","boolean"].includes(type) || !data) {
-					return data;
-				}
-				if(Array.isArray(data)) {
-					for(let i=0;i<data.length;i++) {
-						data[i] = this.escape(data[i]);
-					}
-					return data;
-				}
-				if(data && type==="object") {
-					for(let key in data) {
-						data[key] = this.escape(data[key]);
-					}
-					return data;
-				}
-		    const div = document.createElement('div');
-		    div.appendChild(document.createTextNode(data));
-		    data = div.innerHTML;
-		    try {
-		    	JSON.parse(`${data}`)==data;
-		    	return str; // string is boolean, number, undefined, or null
-		    } catch(error) {
-		    	try {
-		    		return this.escape(Function("return " + data)());
-		    	} catch(error) {
-		    		return data;
-		    	}
-		    }
-		  }
+				return Object.assign({},this.options);
+			}
 		}
 		
 	if(typeof(module)!=="undefined") {
@@ -399,10 +410,9 @@
 					second = (first>=0 ? template.indexOf("${",first+1) : -1);
 				if(first>=0) {
 					if(second>=0 || first>0) {
-						return Function("el","__state__","__attr__","with(el) { with(__state__) { with(el.state||{}) { with(__attr__) { return `" + template + "`}}}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes)); 
+						return Function("el","__state__","__attr__","with(el) { with(__state__) { with(el.state||{}) { with(__attr__) { return `" + template + "`}}}}")(this,as.state||{},Object.assign({},this.getAttributes(attributes),attributes)); 
 					}
-					const value =  Function("el","__state__","__attr__","with(el) { with(__state__) { with(el.state||{}) { with(__attr__) { return (function() { return arguments[arguments.length-1]; })`" + template + "` }}}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes));
-					return (tlx.options.sanitize===false ? value : tlx.escape(value));
+					return  Function("el","__state__","__attr__","with(el) { with(__state__) { with(el.state||{}) { with(__attr__) { return (function() { return arguments[arguments.length-1]; })`" + template + "` }}}}")(this,as.state||{},Object.assign({},this.getAttributes(attributes),attributes));
 				}
 				return template;
 			}
@@ -559,13 +569,13 @@
 				else if(target.type==="select-multiple") {
 					value = [];
 					for(let option of [].slice.call(target.options)) {
-						!option.selected || value.push(tlx.fromJSON(option.value));
+						!option.selected || value.push((tlx.options.sanitize ? tlx.escape(option.value) : option.value));
 					}
 				} else {
-					value = tlx.fromJSON(target.value);
+					value = (tlx.options.sanitize ? tlx.escape(target.value) : target.value);
 				}
 				const parts = property.split(".");
-				let state = this.state;
+				let state = this;
 				property = parts.pop(); // get final property
 				for(let key of parts) {
 					state = state[key] || {};
@@ -573,12 +583,77 @@
 				state[property] = value; // set property
 			}
 		};
-		return f.bind(tlx.getState(this)||(this.state={}));
+		let state = this.state;
+		if(!state) {
+			const as = this.getAncestorWithState();
+			state = as.state;
+		}
+		if(!state) {
+			console.warn("Attempting to use linkState when no state exists in DOM tree.")
+		}
+		return f.bind(state);
 	}
 	tlx.options || (tlx.options={});
 	tlx.options.reactive = true;
 }(tlx));
 },{}],8:[function(require,module,exports){
+(function(tlx) {
+	var global = (typeof(window)!=="undefined" ? window : this);
+	tlx.escape = function(data) {
+		const type = typeof(data);
+		if(type==="function") return;
+		if(["number","boolean"].includes(type) || !data) {
+			return data;
+		}
+		if(Array.isArray(data)) {
+			for(let i=0;i<data.length;i++) {
+				data[i] = this.escape(data[i]);
+			}
+			return data;
+		}
+		if(data && type==="object") {
+			for(let key in data) {
+				data[key] = this.escape(data[key]);
+			}
+			return data;
+		}
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(data));
+    data = div.innerHTML;
+    try {
+    	JSON.parse(`${data}`)==data;
+    	// string is boolean, number, undefined, or null, now convert it
+    	try {
+    		return JSON.parse(data); // a string with no spaces, a boolean, or a number
+    	} catch(error) {
+    		return data; // a string with spaces
+    	}
+    } catch(error) {
+    	try {
+    		// converts to functions or objects and escapes them
+    		return this.escape(Function("return " + data.replace(/&gt;/g,">"))());
+    	} catch(error) {
+    		return data;
+    	}
+    }
+  }
+	const _prompt = global.prompt.bind(global);
+	if(_prompt) {
+		global.prompt = function(title) {
+			const input = _prompt(title),
+				result = (tlx.options.sanitize ? tlx.escape(input) : input);
+			if(typeof(result)=="undefined") {
+				global.alert("Invalid input: " + input);
+			} else {
+				return result;
+			} 
+		}
+	}
+	
+	tlx.options || (tlx.options={});
+	tlx.options.sanitize = true;
+})(tlx);
+},{}],9:[function(require,module,exports){
 (function(tlx) {
 	"use strict";
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -600,7 +675,7 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 	SOFTWARE.
 	*/
-	if(!tlx.options.components) console.warn("tlx-component mut be loaded to use tlx-template");
+	if(!tlx.options.components) console.warn("tlx-component.js mut be loaded to use tlx-template");
 	tlx.compile = function(template) {
 		const tagname = template.getAttribute("t-tagname");
 		if(!tagname) return;
@@ -614,7 +689,7 @@
 				text = (matches ? matches.reduce((accum,item) => accum += `${tagname} ${item.trim()} `,"") : "");
 			spec = (matches ? matches.reduce((accum,item) => accum = accum.replace(item,""),spec) : spec);
 			matches = spec.match(/.*;/g),
-			text = (matches ? matches.reduce((accum,item) => accum += `${tagname} ${item.trim()} `,text) : text);
+			text = (matches ? matches.reduce((accum,item) => accum += `${tagname} * {${item.trim()}} `,text) : text);
 			style.innerText = text.trim();
 			document.head.appendChild(style);
 		}
@@ -631,6 +706,7 @@
 		const component = Function("defaults",`return function(attributes={},el=document.createElement("${tagname}")) {
 					Object.assign(el,tlx.Mixin);
 					el.initialize(Object.assign({},defaults,attributes));
+					return el;
 					}`)(scope);
 		this.define(tagname,component);
 	}

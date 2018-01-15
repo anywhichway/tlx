@@ -22,31 +22,50 @@
 	
 	const global = this;
 	
+	class VNode {
+		constructor(nodeName,attributes,children,node) {
+			Object.defineProperty(this,"node",{enumerable:false,configurable:true,writable:true,value:node});
+			Object.defineProperty(node,"__vNode__",{enumerable:false,configurable:true,writable:true,value:this});
+			this.nodeName = nodeName,
+			this.attributes = attributes,
+			this.children = children,
+			this.key = this.attributes.id || (this.attributes.id = (Math.random()+"").substring(2));
+		}
+		toString() {
+			return `<${this.nodeName}${Object.keys(this.attributes).reduce((accum,key) => accum += (` ${key}="${this.attributes[key]}"`),"")}>${this.children.reduce((accum,child) => accum += " " + child,"")}</${this.tagName}>`;
+		}
+		render(attributes) {
+			return this.node.render(attributes);
+		}
+	}
+	
 	const tlx = {
 			components:{},
 			enable(options={}) {
 				this.options = Object.assign({},this.options,options);
 				
-				if(this.options.sanitize!==false) {
-					const _prompt = global.prompt.bind(global);
-					if(_prompt) {
-						global.prompt = function(title) {
-							const input = _prompt(title),
-								result = tlx.escape(input);
-							if(typeof(result)=="undefined") {
-								global.alert("Invalid input: " + input);
-							} else {
-								return result;
-							} 
-						}
-					}
+				if(this.options.sanitize && !tlx.escape) {
+					console.warn("Sanitizing on but tlx-santize.js does not appear to be loaded.")
 				}
 				
-				tlx.bind = function(object,node,path="") {
+				tlx.bind = function(object,htmlOrElementOrVNode,controller,path="") {
+					let node = htmlOrElementOrVNode;
+					if(typeof(htmlOrElement)==="string") {
+						const el = document.createElement("div");
+						div.innerHTML = htmlOrElement;
+						node = el.firstChild;
+					} else if(htmlOrElementOrVNode instanceof VNode) {
+						node = htmlOrElementOrVNode.node;
+					}
+					if(controller) {
+						node.addEventListener(controller);
+					}
 					if(node.state===object && object.__boundNodes__) return object;
 					for(let key in object) {
 						const value = object[key];
-						if(value && typeof(value)==="object") object[key] = this.bind(value,node,`${path}${key}.`);
+						if(value && typeof(value)==="object") {
+							object[key] = this.bind(value,node,controller,`${path}${key}.`).object;
+						}
 					}
 					let proxy = (node.attributes.state ? node.attributes.state.data : null);
 					if(!proxy) {
@@ -55,8 +74,9 @@
 							get(target,property) {
 								if(property==="__boundNodes__") return nodes;
 								let value = target[property];
-								if(typeof(property)!=="string") return value;
-								if(typeof(value)==="undefined") {
+								const type = typeof(value);
+								if(typeof(property)!=="string" || type==="function") return value;
+								if(type==="undefined") {
 									let {ancestorNode,state} = node.getAncestorWithState();
 									while(ancestorNode) {
 										value = state[property];
@@ -86,15 +106,24 @@
 						});
 						node.setAttribute("state",proxy,true);
 					}
-					return proxy;
+					return {object:proxy,el:node,controller};
 				}
-				HTMLElement.prototype.bind = function(object) {
-					tlx.bind(object,this);
-					return this;
+				HTMLElement.prototype.bind = function(object,controller) {
+					return tlx.bind(object,this,controller);
 				}
-
-				HTMLElement.prototype.getAttributes = function() {
-					return [].slice.call(this.attributes).reduce((accum,attribute) => { (accum[attribute.name] = this.getAttribute(attribute.name)); return accum;},{});
+				HTMLElement.prototype.getAttributes = function(ignore={}) {
+					return [].slice.call(this.attributes).reduce((accum,attribute) => {
+						if(typeof(ignore[attribute.name])==="undefined") {
+							let name = attribute.name,
+								value = this.getAttribute(name),
+								type = typeof(value);
+							if(type==="function" && name.indexOf("on")===0) {
+								name = "on" + name.substring(2,3).toUpperCase() + name.substring(3);
+								value = value.bind(this);
+							}
+							value==null || (accum[name] = value); 
+						}
+						return accum;},{});
 				}
 				const _render = HTMLElement.prototype.render = function() {
 					for(let attribute of [].slice.call(this.attributes)) {
@@ -102,7 +131,7 @@
 						!tlx.renderDirective || tlx.renderDirective(this,attribute);
 					}
 					if(this.render===_render) {
-						for(let child of [].slice.call(this.childNodes)) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
+						for(let child of [].slice.call(this.childNodes)) !child.render || child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
 						return this.innerHTML;
 					} else {
 						return this.render();
@@ -110,10 +139,19 @@
 				}
 				const _HTMLElement_getAttribute = HTMLElement.prototype.getAttribute;
 				HTMLElement.prototype.getAttribute = function(name) {
-					let value = this[name],
+					const desc = Object.getOwnPropertyDescriptor(this,name);
+					let value = (desc ? desc.value : desc),
 						type = typeof(value);
-					if(type==="undefined") { value = _HTMLElement_getAttribute.call(this,name); type = typeof(value); }
+					if(type==="undefined") {
+						value = _HTMLElement_getAttribute.call(this,name);
+						type = typeof(value);
+					}
+					if(type==="string" && value.indexOf("${")>=0) {
+						value = this.setAttribute(name,value,true);
+						type = typeof(value);
+					}
 					if(value && type==="object" && value instanceof HTMLElement) return value.getAttributes();
+					if(value==null) return;
 					try { return JSON.parse(value)	} catch(error) { return value };
 				}
 				const _HTMLElement_setAttribute = HTMLElement.prototype.setAttribute;
@@ -129,35 +167,57 @@
 					let type = typeof(value);
 					if(type==="string") {
 						if(this.resolve) {
-							value = this.resolve(value);
+							value = this.resolve(value,this.attributes);
 						} else if(name.indexOf("on")!==0) {
-							value = tlx.escape(value);
+							!tlx.options.sanitize || (value = tlx.escape(value));
 						}
 						type = typeof(value);
 					}
 					
-					const oldvalue = this.getAttribute(name),
-						neq = !equal(oldvalue,value);
-					if(neq || lazy) {
+					const oldvalue = lazy || this.getAttribute(name),
+						neq = lazy || !equal(oldvalue,value);
+					if(neq) {
 						if(value==null) { delete this[name]; this.removeAttribute(name); }
 						if(type==="object" || type==="function") {
 							this[name] = value;
-							name!=="state" || !this.bind || this.bind(value);
-							type==="function" || (value = "${" + JSON.stringify(value) + "}");
+							name!=="state" || !this.bind || type==="function" || this.bind(value);
+							name==="state" || type==="function" || (value = "${" + JSON.stringify(value) + "}");
 						}
-						name==="state" || _HTMLElement_setAttribute.call(this,name,value);
+						name==="state" || type==="function" || _HTMLElement_setAttribute.call(this,name,value);
 					}
 					if(!lazy && this.constructor.observedAttributes && this.constructor.observedAttributes.includes[name] && this.attributeChangedCallback) {
 						this.attributeChangedCallback(name,oldvalue,value,null);
 					}
 					if(tlx.options.reactive && !lazy && this.render && neq) this.render();
+					return value;
 				}
-			  Node.prototype.render = function() {
+
+				const getChildren = (el) => {
+					const result = [];
+			    for(let i=0;i<el.childNodes.length;i++) {
+			      const child = el.childNodes[i].h();
+			     !child || result.push(child);
+			    }
+			    return result;
+				}
+				Node.prototype.h = function(html) {
+					if(html) {
+						this.innerHTML = html;
+					}
+					if(this.tagName) {
+						return new VNode(this.tagName,this.getAttributes(),getChildren(this));
+					}
+					if(this instanceof Text) {
+						return this.data;
+					}
+				}
+
+				Attr.prototype.render = function() {
 			  	const owner = this.ownerElement;
 			  	if(this.value.indexOf("${")>=0 && !Object.getOwnPropertyDescriptor(this,"render")  && owner.resolve) {
-			  		const template = this.value;
+			  		const template = this.value.trim();
 			  		this.render = function() { 
-			  			const value = owner.resolve(template);
+			  			const value = (this.name==="state" && owner.state ? owner.state : owner.resolve(template,owner.attributes));
 			  			owner.setAttribute(this.name,value,true); return value; }
 			  		return this.render();
 			  	}
@@ -166,7 +226,7 @@
 				Text.prototype.render = function() {
 					const parent = this.parentElement;
 					if(this.textContent.indexOf("${")>=0 && !Object.getOwnPropertyDescriptor(this,"render") && parent.resolve) {
-						const template = this.textContent;
+						const template = this.textContent.trim();
 						this.render = function() {
 							this.textContent = parent.resolve(template);
 						}
@@ -176,8 +236,9 @@
 				}
 			
 				if(this.options.polyfill==="force") {
-					this.options.components = true;
-					// add warning is not loaded
+					if(this.options.components!==true || !tlx.define) {
+						console.warn("Attempting to force polyfill when tlx-component.js module not activated or loaded.");
+					}
 				}
 				window.addEventListener("load",() => {
 					const doc = document;
@@ -193,39 +254,8 @@
 				if(this.options.polyfill && this.polyfill) {
 					this.polyfill(this.options.polyfill==="force" || false);
 				}
-			},
-			escape(data) {
-				const type = typeof(data);
-				if(type==="function") return;
-				if(["number","boolean"].includes(type) || !data) {
-					return data;
-				}
-				if(Array.isArray(data)) {
-					for(let i=0;i<data.length;i++) {
-						data[i] = this.escape(data[i]);
-					}
-					return data;
-				}
-				if(data && type==="object") {
-					for(let key in data) {
-						data[key] = this.escape(data[key]);
-					}
-					return data;
-				}
-		    const div = document.createElement('div');
-		    div.appendChild(document.createTextNode(data));
-		    data = div.innerHTML;
-		    try {
-		    	JSON.parse(`${data}`)==data;
-		    	return str; // string is boolean, number, undefined, or null
-		    } catch(error) {
-		    	try {
-		    		return this.escape(Function("return " + data)());
-		    	} catch(error) {
-		    		return data;
-		    	}
-		    }
-		  }
+				return Object.assign({},this.options);
+			}
 		}
 		
 	if(typeof(module)!=="undefined") {

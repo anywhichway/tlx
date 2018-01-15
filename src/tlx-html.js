@@ -26,10 +26,9 @@
 					second = (first>=0 ? template.indexOf("${",first+1) : -1);
 				if(first>=0) {
 					if(second>=0 || first>0) {
-						return Function("el","__state__","__attr__","with(el) { with(__state__) { with(el.state||{}) { with(__attr__) { return `" + template + "`}}}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes)); 
+						return Function("el","__state__","__attr__","with(el) { with(__state__) { with(el.state||{}) { with(__attr__) { return `" + template + "`}}}}")(this,as.state||{},Object.assign({},this.getAttributes(attributes),attributes)); 
 					}
-					const value =  Function("el","__state__","__attr__","with(el) { with(__state__) { with(el.state||{}) { with(__attr__) { return (function() { return arguments[arguments.length-1]; })`" + template + "` }}}}")(this,as.state||{},Object.assign({},this.getAttributes(),attributes));
-					return (tlx.options.sanitize===false ? value : tlx.escape(value));
+					return  Function("el","__state__","__attr__","with(el) { with(__state__) { with(el.state||{}) { with(__attr__) { return (function() { return arguments[arguments.length-1]; })`" + template + "` }}}}")(this,as.state||{},Object.assign({},this.getAttributes(attributes),attributes));
 				}
 				return template;
 			}

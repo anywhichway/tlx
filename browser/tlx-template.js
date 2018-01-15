@@ -19,7 +19,7 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 	SOFTWARE.
 	*/
-	if(!tlx.options.components) console.warn("tlx-component mut be loaded to use tlx-template");
+	if(!tlx.options.components) console.warn("tlx-component.js mut be loaded to use tlx-template");
 	tlx.compile = function(template) {
 		const tagname = template.getAttribute("t-tagname");
 		if(!tagname) return;
@@ -33,7 +33,7 @@
 				text = (matches ? matches.reduce((accum,item) => accum += `${tagname} ${item.trim()} `,"") : "");
 			spec = (matches ? matches.reduce((accum,item) => accum = accum.replace(item,""),spec) : spec);
 			matches = spec.match(/.*;/g),
-			text = (matches ? matches.reduce((accum,item) => accum += `${tagname} ${item.trim()} `,text) : text);
+			text = (matches ? matches.reduce((accum,item) => accum += `${tagname} * {${item.trim()}} `,text) : text);
 			style.innerText = text.trim();
 			document.head.appendChild(style);
 		}
@@ -50,6 +50,7 @@
 		const component = Function("defaults",`return function(attributes={},el=document.createElement("${tagname}")) {
 					Object.assign(el,tlx.Mixin);
 					el.initialize(Object.assign({},defaults,attributes));
+					return el;
 					}`)(scope);
 		this.define(tagname,component);
 	}

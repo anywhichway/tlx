@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-html.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/preact/8.2.5/preact.min.js"></script>
+<script>tlx.enable({h:preact.h})</script>
+</head>
+<body>
+<div id="button1"></div>
+<div id="button2"></div>
+<script>
+const model = {	doclick: function() { alert('hi!'); } },
+	el = document.createElement("div").h(`<button onClick="\${doclick}">Click Me</button>`);
+tlx.bind(model,el);
+el.render();
+
+const vdom1 = el.h();
+preact.render(vdom1,document.getElementById("button1"));
+
+const vdom2 = preact.h("button",{onClick: function() { alert('ok');}},["Click Me"]);
+preact.render(vdom2,document.getElementById("button2"));
+
+console.log(vdom1);
+console.log(vdom2);
+</script>
+</body>
+</html>

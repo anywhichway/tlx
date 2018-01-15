@@ -2,6 +2,7 @@
 <html>
 <head>
 <script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-sanitize.js"></script>
 <script src="../src/tlx-html.js"></script>
 <script src="../src/tlx-directives.js"></script>
 <script src="../src/tlx-component.js"></script>
@@ -16,9 +17,9 @@ const ToDo = function({title="",listid="",done=false},el = document.createElemen
 	el.remove = () => {
 		el.parentElement.removeChild(el);
 	}
-	el.render = (attributes) => el.innerHTML = el.resolve(`
+	el.render = (attributes) => el.h(el.resolve(`
 		${innerHTML}<li id="\${id}">\${title} <input type="checkbox" \${(done ? "checked" : "")} onclick="(()=>{ \${listid||id}.remove('\${id}')})()"></li>
-	`,attributes);
+	`,attributes));
 	return el;
 }
 tlx.define("todo",ToDo);
@@ -43,14 +44,14 @@ const ToDoList = function({title="",todos=[]},el = document.createElement(tlx.ge
 			el.render();
 		}
 	}
-	el.render = (attributes) => el.innerHTML = el.resolve(`
+	el.render = (attributes) => el.h(el.resolve(`
 			<p>\${title}</p>
 			${innerHTML}
 			<button onclick="\${id}.add()">Add Task</button>
 			<ul>
 			\${el.todos.reduce((accum,todo) => accum += ToDo(todo).render({listid:el.id}),"")}
 			</ul>
-	`,attributes);
+	`,attributes));
 	return el;
 }
 tlx.define("todolist",ToDoList);
@@ -68,7 +69,6 @@ tlx.enable();
 	</style>
   
 	<script>
-		//this.state.name = "Test Name"
 		this.tasks = ["Task One"];
 		this.addTask = function() { 
 			this.tasks.push(prompt("Task Name:")); 
@@ -116,6 +116,12 @@ setTimeout(() => {
 <div t-on="${{click: function(event) { alert('ok'); }}}" t-if="${3}">${value}</div>
 
 <div t-if="${false}">${value}</div>
+
+<div state="${{name:'joe'}}">
+${name}<br>
+<input value="${name}" onchange="this.linkState('name')(event)">
+</div>
+
 
 </body>
 </html>

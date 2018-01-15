@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-html.js"></script>
+<script src="../src/tlx-component.js"></script>
+<script src="../src/tlx-template.js"></script>
+
+<script>tlx.enable();</script>
+
+<template t-tagname="x-todo" title="Untitled Tasks">
+	<h3 onclick="${id}.changeTitle(event)">${title}</h3>
+	
+  	<!-- render the actual list --> 
+  	<ul onclick="${id}.addTask()" >${tasks.reduce((accum,item) => accum += (`<li>${item}</li>`),"")}</ul>
+  	
+  	<!-- these will be scoped automatically, h3's at 120%, everything italic -->
+	<style>
+		h3 { font-size: 120% }
+		font-style: italic;
+	</style>
+  
+	<script>
+		this.tasks = ["Task One"];
+		this.addTask = function() {
+			const task = prompt("Task Name:");
+			if(task) {
+				this.tasks.push(task);
+				this.render();
+			}
+			event.stopPropagation();
+		};
+		this.changeTitle = function(event) { 
+			const title = prompt("New Title:");
+			if(title) {
+				this.setAttribute("title",title);
+				this.render();
+			}
+			event.stopPropagation();
+		}
+	</script>
+</template>
+</head>
+<body>
+
+
+<x-todo id="mytodos" title="My Tasks"></x-todo>
+
+<div id="yourtasks"></div>
+
+<script>
+setTimeout(() => {
+	const todos = tlx.get("x-todo")({title:"Your Tasks",tasks:["Your First Task"]});
+	todos.render();
+	document.getElementById("yourtasks").appendChild(todos);
+});
+</script>
+
+</body>
+</html>

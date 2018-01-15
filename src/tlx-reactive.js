@@ -30,13 +30,13 @@
 				else if(target.type==="select-multiple") {
 					value = [];
 					for(let option of [].slice.call(target.options)) {
-						!option.selected || value.push(tlx.fromJSON(option.value));
+						!option.selected || value.push((tlx.options.sanitize ? tlx.escape(option.value) : option.value));
 					}
 				} else {
-					value = tlx.fromJSON(target.value);
+					value = (tlx.options.sanitize ? tlx.escape(target.value) : target.value);
 				}
 				const parts = property.split(".");
-				let state = this.state;
+				let state = this;
 				property = parts.pop(); // get final property
 				for(let key of parts) {
 					state = state[key] || {};
@@ -44,7 +44,15 @@
 				state[property] = value; // set property
 			}
 		};
-		return f.bind(tlx.getState(this)||(this.state={}));
+		let state = this.state;
+		if(!state) {
+			const as = this.getAncestorWithState();
+			state = as.state;
+		}
+		if(!state) {
+			console.warn("Attempting to use linkState when no state exists in DOM tree.")
+		}
+		return f.bind(state);
 	}
 	tlx.options || (tlx.options={});
 	tlx.options.reactive = true;

@@ -1,4 +1,4 @@
-(function(tlx) {
+(function() {
 	"use strict"
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
 	Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,10 +19,14 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 	SOFTWARE.
 	*/
-	const global = this;
-	let polyfill = (typeof(global.customElements)==="undefined" ? "force" : true);
+	const global = this,
+		tlx = this.tlx || (this.tlx = {});
+	tlx.options || (tlx.options={});
+	const polyfill = (typeof(global.customElements)==="undefined" ? "force" : true);
+	tlx.options.polyfill = polyfill;
+	polyfill!=="force" || (tlx.options.components = true);
 	tlx.polyfill = function(force) {
-		if(typeof(global.customElements)==="undefined" || force) {
+		if(polyfill==="force" || force) {
 			const _document_createElement = document.createElement.bind(document);
 			document.createElement = function(tagName,options) {
 				const ctor = tlx.customElementRegistry.get(tagName);
@@ -72,6 +76,7 @@
 					for(let key in descriptors) {
 						key==="constructor" || (el[key] = prototype[key]);
 					}
+					el.vNode();
 				}
 			}
 			tlx.customElementRegistry = {
@@ -80,7 +85,9 @@
 								Object.defineProperty(el,"constructor",{enumerable:false,configurable:true,writeable:true,value:cls});
 								const instance = new cls(name),
 									proto = Object.create(cls.prototype);
-								Object.keys(instance).forEach(key => (el[key] = instance[key]));
+								Object.keys(instance).forEach(key => (el[key] = instance[key])); // should this be getOwnPropertyDescriptors?
+								Object.defineProperty(el,"vnode",{enumerable:false,configurable:true,writable:true,value:instance.vnode});
+								!instance.__setAttribute__ || Object.defineProperty(el,"__setAttribute__",{enumerable:false,configurable:true,writable:true,value:instance.__setAttribute__});
 								for(let key in attributes) {
 									el.setAttribute(key,attributes[key],true);
 									if(cls.observedAttributes && cls.observedAttributes.includes(key) && el.attributeChangedCallback) {
@@ -89,6 +96,7 @@
 								}
 								return el;
 							}
+							ctor.class = cls;
 							tlx.define(name,ctor);
 					},
 					get(name) {
@@ -101,8 +109,8 @@
 			Object.defineProperty(global,"customElements",{enumerable:true,configurable:true,writable:false,value:tlx.customElementRegistry});
 		}
 	}
+	tlx.polyfill();
 	
-	tlx.options || (tlx.options={});
-	tlx.options.polyfill = polyfill;
-	typeof(global.customElements)!=="undefined" || (tlx.options.components = true);
-}).call(this,tlx);
+	if(typeof(module)!=="undefined") module.exports = tlx;
+	if(typeof(window)!=="undefined") window.tlx = tlx;
+}).call(typeof(window)!=="undefined" ? window : this);

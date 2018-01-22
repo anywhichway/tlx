@@ -2,11 +2,11 @@
 <html>
 <head>
 <meta charset="utf-8"/>
-<script src="../src/tlx-core.js"></script>
-<script src="../src/tlx-html.js"></script>
+<script src="../src/tlx-vtdom.js"></script>
+<script src="../src/tlx-sanitize.js"></script>
 <script src="../src/tlx-component.js"></script>
 <script src="../src/tlx-polyfill.js"></script>
-<script>tlx.enable({polyfill:"force"})</script>
+<script>tlx.polyfill(true)</script>
 
 <script>
 class XTodo extends HTMLElement {
@@ -14,50 +14,41 @@ class XTodo extends HTMLElement {
 		super(tlx.getTagName(XTodo));
 		// If the polyfill if being used, then super creates a native element and assigns it to el.
 		// The property '__el__' should be used as a replacement for 'this', if it exists, and returned.
-		const el = this.__el__ || this;
+		const el = this.__el__ || this,
+			vnode = el.vNode();
 		
 		// Define tasks local to the instance
-		el.tasks = ["Task One"];
+		vnode.tasks = ["Task One"];
 		
-		return el;
-	}
-	// Custom methods for the Todo component.
-	addTask(event) {
-		const task = prompt("Task Name:");
-		if(task) {
-			this.tasks.push(task);
-			event.currentTarget.innerHTML = this.buildList();
-		} 
-		event.stopPropagation();
-	}
-	buildList() {
-		return this.tasks.reduce((accum,item) => accum += `<li>${item}</li>`,"");
-	}
-	changeTitle(event) {
-		const title = prompt("New Title:");
-		if(title) {
-			this.setAttribute("title",title);
-			event.target.innerHTML = title;
+		vnode.addTask = function(event) {
+			event.stopPropagation();
+			const task = prompt("Task Name:");
+			if(task) {
+				this.tasks.push(task);
+				this.render();
+			} 
 		}
-		event.stopPropagation();
-	}
-	render(attributes) { // Always define a render function that takes an attribute map, i.e. {<name>:<value>,...}, as an argument.
-		this.innerHTML = "";
-		const h3 = document.createElement("h3"),
-			ul = document.createElement("ul"),
-			title = (attributes ? attributes.title : this.title || "Untitled Tasks");
-		h3.innerHTML = title;
-		ul.innerHTML = this.buildList();
-		h3.onclick = (event) => this.changeTitle(event);
-		ul.onclick = (event) => this.addTask(event);
-		this.appendChild(h3);
-		this.appendChild(ul);
-	}
-	connectedCallback() {
-		console.log("Connected");
-	}
-	attributeChangedCallback(name,oldValue,newValue) {
-		console.log(arguments);
+		vnode.buildList = function() {
+			return this.tasks.reduce((accum,item) => accum += `<li>${item}</li>`,"");
+		}
+		vnode.changeTitle = function(event) {
+			event.stopPropagation();
+			const title = prompt("New Title:");
+			if(title) {
+				this.attributes.title = title;
+				this.render();
+			}
+		}
+		vnode.render = function(attributes) {
+			this.html(`<h3 onclick="\${id}.changeTitle(event)">\${title}</h3><ul onclick="\${id}.addTask(event)">\${buildList()}</ul>`, Object.assign({title:"My Tasks"},this.attributes,attributes));
+		}
+		vnode.connectedCallback = function() {
+			console.log("Connected");
+		}
+		vnode.attributeChangedCallback = function(name,oldValue,newValue) {
+			console.log(arguments);
+		}
+		return el;
 	}
 	static get observedAttributes() { return ["title"]; }
 }

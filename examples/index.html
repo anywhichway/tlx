@@ -17,9 +17,9 @@ const ToDo = function({title="",listid="",done=false},el = document.createElemen
 	el.remove = () => {
 		el.parentElement.removeChild(el);
 	}
-	el.render = (attributes) => el.h(el.resolve(`
+	el.render = (attributes) => el.vNode(`
 		${innerHTML}<li id="\${id}">\${title} <input type="checkbox" \${(done ? "checked" : "")} onclick="(()=>{ \${listid||id}.remove('\${id}')})()"></li>
-	`,attributes));
+	`,attributes);
 	return el;
 }
 tlx.define("todo",ToDo);
@@ -44,14 +44,14 @@ const ToDoList = function({title="",todos=[]},el = document.createElement(tlx.ge
 			el.render();
 		}
 	}
-	el.render = (attributes) => el.h(el.resolve(`
+	el.render = (attributes) => el.vNode(`
 			<p>\${title}</p>
 			${innerHTML}
 			<button onclick="\${id}.add()">Add Task</button>
 			<ul>
 			\${el.todos.reduce((accum,todo) => accum += ToDo(todo).render({listid:el.id}),"")}
 			</ul>
-	`,attributes));
+	`,attributes);
 	return el;
 }
 tlx.define("todolist",ToDoList);

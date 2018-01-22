@@ -1,46 +1,69 @@
-(function(tlx) {
+(function() {
 	"use strict";
-	tlx.directives = {
-			"t-if": (value,template,element) => {
+	/* Copyright 2017,2018 AnyWhichWay, Simon Y. Blackwell, MIT License
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+	*/
+	const tlx = this.tlx || (this.tlx = {});
+	tlx.options || (tlx.options={});
+	tlx.directives || (tlx.directives={});
+	Object.assign(this.tlx.directives,{
+			"t-if": (value,template,vnode) => {
 				if(value) {
-					return element.resolve(template,{value})
+					const el = document.createElement("div"),
+						resolved = el.vNode(tlx.resolve(vnode,template,null,vnode.currentState,{value}));
+					if(resolved.children) return resolved.children;
+					return resolved;
 				}
+				return [];
 			},
-			"t-for": (spec,template,element) => {
+			"t-for": (spec,template,vnode) => {
+					const el = document.createElement("div"),
+						children = [];
 	  			if(spec.of) {
-	  				return spec.of.reduce((accum,value,index,array) => accum += element.resolve(template,{[spec.let||spec.var]:value,value,index,array}),"");
+	  				spec.of.forEach((value,index,array) => {
+	  					const extra = {[spec.let||spec.var]:value,value,index,array},
+	  						resolved = el.vNode(template.resolve ? template.resolve(null,vnode.currentState,extra): tlx.resolve(vnode,template,null,vnode.currentState,extra));
+	  					children[index] = (resolved.children ? resolved.children[0] : resolved);
+	  				});
 	  			} else {
-	  				return Object.keys(spec.in).reduce((accum,key) => accum += element.resolve(template,{[spec.let||spec.var]:key,value:spec.in[key],key,object:spec.in}),"");
+	  				Object.keys(spec.in).forEach((key,index) => {
+	  					const extra = {[spec.let||spec.var]:key,value:spec.in[key],key,object:spec.in},
+  							resolved = el.vNode(template.resolve ? template.resolve(null,vnode.currentState,extra): tlx.resolve(vnode,template,null,vnode.currentState,extra));
+	  					children[index] = (resolved.children ? resolved.children[0] : resolved);
+	  				});
 	  			}
+	  			return children;
 			},
-			"t-foreach": (value,template,element) => {
-				if(Array.isArray(value)) return tlx.directives["t-for"]({of:value,let:'value'},template,element);
-				return tlx.directives["t-for"]({in:value,let:'key'},template,element);
+			"t-foreach": (value,template,vnode) => {
+				if(Array.isArray(value)) return tlx.directives["t-for"]({of:value,let:'value'},template,vnode);
+				return tlx.directives["t-for"]({in:value,let:'key'},template,vnode);
+			},
+			"t-on": (value,_,vnode) => {
+				for(let key in value) {
+					vnode.attributes["on"+key] = `(${value[key]})(event)`;
+				}
 			}
+	});
+	if(typeof(module)!=="undefined") {
+		module.exports = tlx;
 	}
-	tlx.renderDirective = function(element,attribute) {
-		if(attribute.name==="t-on") {
-			for(let key in element["t-on"]) {
-				element["on"+key] = element["t-on"][key];
-			}
-		} else {
-			const directive = (tlx.directives ? tlx.directives[attribute.name] : null);
-			if(directive) {
-				const template = element.innerHTML || element.textContent,
-					name = attribute.name,
-					render = (element.render===HTMLElement.prototype.render ? null : element.render);
-	  		element.render = function()  {
-	  			!render || render.call(element);
-	  			const html = directive(element.getAttribute(name),template,element);
-	  			if(typeof(html)==="undefined") {
-	  				element.innerHTML = "";
-	  			} else {
-	  				element.innerHTML = html;
-		  			for(let child of [].slice.call(element.childNodes)) child instanceof HTMLTemplateElement || child instanceof HTMLScriptElement || child.render();
-	  			}
-	  			return element.innerHTML;
-	  		}
-	  	}
-		}
+	if(typeof(window)!=="undefined") {
+		window.tlx = tlx;
 	}
-}(tlx));
+}).call(typeof(window)!=="undefined" ? window : this);

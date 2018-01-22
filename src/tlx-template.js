@@ -1,4 +1,4 @@
-(function(tlx) {
+(function() {
 	"use strict";
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
 	Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,7 +19,11 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 	SOFTWARE.
 	*/
+	const tlx = this.tlx || (this.tlx = {});
+	tlx.options || (tlx.options={});
+	tlx.options.templates = true;
 	if(!tlx.options.components) console.warn("tlx-component.js mut be loaded to use tlx-template");
+	//tlx.polyfill(true);
 	tlx.compile = function(template) {
 		const tagname = template.getAttribute("t-tagname");
 		if(!tagname) return;
@@ -45,7 +49,7 @@
 		}
 		const templatehtml = clone.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<");
 		scope.render = function() { 
-			return this.h(this.resolve(templatehtml,this));
+			return this.html(templatehtml,Object.assign({},scope,this.attributes));
 		}
 		const component = Function("defaults",`return function(attributes={},el=document.createElement("${tagname}")) {
 					Object.assign(el,tlx.Mixin);
@@ -54,6 +58,4 @@
 					}`)(scope);
 		this.define(tagname,component);
 	}
-	tlx.options || (tlx.options={});
-	tlx.options.templates = true;
-}(tlx));
+}).call(this);

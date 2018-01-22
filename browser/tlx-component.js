@@ -1,4 +1,4 @@
-(function(tlx) {
+(function() {
 	"use strict";
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
 	Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,6 +19,9 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 	SOFTWARE.
 	*/
+	const tlx = this.tlx || (this.tlx = {});
+	tlx.options || (tlx.options={});
+	tlx.options.components = true;
 	tlx.components = {};
 	tlx.define = function(tagName,component) {
 		this.components[tagName] = component;
@@ -32,10 +35,13 @@
 	tlx.mount = function(...tagNames) {
 		tagNames.length>0 || (tagNames = Object.keys(this.components));
 		for(let tagName of tagNames) {
-			const component = this.components[tagName];
-			for(let element of [].slice.call(document.getElementsByTagName(tagName)||[])) {
+			const component = this.components[tagName],
+				elements = [].slice.call(document.getElementsByTagName(tagName)||[]);
+			for(let element of elements) {
+				if(!element.vnode) {
 					const attributes = [].slice.call(element.attributes).reduce((accum,attribute) => { accum[attribute.name] = attribute.value; return accum; },{});
-					component(attributes,element);
+					component(attributes,element).vnode.render();
+				}
 			}
 		}
 	}
@@ -49,15 +55,24 @@
 	}
 	tlx.getTagName = function(component) {
 		for(let tagName in this.components) {
-			if(this.components[tagName]===component) return tagName;
+			if(this.components[tagName]===component || this.components[tagName].class===component) return tagName;
 		}
 	}
 	tlx.Mixin = {
-		initialize(attributes) {
-			for(let name in attributes) this.setAttribute(name,attributes[name],true); //(typeof(attributes[name])==="string" ? this.parse(attributes[name]): attributes[name])
-			this.id || this.setAttribute("id",`rid${String(Math.random()).substring(2)}`,true);
+		initialize(attributes={}) {
+			const properties = Object.assign({},attributes);
+			for(let key in properties) {
+				const value = properties[key],
+					type = typeof(value);
+				type!=="object" || delete attributes[key];
+			}
+			const vnode = this.vNode(null,attributes);
+			for(let key in properties) {
+				vnode[key] = tlx.resolve(vnode,properties[key],attributes,vnode.state);
+			}
+			return vnode;
 		},
-		toString() { 
+	/*	toString() { 
 			const stringify = (v) => {
 					const type = typeof(v);
 					if(type==="string") return v;
@@ -69,8 +84,9 @@
 					return JSON.stringify(v);
 				}
 			return `<${this.localName}${[].slice.call(this.attributes).reduce((accum,attribute) => accum += (` ${attribute.name}="${stringify(this.getAttribute(attribute.name))}"`),"")}>${this.innerHTML}</${this.localName}>`
-		}
+		}*/
 	}
-	tlx.options || (tlx.options={});
-	tlx.options.components = true;
-}(tlx));
+	
+	if(typeof(module)!=="undefined") module.exports = tlx;
+	if(typeof(window)!=="undefined") window.tlx = tlx;
+}).call(typeof(window)!=="undefined" ? window : this);

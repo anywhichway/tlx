@@ -1,61 +1,60 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script src="../src/tlx-core.js"></script>
-<script src="../src/tlx-html.js"></script>
+<script src="../src/tlx-vtdom.js"></script>
+<script src="../src/tlx-sanitize.js"></script>
 <script src="../src/tlx-component.js"></script>
 <script>
 
 const ToDo = function({title="",listid="",done=false},el = document.createElement(tlx.getTagName(ToDo))) {
 	Object.assign(el,tlx.Mixin);
 	// Note the use of default destructuring to provide both define time defaults and runtime overrides
-	el.initialize(Object.assign({title,listid,done},arguments[0])); 
+	const vnode = el.initialize(Object.assign({title,listid,done},arguments[0])); 
 	
-	el.remove = () => {
-		el.parentElement.removeChild(el);
+	vnode.remove = () => {
+		this.node.parentElement.removeChild(this.node);
 	}
 	
-	// Note how we assign and return innerHTML. You could also build the DOM and then return innerHTML
-	// The escaped template literals are why we need the html module for this example.
-	el.render = (attributes) => el.innerHTML = el.resolve(`
-		<li id="\${id}">\${title} <input type="checkbox" \${(done ? "checked" : "")} onclick="(()=>{ \${listid||id}.remove('\${id}')})()"></li>
-	`,attributes);
+	vnode.render = function(attributes) {
+		return this.html(`<li id="\${id}">${title} <input type="checkbox" \${(done ? "checked" : "")} onclick="\${listid||id}.remove('\${id}')"></li>`,attributes);
+	}
 	return el;
 }
 tlx.define("todo",ToDo);
 
 const ToDoList = function({title="",todos=[]},el = document.createElement(tlx.getTagName(ToDoList))) {
-	const genId = () => "tid" + (Math.random()+"").substring(2); // not a great id generator, but fine for demo
+	const genId = () => "tid" + (Math.random()+"").substring(2);
 	Object.assign(el,tlx.Mixin);
-	el.initialize(Object.assign({title,todos},arguments[0]));
-	el.todos.forEach(todo => todo.id || (todo.id = genId())); 
-	el.add = () => {
+	const vnode = el.initialize(Object.assign({title,todos},arguments[0]));
+	vnode.todos.forEach(todo => todo.id || (todo.id = genId())); 
+	vnode.add = function() {
 		const title = prompt("ToDo Name");
 		if(title) {
-			el.todos.push({title,id:genId()});
-			el.render();
+			this.todos.push({title,id:genId()});
+			this.render();
 		}
 	}
-	el.remove = (id) => {
-		const i = el.todos.findIndex((item) => item.id===id);
+	vnode.remove = function(id) {
+		const i = this.todos.findIndex((item) => item.id===id);
 		if(i>=0) {
-			el.todos.splice(i,1);
-			el.render();
+			this.todos.splice(i,1);
+			this.render();
 		}
 	}
-	el.render = (attributes) => el.innerHTML = el.resolve(`
-			<p>\${title}</p>
+	vnode.render = function(attributes) { 
+		return this.html(
+			`<p>\${title}</p>
 			<button onclick="\${id}.add()">Add Task</button>
 			<ul>
-			\${el.todos.reduce((accum,todo) => accum += ToDo(todo).render({listid:el.id}),"")}
-			</ul>
-	`,attributes);
+			\${todos.reduce((accum,todo) => accum += ToDo(todo).render({listid:id}),"")}
+			</ul>`
+		,attributes);
+	}
 	return el;
 }
 tlx.define("todolist",ToDoList);
 
 
-tlx.enable();
 </script>
 </head>
 <body>
@@ -66,7 +65,7 @@ tlx.enable();
 
 <script>
 const todos = ToDoList({title:"Your Tasks",todos:[{title:"Task One"}]});
-document.getElementById("yourtasks").appendChild(todos);
+document.getElementById("yourtasks").appendChild(todos).render();
 </script>
 </body>
 </html>

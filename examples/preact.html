@@ -1,28 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script src="../src/tlx-core.js"></script>
-<script src="../src/tlx-html.js"></script>
+<script src="../src/tlx-vtdom.js"></script>
+<script src="../src/tlx-sanitize.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/preact/8.2.5/preact.min.js"></script>
-<script>tlx.enable({h:preact.h})</script>
 </head>
 <body>
+<div><button onclick="(function() { alert('ok');})()">Click Me</button></div>
+<div id="button0"></div>
 <div id="button1"></div>
 <div id="button2"></div>
 <script>
 const model = {	doclick: function() { alert('hi!'); } },
-	el = document.createElement("div").h(`<button onClick="\${doclick}">Click Me</button>`);
-tlx.bind(model,el);
-el.render();
+	el = document.createElement("div");
+	el.innerHTML = "<button onclick='(function() { alert(\"ok\");})()'>Click Me</button>";
+//tlx.bind(model,el);
+//el.render();
 
-const vdom1 = el.h();
-preact.render(vdom1,document.getElementById("button1"));
+let vnode = el.children[0].vNode();
+tlx.render(vnode,document.getElementById("button0"));
 
-const vdom2 = preact.h("button",{onClick: function() { alert('ok');}},["Click Me"]);
-preact.render(vdom2,document.getElementById("button2"));
+preact.render(vnode.h(),document.getElementById("button1"));
 
-console.log(vdom1);
-console.log(vdom2);
+vnode = preact.h("button",{onClick: function() { alert('ok');}},["Click Me"]);
+preact.render(vnode,document.getElementById("button2"));
+
+
 </script>
 </body>
 </html>

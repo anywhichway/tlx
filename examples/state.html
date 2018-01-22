@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../src/tlx-vtdom.js"></script>
+<script src="../src/tlx-sanitize.js"></script>
+<script src="../src/tlx-state.js"></script>
+</head>
+<body>
+
+<div t-state="${{name:'bill',age:27}}">
+Outter<br>
+Name:<input value="${name}" onchange="this.linkState('name')(event)">
+Age:<input value="${age}" onchange="this.linkState('name')(event)">
+<div id="hasstate" t-state="${{name:'joe'}}" onclick="(() => alert('ok'))(event)">
+Inner<br>
+Name:<input value="${name}" onchange="this.linkState('name')(event)">
+Age:<input value="${age}" onchange="this.linkState('name')(event)">
+</div>
+</div>
+
+</body>
+</html>

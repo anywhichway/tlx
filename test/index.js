@@ -1,13 +1,13 @@
 var chai,
 	expect,
-	_;
+	_,
+	tlx;
 if(typeof(window)==="undefined") {
 	chai = require("chai");
 	expect = chai.expect;
 	_ = require("lodash");
+	tlx = require("../index.js");
 }
-
-tlx.enable();
 
 var testobject = {name:"Joe",address:{city:"Seattle",state:"WA"},children:["Sara","Mike"],publicKey:{show:true,key:"a key"},privateKey:{show:false,key:"a key"}};
 
@@ -16,7 +16,7 @@ describe("Test",function() {
 		expect(tlx.escape("() => { true; }")).to.equal(undefined);
 	});
 	it("sanitize html",function() {
-		expect(tlx.escape("<div onclick='((event) => console.log(event))(event)'>Test</div>")).to.equal("&lt;div onclick='((event) =&gt; console.log(event))(event)'&gt;Test&lt;/div&gt;");
+		expect(tlx.escape("<div onclick='((event) => console.log(event))(event)'>Test</div>")).to.equal(undefined);
 	});
 	it("sanitize object",function() {
 		const object = {
@@ -28,6 +28,16 @@ describe("Test",function() {
 			sanitized = tlx.escape(object);
 		expect(sanitized.nested.f).to.equal(undefined);
 		expect(sanitized.nested.s).to.equal("test");
+	});
+	it("sanitized setAttribute",function() {
+		const el = document.createElement("div");
+		el.setAttribute("title","function() { true; }");
+		expect(el.getAttribute("title")).to.equal(null);
+	});
+	it("sanitized setAttribute onclick",function() {
+		const el = document.createElement("div");
+		el.setAttribute("onclick","function() { true; }");
+		expect(el.getAttribute("onclick")).to.equal("function() { true; }");
 	});
 	it("primtive",function() {
 		const app = document.getElementById("app");
@@ -81,7 +91,7 @@ describe("Test",function() {
 	it("reactive primitive",function() {
 		const app = document.getElementById("app");
 		app.innerHTML = "${name}";
-		const {object} = tlx.bind(testobject,app);
+		const object = tlx.bind(testobject,app);
 		app.render();
 		object.name = "Mary";
 		expect(document.getElementById("app").innerHTML).to.equal("Mary");
@@ -89,7 +99,7 @@ describe("Test",function() {
 	it("reactive object",function() {
 		const app = document.getElementById("app");
 		app.innerHTML = "${address.city}";
-		const {object} = tlx.bind(testobject,app);
+		const object = tlx.bind(testobject,app);
 		app.render();
 		object.address.city = "Portland";
 		expect(document.getElementById("app").innerHTML).to.equal("Portland");
@@ -97,7 +107,7 @@ describe("Test",function() {
 	it("reactive object parent",function() {
 		const app = document.getElementById("app");
 		app.innerHTML = "${address.city}";
-		const {object} = tlx.bind(testobject,app);
+		const object = tlx.bind(testobject,app);
 		app.render();
 		object.address = {city: "Seattle"};
 		expect(document.getElementById("app").innerHTML).to.equal("Seattle");

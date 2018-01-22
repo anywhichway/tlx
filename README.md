@@ -1,6 +1,6 @@
 
 
-# TLX v1.0.0
+# TLX v0.2.8b.
 
 Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.
 
@@ -8,26 +8,23 @@ TLX is a tiny multi-paradigm front-end toolkit that lets you use core aspects of
 
 Use just the parts you want (sizes are minified and GZipped):
 
-`tlx-core.min.js` - 1.9K Supports objects as attribute values. Provides input/attribute escape protection. All other modules depend on this.
+`tlx-vtdom.min.js` - 1.7K Supports objects as attribute values.  Enables "inverted JSX", i.e. puts the focus on HTML while supporting the power of in-line template literals. All other modules depend on this.
 
-`tlx-sanitize.min.js` - Provides automatic input and attribute escaping to help prevent HTML injection.
+`tlx-sanitize.min.js` - 1.2K Provides automatic input and attribute escaping to help prevent HTML injection.
 
-`tlx-html.min.js` - 0.5K Enables "inverted JSX", i.e. puts the focus on HTML while supporting the power of in-line template literals, e.g. `<div>${item.message}</div>`. Continue to use React or Preact.
-
-`tlx-directives.min.js` - 0.6K If you like Vue or Angular, you can also use the built-in [directives](##directives) `t-if`, `t-foreach`, `t-for`, and `t-on`. Or, [add your own directives](#directives). Depends on tlx-html.
+`tlx-directives.min.js` - 0.5K If you like Vue or Angular, you can also use the built-in [directives](##directives) `t-if`, `t-foreach`, `t-for`, and `t-on`. Or, [add your own directives](#directives). Depends on tlx-html.
 
 `tlx-component.min.js` - 0.7K Enables components.
 
-`tlx-reactive.min.js` - 0.9K Adds uni-directional and bi-directional state [reactivity](##reactivity) to a manner similar to Vue and many other libraries.
+`tlx-state.min.js` - 0.9K Adds uni-directional and bi-directional state [reactivity](##reactivity) to a manner similar to Vue and many other libraries. Adds `t-state` directive.
 
 `tlx-template.min.js` -  0.7k Adds the ability to define components using HTML template tags similar to Riot. Includes support for scoped styles. Depends on tlx-components.
 
-
-`tlx-polyfill.min.js` - 1.0K A polyfill for [Custom Elements](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Custom_Elements). The standard lifecyle events are respected and invoked. Depends on tlx-components.
+`tlx-polyfill.min.js` - 0.9K A polyfill for [Custom Elements](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Custom_Elements). The standard lifecyle events are respected and invoked. Depends on tlx-components.
 
 Watch for `tlx-router.js` coming soon.
 
-`tlx.min.js` - 5.3K minifed and Gzipped, includes everything ... 16.7K minified, 27.5K raw.
+`tlx.min.js` - 5.4K minifed and Gzipped, includes everything ... 22.8K minified, 38.6K raw.
 
 
 ***Don't forget***, give us a star if you like what you see!
@@ -517,19 +514,15 @@ customElements.define("x-todo",XTodo);
 
 # Design Notes
 
-In order to keep memory footprint down, there is currently no VDom or DOM diffing done by `tlx`.
-
 Since not all browsers support a shadow DOM, a shadow DOM in not used for components.
 
 Since most developers requring transpiled code are already running build pipelines, no transpiled files are provided. However, the code as delivered will run in the most recent versions of Chrome, Firefox, and Edge.
 
 The HTML5 standard data attribute type and the `dataset` property on HTMLElements are not used for two reasons:
 
-1) Prefixing all attribuets with "data-" gets pretty noisy.
+1) Prefixing all attributes with "data-" gets pretty noisy.
 
-2) The standard data attributes do not support storing the proxies that are required for making everything reactive.
-
-We also did not want to wrap very DOM node in a Proxy. This has the negative consequence that non-primitive attribute values are stored directly on DOM Nodes and application developers need to be careful to avoid naming conflicts.
+2) The standard data attributes do not support storing the proxies that are required for making everything reactive. All values are converted to strings.
 
 
 # Acknowledgements
@@ -541,6 +534,8 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular` a
 Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reached its architectural limits and is no longer maintained.
 
 # Release History (reverse chronological order)
+
+2018-01-21 v0.2.8b - BETA regorganized modules. WARNING: Docs out of date. Server side unit tests and bundles `tlx.js` file not working.
 
 2018-01-14 v0.2.7b - BETA sanitize put in its own module. Fixed issue with `linkState` not walking DOM tree for state.
 

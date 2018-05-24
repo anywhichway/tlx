@@ -19,12 +19,7 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 	SOFTWARE.
 	*/
-
-	const tlx = this.tlx || (this.tlx = {});
-	tlx.options || (tlx.options={});
-	tlx.options.sanitize = true;
-	
-		const cleaner = tlx.escape = (data,extensions={},options=cleaner.options) => {
+		const cleaner = (data,extensions={},options=cleaner.options) => {
 			// include extensions, to exclude standard options pass {coerce:[],accept:[],reject:[],escape:[],eval:false} as third argument
 			options = Object.keys(options).reduce((accum,key) => 
 					{ 
@@ -147,32 +142,53 @@
 		],
 		eval: true
 	}
-	function setAttribute(name,value) {
-		 const cleaned = (name.indexOf("on")===0 ? value : cleaner(value));
-	   if(typeof(cleaned)!=="undefined") {
-	     this.__setAttribute__(name,cleaned);
-	   }
-	}
-	cleaner.protect = (el) => {
-		if(typeof(el.value)!=="undefined") {
-			 const get = () => get._value,
-		     set = (value) => {
-		       const cleaned = cleaner(value);
-		       if(typeof(cleaned)!=="undefined") {
-		         get._value = cleaned;
-		       }
-		     };
-		 // save current value;
-		 get.__value = cleaner(el.value);
-	   // re-define the value property so data is cleaned
-	   Object.defineProperty(el,"value",{enumerable:true,
-	                                     configurable:true,
-	                                     get,set});
-		}
-	//redefine setAttribute so it works with cleaned value
-		if(el.setAttribute!==setAttribute) {
-			Object.defineProperty(el,"__setAttribute__",{enumerbale:false,configurable:true,writable:true,value:el.setAttribute});
-		  el.setAttribute = setAttribute;
+	const protect = (el,violated=() => "") => {
+		if(typeof(window)!=="undefined") {
+			// on client or a server pseudo window is available
+				if(window.prompt && el===window) {
+					const _prompt = window.prompt.bind(window);
+					window.prompt = function(title) {
+						const input = _prompt(title),
+							cleaned = cleaner(input);
+						if(typeof(cleaned)=="undefined") {
+							window.alert("Invalid input: " + input);
+						} else {
+							return cleaned;
+						} 
+					}
+					return;
+				}
+			}
+		if(el instanceof HTMLInputElement) {
+			 el.addEventListener("change",(event) => {
+				 const desc = {enumerable:true,configurable:true,writable:false};
+				 desc.value = new Proxy(event.target,{
+					 get(target,property) {
+						 let value = target[property];
+						 if(property==="value" && value) {
+							 const cleaned =  cleaner(value);
+							 if(cleaned===undefined) {
+								 value = typeof(violated)==="function" ? violated(value) : "";
+							 }
+							 else value = cleaned;
+						 }
+						 return value;
+					 }
+				 });
+				 Object.defineProperty(event,"target",desc);
+				 desc.value = new Proxy(event.currentTarget,{
+					 get(target,property) {
+						 let value = target[property];
+						 if(property==="value" && value) {
+							 const cleaned =  cleaner(value);
+							 if(cleaned===undefined) value = violated(value);
+							 else value = cleaned;
+						 }
+						 return value;
+					 }
+				 });
+				 Object.defineProperty(event,"currentTarget",desc);
+			 })
 		}
 	  for(let child of [].slice.call(el.children)) {
 	  	cleaner.protect(child);
@@ -180,35 +196,6 @@
 	  return el;
 	}
 
-	if(typeof(document)!=="undefined") {
-	//on client or a server DOM is operable
-	  const _documentCreateElement =
-	        document.createElement.bind(document);
-	  document.createElement = function(tagName,options) {
-	    return cleaner.protect(_documentCreateElement(tagName,options));
-	  }
-	}
-
-	if(typeof(window)!=="undefined") {
-	// on client or a server pseudo window is available
-		if(window.prompt) {
-			const _prompt = window.prompt.bind(window);
-			window.prompt = function(title) {
-				const input = _prompt(title),
-					cleaned = cleaner(input);
-				if(typeof(cleaned)=="undefined") {
-					window.alert("Invalid input: " + input);
-				} else {
-					return cleaned;
-				} 
-			}
-		}
-		window.addEventListener("load",() => {
-			cleaner.protect(document.head);
-			cleaner.protect(document.body);
-		});
-	}
-
-	if(typeof(module)!=="undefined") module.exports = cleaner;
-	if(typeof(window)!=="undefined") window.cleaner = cleaner;
+	if(typeof(module)!=="undefined") module.exports = (tlx) => { tlx.escape = cleaner; tlx.protect = protect; }
+	if(typeof(window)!=="undefined") tlx.escape = cleaner; tlx.protect = protect;
 }).call(this);

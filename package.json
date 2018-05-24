@@ -1,11 +1,11 @@
 {
   "name": "tlx",
-  "version": "v0.2.8b",
+  "version": "v0.2.9b",
   "description": "Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.",
   "engines": {},
   "license": "MIT",
   "scripts": {
-    "prepare": "cp ./src/*.js ./browser/ && browserify index.js -o browser/tlx.js && uglifyjs browser/tlx.js -o browser/tlx.min.js && uglifyjs src/tlx-vtdom.js -o browser/tlx-vtdom.min.js && uglifyjs src/tlx-sanitize.js -o browser/tlx-sanitize.min.js && uglifyjs src/tlx-directives.js -o browser/tlx-directives.min.js && uglifyjs src/tlx-component.js -o browser/tlx-component.min.js && uglifyjs src/tlx-state.js -o browser/tlx-state.min.js && uglifyjs src/tlx-template.js -o browser/tlx-template.min.js && uglifyjs src/tlx-polyfill.js -o browser/tlx-polyfill.min.js"
+    "prepare": "cp ./src/*.js ./dist/ && browserify index.js -o dist/tlx.js && uglifyjs dist/tlx.js -o dist/tlx.min.js"
   },
   "repository": {
     "type": "git",
@@ -19,8 +19,7 @@
     "hyperapp",
     "CustomElements",
     "VUE",
-    "Riot",
-    "polyfill"
+    "Riot"
   ],
   "author": "Simon Y. Blackwell <syblackwell@anywhichway.com> (http://www.github.com/anywhichway)",
   "bugs": {

@@ -1,9 +1,7 @@
 (function() {
-	require("./src/tlx-vtdom.js");
-	require("./src/tlx-sanitize.js");
-	require("./src/tlx-directives.js");
-	require("./src/tlx-component.js");
-	require("./src/tlx-state.js");
-	require("./src/tlx-template.js");
-	require("./src/tlx-polyfill.js");
+	const tlx = require("./src/tlx-core.js");
+	require("./src/tlx-vtdom.js")(tlx);
+	require("./src/tlx-reactive.js")(tlx);
+	require("./src/tlx-directives.js")(tlx);
+	//require("./src/tlx-sanitize.js");
 })();

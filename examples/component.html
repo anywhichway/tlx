@@ -1,71 +1,71 @@
 <!DOCTYPE html>
 <html>
 <head>
+<script src="../src/tlx-core.js"></script>
 <script src="../src/tlx-vtdom.js"></script>
-<script src="../src/tlx-sanitize.js"></script>
 <script src="../src/tlx-component.js"></script>
-<script>
-
-const ToDo = function({title="",listid="",done=false},el = document.createElement(tlx.getTagName(ToDo))) {
-	Object.assign(el,tlx.Mixin);
-	// Note the use of default destructuring to provide both define time defaults and runtime overrides
-	const vnode = el.initialize(Object.assign({title,listid,done},arguments[0])); 
-	
-	vnode.remove = () => {
-		this.node.parentElement.removeChild(this.node);
-	}
-	
-	vnode.render = function(attributes) {
-		return this.html(`<li id="\${id}">${title} <input type="checkbox" \${(done ? "checked" : "")} onclick="\${listid||id}.remove('\${id}')"></li>`,attributes);
-	}
-	return el;
-}
-tlx.define("todo",ToDo);
-
-const ToDoList = function({title="",todos=[]},el = document.createElement(tlx.getTagName(ToDoList))) {
-	const genId = () => "tid" + (Math.random()+"").substring(2);
-	Object.assign(el,tlx.Mixin);
-	const vnode = el.initialize(Object.assign({title,todos},arguments[0]));
-	vnode.todos.forEach(todo => todo.id || (todo.id = genId())); 
-	vnode.add = function() {
-		const title = prompt("ToDo Name");
-		if(title) {
-			this.todos.push({title,id:genId()});
-			this.render();
-		}
-	}
-	vnode.remove = function(id) {
-		const i = this.todos.findIndex((item) => item.id===id);
-		if(i>=0) {
-			this.todos.splice(i,1);
-			this.render();
-		}
-	}
-	vnode.render = function(attributes) { 
-		return this.html(
-			`<p>\${title}</p>
-			<button onclick="\${id}.add()">Add Task</button>
-			<ul>
-			\${todos.reduce((accum,todo) => accum += ToDo(todo).render({listid:id}),"")}
-			</ul>`
-		,attributes);
-	}
-	return el;
-}
-tlx.define("todolist",ToDoList);
-
-
-</script>
 </head>
 <body>
-
-<todolist title="My Tasks" todos="${[{title:'Task One'}]}"></todolist>
-
-<div id="yourtasks"></div>
-
-<script>
-const todos = ToDoList({title:"Your Tasks",todos:[{title:"Task One"}]});
-document.getElementById("yourtasks").appendChild(todos).render();
-</script>
+<button-counter1></button-counter1>
+<button-counter2></button-counter2>
+<button-counter3></button-counter3>
+<button-counter4></button-counter4>
 </body>
+<script>
+tlx.component('button-counter1', {
+  model: function () {
+    return {
+      count: 0
+    }
+  },
+  controller: function() {
+  	return {
+  		onclick: function(event) { this.count++; }
+  	}
+  },
+  template: '<button title="${attributes.title}" onclick="${controller.onclick}">You clicked me ${model.count} times.</button>',
+  options: {reactive: true}
+});
+tlx.component('button-counter2', {
+  model: function () {
+    return {
+      count: 0
+    }
+  },
+  controller: function() {
+  	return {
+  		onclick: function(event) { return {count: ++this.count}; }
+  	}
+  },
+  template: '<button title="${attributes.title}" onclick="${controller.onclick}">You clicked me ${model.count} times.</button>',
+  options: {reactive: true, partials: true}
+});
+tlx.component('button-counter3', {
+  model: function () {
+    return {
+      count: 0
+    }
+  },
+  controller: function() {
+  	return {
+  		onclick: function(event) { this.count++; this.update(); }
+  	}
+  },
+  template: '<button title="${attributes.title}" onclick="${controller.onclick}">You clicked me ${model.count} times.</button>'
+});
+tlx.component('button-counter4', {
+  model: function () {
+    return {
+      count: 0
+    }
+  },
+  controller: function() {
+  	return {
+  		onclick: function(event) { this.update({count: ++this.count}); }
+  	}
+  },
+  template: '<button title="${attributes.title}" onclick="${controller.onclick}">You clicked me ${model.count} times.</button>',
+  options: {partials: true}
+});
+</script>
 </html>

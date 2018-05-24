@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-vtdom.js"></script>
+</head>
+<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'}})">
+<div>
+	<div>
+	Name: <input value="${name}">
+		<div>
+		City: ${address.city}, State: ${address.state}
+		</div>
+	</div>
+</div>
+</body>
+</html>

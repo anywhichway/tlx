@@ -1,30 +1,23 @@
 
 
-# TLX v0.2.8b.
+# TLX v0.2.9b.
 
 Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.
 
-TLX is a tiny multi-paradigm front-end toolkit that lets you use core aspects of your favorite framework programming style. With TLX you can use the style appropriate to the job without re-tooling. You can use from 1.6 to 5K depending on what capability you need.
+TLX is a tiny (from 1.6 to 3.3K) multi-paradigm, less opinionated, front-end toolkit that lets you use core aspects of your favorite framework programming style. With TLX you can use the style appropriate to the job or skills of the team.
 
-Use just the parts you want (sizes are minified and GZipped):
+Optional modules for routing and HTML sanitizing are on the way.
 
-`tlx-vtdom.min.js` - 1.7K Supports objects as attribute values.  Enables "inverted JSX", i.e. puts the focus on HTML while supporting the power of in-line template literals. All other modules depend on this.
+`tlx-core.js` - Roughly equivalent to Hyperapp. 1.7K minifed and Gzipped, 3.8K minified, 8.7K raw. 
+`tlx-vtdom.js` - Replaces JSX with HTML string literal substitution. 0.9K minifed and Gzipped, 1.8K minified, 4K raw. 
+`tlx-reactive.js` -  Adds basic reactivity without the need for controllers and views. 0.5K minifed and Gzipped, 0.7K minified, 2.3K raw.
+`tlx-directives.js` - Adds standard directives like `t-if` and `t-for`. Supports custom directives. 0.6K minifed and Gzipped, 1.2K minified, 3.3K raw. 
+`tlx-component.js` - Adds custom tags and Riot like components. 0.8K K minifed and Gzipped, 1.6K minified,  4.1K raw.
+`tlx-protect.js` - Adds HTML script injection protection.  0.8K K minifed and Gzipped, 1.6K minified,  2.8K raw.
+`tlx.js` - All files combined. Roughly equivalent to Vue. 3.9K minifed and Gzipped, 12.5K minified, 19.5K raw. 
 
-`tlx-sanitize.min.js` - 1.2K Provides automatic input and attribute escaping to help prevent HTML injection.
 
-`tlx-directives.min.js` - 0.5K If you like Vue or Angular, you can also use the built-in [directives](##directives) `t-if`, `t-foreach`, `t-for`, and `t-on`. Or, [add your own directives](#directives). Depends on tlx-html.
-
-`tlx-component.min.js` - 0.7K Enables components.
-
-`tlx-state.min.js` - 0.9K Adds uni-directional and bi-directional state [reactivity](##reactivity) to a manner similar to Vue and many other libraries. Adds `t-state` directive.
-
-`tlx-template.min.js` -  0.7k Adds the ability to define components using HTML template tags similar to Riot. Includes support for scoped styles. Depends on tlx-components.
-
-`tlx-polyfill.min.js` - 0.9K A polyfill for [Custom Elements](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Custom_Elements). The standard lifecyle events are respected and invoked. Depends on tlx-components.
-
-Watch for `tlx-router.js` coming soon.
-
-`tlx.min.js` - 5.4K minifed and Gzipped, includes everything ... 22.8K minified, 38.6K raw.
+`tlx-route.js` - COMING SOON. K minifed and Gzipped, minified,  raw. Adds a router.
 
 
 ***Don't forget***, give us a star if you like what you see!
@@ -33,13 +26,15 @@ Watch for `tlx-router.js` coming soon.
 
 <h2>[Installation](#installation)</h2>
 
-<h2>[API](#api)</h2>
+<h3>[Overview](#overview)</h3>
 
-<h3>[Core](#core)</h3>
+<h2>[Usage](#usage)</h2>
 
-<h3>[Sanitize](#santize)</h3>
+<h3>[Model View Controller Apps](#model-view-controller-apps)</h3>
 
-<h3>[HTML](#html)</h3>
+<h3>[HTMLTemplates](#html-templates)</h3>
+
+<h3>[Reactivity](#reactivity)</h3>
 
 <h3>[Directives](#directives)</h3>
 
@@ -47,13 +42,13 @@ Watch for `tlx-router.js` coming soon.
 
 <h4>[Custom Directives](#custom-directives)</h4>
 
-<h3>[Reactive](#reactive)</h3>
-
 <h3>[Component](#component)</h3>
 
-<h3>[Template](#template)</h3>
+<h3>[Template Tag](#template-tag)</h3>
 
-<h3>[Polyfill](#polyfill)</h3>
+<h3>[Protect](#protect)</h3>
+
+<h3>[API](#api)</h3>
 
 <h2>[Design Notes](#design-notes)</h2>
 
@@ -68,39 +63,131 @@ Watch for `tlx-router.js` coming soon.
 
 # Usage
 
-Load the files you need from the `browser` directory.
+Load the files you need from the `dist` directory.
 
-Call `tlx.enable()` before you try to use anything else.
+## Overview
 
-# API
+Tlx provides a set of layered functions to support the implementation of reactive HTML front ends using the programming style most appropriate to the team or job at hand. While doing this it attempts to leverage as much built-in Javascript capability as possible and add minimal things to learn that can't be directly applied elsewhere. 
 
-## Core
+For example, although most people feel Vue is far easier to learn than React and Angular, it still adds ...
 
-The `core` module API exposes three functions useful to a developer:
+Vue
 
-`{sanitize,html,directives,component,template,reactive,polyfill} tlx.enable(options)` - The options object has a boolean flag for each `tlx` module, `sanitize`, `html`, `directives`, `component`, `template`, `reactive`, `polyfill`. The flag is automatically set to true if the module is loaded. The `polyfill` flag can also be set to `force` to overwrite natively supported behavior with that of the polyfill. When called, the function ehances a number of built-in DOM prototypes of functions and checks dependencies, e.g. the `template` module requires that the `component` module is loaded. The function returns a copy of the options.
+```javascript
 
-`{object,element,controller} tlx.bind(object,htmlOrElement,controller)` - Used internally and also exposed to developers to attach an object and/or controller to an HTMLElement. A bound `object` provide data storage that is inherited down the DOM tree. This should generally be used for storing "business logic" state. DOM Attributes should be used for storing UI state. If the second argument is a string it should be HTML that has a single containing tag. It will be converted into an HTMLElement. The `controller` should take a single `Event` object as an argument. The returned `object` is a proxy for the one passed in. The `tlx.bind` function provides the core reactivity capability, but reactivity is not turned on unless the `reactive` module is loaded or `tlx.enable` is called with `{reactive:true}`. See [HTML Module](#html) for an example of using `tlx.bind`.
+```
 
-The remainder of the core wraps some existing DOM functions such as `setAttribute` and `getAttribute` in order to support transparent storage of complex data in addition to primitives and reduces the chance of HTML injection by using `tlx.escape`. It also adds some default behavior to DOM prototypes, i.e. `render` is added to `HTMLElement`, `Attr` and `Text`. See [Design Notes](#design-notes) for more detail.
+vs Tlx
 
-## Sanitize
+```javascript
 
-The `sanitize` module reduces the chance of HTML injection attacks. Including the module automatically enhances the build-in JavaScript prompt function to sanitize or reject dangerous input. Once `tlx.enable` is called, `setAttribute` is also enhanced.
+```
 
-`escapedData tlx.escape(data)` - Used internally to provide a measure of HTML injection protection, but exposed to developers as a convenience. `tlx.escape` takes any argument type and replaces angle brackets with entities in strings, removes functions from objects, and returns `undefined` if the argument is a function or convertable into a function. It also converts input strings to numbers or booleans if possible. This reduces the possibility that a user will be able to enter executable code via a URL that fills in a form which is then presented to another user or enter code that gets stored and then re-rendered for another individual. See [Finding HTML Injection Vulns](https://blog.qualys.com/technology/2013/05/30/finding-html-injection-vulns-part-i) or search Google for more information about the risks of HTML injection. 
+Deep in-side Tlx uses, for the most part, a functional programming style that simulates data immutability. However, on the surface, you can use either the immutable style prefered with Hyperapp or instances of classic JavaScript objects that combine functionality and data. These classic objects can be used at one and the same time for data models and controllers. For example, where in Hyperapp you would do the following:
+
+```javascript
+
+```
+
+In Tlx you can any of of the below:
+
+```javascript
+
+```
+
+```javascript
+
+```
+
+Note, with Hyperapp the objects you pass in are always cloned to copies of themselves which do not have any functionality specified at the prototype or ancestor class level. With Tlx, even clones keep the functionality of the original object.
+
+Since Tlx supports inheritance you can use classic structure/data/functionality inhertiance in a single tree or two separate inhertiance trees for data and functionality or no inhertiance at all. The architectural decision is left to you and not dictated by the framework.
+
+Tlx also provides pseudo-compatibility options that can make it familiar to developers accustomed to other libraries or allow the overaly of architectural concerns, e.g. watcher functions in Vue or clustering related layout, style and functional code ala Riot templates.
+
+
+```javascript
+
+```
+
+```html
+
+
+```
+
+Tlx is agnostic as to the use of build tools and development pipelines. In fact, it is only delivered in ES16 format since most people doing substantive development have their own preferred build pipleline that will do any necesssary transpiling.
+
+Tlx can also be used in a manner that respects the separation or intergration of development responsibilites between those with a focus on style and layout (HTML and CSS) vs. those with a focus of logic (JavaScript).
+
+## Usage
+
+Load the files you need from the `dist` directory. The required files are named next to each section. For simplicity, if you wish, you can simply load `dist/tlx.js`.
+
+## Model View Controller Apps
+
+Tlx uses a Model/View/Controller paradigm, `{model:object,view:function,controller:object}`. 
+
+Models can be POJO's or instances of classes.
+
+Views are functions that when provided a `model` and a `controller` return a virtual dom in the classic form, `{tagName:string,attributes:object,children:array}`. These are typically constructed using `tlx.h(tagName,attributes={},children=[])`.
+
+Controllers can be POJO's or instances of classes. In fact, if no controller is specified, it is assumed the `model` provides the controller functionality. Hence, `controller` is an optional property.
+
+Apps are created using 
+
+```
+tlx.mvc({model:object,view:function,controller:function},
+         target:HTMLElement,
+         {reactive:boolean,partials:boolean,protect:boolean})
+```
+
+For convenience, you can also call `tlx.app(model,controller,view,target)` like Hyperapp; although, Hyperapp denotes the `controller` as `actions`.
+
+When controller functions are called, `this` is bound to the `model` unless `partials` is truthy in the options, in which case `this` will be a copy of the `model` and from the perspective of the `controller` the `model` will be immutable. When `partials` is truthy, since the `model` is not directly available to the controller it needs to return the changes it wishes made to the model (the way Hyperapp behaves). In either case, Tlx will determine what nodes need to be re-rendered and will re-render them if `reactive` is truthy. By default `reactive` and `partials` are false when apps are created with `tlx.mvc`. When apps are created with `tlx.app`, the `reactive` and `partials` options are set to true, since this is the behavior in Hyperapp.
+
+The when the option `protect` is truthy, attribute values and the text of Text nodes are escaped to help prevent HTML script injection. The function `window.prompt` is also wrapped and its return value escaped. If the return value contains executable code, then prompt is re-run asking the user to enter a new value. If the value of a `protect` is a function, it is called with the invalid value and the return value is used as a substitute. If `protect` is truthy but not a function, then the invalid value is replaced with an empty string.
+
+You can change the default option values by setting `tlx.defaults` to the value you desire.
+
+The below example displays a form that updates a model every time the input field is changed. The form is protected against script injection.
+
+```html
+<html>
+
+<head>
+<script src="../src/tlx-core.js"></script>
+</head>
+
+<body>
+<div id="form"></div>
+</body>
+
+<script>
+const h = tlx.h;
+
+const form = (model,controller) => h("div",{},[h("input",{value:model.value,onchange:(event) => controller.onchange.call(model,event)}),model.value]);
+
+tlx.defaults = {protect:(value) => { alert(`${value} is executable and invalid`); return ""; }};
+tlx.mvc({
+	model: {value:"test"},
+	view: form,
+	controller: {
+			onchange: function(event) { 
+				this.value = event.target.value;
+			}
+		}
+	},
+	document.getElementById("form"));
+</script>
+
+</html>
+```
 
 ## HTML
 
-The `html` module enhances the DOM to support resolving embeded string template literals.
+Requires: `tlx-core.js` and `tlx-vtdom.js`
 
-`primitiveOrObject HTMLElement.prototype.resolve = function(template,values={})` - This function is used extensively in `tlx` internals. However, it generally only useful to developers wishing to implement [custom directives](#custom-directives). The function takes a string containing string literal syntax and walks up the DOM tree to resolve the variables in the string. Extra values can be provided as key value pairs. The result will be a string unless the `template` being resolved is a single template literal, e.g. `${<some code>}`, in which case the result of the code will be returned.
-
-
-Below is an example of using the `html` module:
-
-
-If you want to templatize regular HTML outside of a script, bind an object to an HTMLElement with `tlx.bind`, e.g. `tlx.bind({<some data>},document.getElementbyId(<some id>));` 
+Tlx supports resolving string template literals embedded in HTML. 
 
 
 ```html
@@ -108,13 +195,11 @@ If you want to templatize regular HTML outside of a script, bind an object to an
 <html>
 <head>
 <script src="../src/tlx-core.js"></script>
-<script src="../src/tlx-html.js"></script>
-<script>tlx.enable()</script>
 </head>
-<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'}},document.getElementByTagName('body')">
+<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'}})">
 <div>
 	<div>
-	Name: ${name}
+	Name: <input value="${name}">
 		<div>
 		City: ${address.city}, State: ${address.state}
 		</div>
@@ -124,67 +209,37 @@ If you want to templatize regular HTML outside of a script, bind an object to an
 </html>
 ```
 
-Alternatively, you can use a special attribute called `state`. Note, the value for `state` is itself a template literal.
+## Reactivity
+
+Requires: `tlx-core.js` and `tlx-reactive.js`
+
+In addition to the reactivity that can be enabled using the `reactive` option to `tlx.mvc`, reactivity can be based on the `linkState(path:string,targetSelector:string)` function, a concept borrowed from Preact and enhanced. This removes the complexity of creating views and controllers.
+
+In its basic form, `linkState` takes a dot delimitted `path` and `targetSelector` (usually an id including #) of an HTML element that has a model bound to it. If no model is bound to the target, one will get created and bound. Whenever `linkState` is called, the `path` on the model bound to the target will be updated with the value of the `event.target` and the element identified by `targetSelector` will be re-rendered.
+
+This can be used completely independent of the use of `tlx.mvc`, as shown below:
 
 ```html
-<!DOCTYPE html>
-<html>
-<head>
-<script src="../src/tlx-core.js"></script>
-<script src="../src/tlx-html.js"></script>
-<script>tlx.enable()</script>
-</head>
-<body state="${{name:'Joe',address:{city:'Seattle',state:'WA'}}}">
-<div>
-	<div>
-	Name: ${name}
-		<div>
-		City: ${address.city}, State: ${address.state}
-		</div>
-	</div>
-</div>
-</body>
-</html>
-```
+<input type="text" onchange="this.linkState('name.first','#firstName')(event)">
 
-The value of the `state` attribute or binding is inherited down the DOM tree. Note above how it is possible to reference the `state` specified in the `body` element three `divs` below it. Specifying state again shadows higher level attributes of the same name in the below example from `examples/htmlmodule.html`:
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-<script src="../src/tlx-core.js"></script>
-<script src="../src/tlx-html.js"></script>
-<script>tlx.enable()</script>
-</head>
-<body state="${{name:'Joe',address:{city:'Seattle',state:'WA'}}}">
-<div>
-	<div state="${{address: {city:'New York', state:'NY'}}}">
-	Name: ${name}
-		<div >
-		City: ${address.city}, State: ${address.state}
-		</div>
-	</div>
-</div>
-</body>
-</html>
+<div id="firstName">Name:${name.first}</div>
 ```
 
 ## Directives
 
+Requires: `tlx-core.js` and `tlx-directives.js`
+
 The following attribute directives are built-in:
 
-`state`, which is a special directive in that it is not prefixed with a letter and a hyphen but supports interpolation, e.g. `state="${[1,2,3]}"`. Interpolations are frequently useful in order to simplify the expression of JSON, e.g. `state="{name: 'Bill}"` is not valid JSON, where as `state="${{name: 'Bill'}}"` is valid JavaScript and will return the correct object, i.e. `{"name":"Bill"}`. 
+`t-state`, sets the state for the DOM node it is used in. Note, interpolations are frequently useful in order to simplify the expression of JSON, e.g. `state="{name: 'Bill}"` is not valid JSON, where as `state="${{name: 'Bill'}}"` is valid JavaScript and will return the correct object, i.e. `{"name":"Bill"}`. 
 
-`t-for="${{let:<vname>, of: <array>}}"`, operates like its JavaScript counterpart, in addition to `<vname>`, the scoped variables `value`, `index`, and `array` (similar to `Array.prototype.forEach`) are available in nested HTML string literal expressions.
+`t-for="<vname> of <array>"`, operates like its JavaScript counterpart, in addition to `<vname>`, the scoped variables `value`, `index`, and `array` (similar to `Array.prototype.forEach`) are available in nested HTML string literal expressions.
 
-`t-for="${{let:<vname>, in: <object>}}"`, operates like its JavaScript counterpart except that in addition to `<vname>`, locally scoped variables `object` and `key` are available in the nested HTML string literal expressions so that `${object[key]}` can be used to retrieve a value in addition to `${object[<vname>]}`.
+`t-for="<vname> in <object>"`, operates like its JavaScript counterpart except that in addition to `<vname>`, locally scoped variables `value`, `key', and `object` are available in the nested HTML string literal expressions so that `${object[key]}` and `${value}` can be used to retrieve a value in addition to `${object[<vname>]}`.
 
-`t-foreach="${<object>}"`, is smart and operates on either an array or regular object. The variables `value`, `index` and `array` are available to nested HTML string literal expressions if an array is passed in, otherwise `key`, `value` and `object` are available.
+`t-foreach="${<objectOrArray>}"`, is smart and operates on either an array or regular object. The variables `value`, `index` and `array` are available to nested HTML string literal expressions if an array is passed in, otherwise `key`, `value` and `object` are available.
 
 `t-if="${<boolean>}"`, prevents rendering of child elements if the boolean is falsy.
-
-`t-import=<url>`, (coming soon) which will load a remote resource. Use with `t-if` to support on-demand/progressive loading.
 
 `t-on="${{<eventName>: <handler>[,<eventName>:<handler>...]}`, adds event handlers. The handler signature is the same as a normal JavaScript event handler and just takes an `Event` as an argument.
 
@@ -192,90 +247,43 @@ The following attribute directives are built-in:
 
 Iterating directives are slightly different than Vue. The iteration expression exists in an attribute on the containing element rather than the child element being duplicated, for example:
 
-TLX:
-
-```html
-<ul t-for="${{let:"item", of: [{message:'Foo'},{message:'Bar'}]}}"><li>${item.message}</li></ul>
-```
-
 Vue:
 
 ```html
-<ul><li f-for="item of [{message:'Foo'},{message:'Bar'}]">{{item.message}}</li></ul>
+<ul><li v-for="item of [{message:'Foo'},{message:'Bar'}]">{{item.message}}</li></ul>
 
 ```
+
+Tlx:
+
+```html
+<ul t-for="item of [{message:'Foo'},{message:'Bar'}]}}"><li>${item.message}</li></ul>
+```
+
+Not only was it easier to implement this way as part of Tlx, we think it is also more closely aligned with normal coding syntax and semantics.
 
 ### Custom Directives
 
-New directives can be added by augmenting the object `tlx.directives` or `tlx.directives.HTMLElement` with a key representing the directive name, e.g. `x-mydirective`, and a function as the value with the signature, `(value,template,htmlElement) ...`. Typically the function will return an interpolated template but it is also is free to change the `htmlElement` as it sees fit, e.g.:
+New directives can be added by augmenting the object `tlx.directives` with a key representing the directive name, e.g. `x-mydirective`, and a function as the value with the signature, `(vnode,node,attributeValue) ...`. `attributeValue` will be a string or a JavaScript value if the string is parseable using `JSON.parse`. The function is free to modify the `vnode` or `node` as it sees fit. The function should return a value if child nodes of `node` should be processed. If it returns `undefined`, then further processing of the `node` will be aborted. Internally the iterating directives return `undefined`. Below is the actual implementation of `t-on`.
 
 
 ```js
-tx.directives["t-for"] = (spec,template,element) => {
-	if(spec.of) {
-		return spec.of.reduce((accum,value,index,array) => accum += element.resolve(template,{[spec.let||spec.var]:value,value,index,array}),"");
-	} else {
-		return Object.keys(spec.in).reduce((accum,key) => accum += element.resolve(template,{[spec.let||spec.var]:key,value:spec.in[key],key,object:spec.in}),"");
+tlx.directives["t-on"] =  function(vnode,node,spec) {
+	for(const key in spec) {
+		vnode.attributes["on"+key] = spec[key];
 	}
+	return true;
 }
 ```
 
-## Reactive
-
-Loading the `reactive` module turns on reactivity, changes to `state` will cause re-rendering automatically. It also exposes one function:
-
-`HTMLElement.protoype.linkState(property)` - Returns an event handler function that will set `property` on the element's (or it's parent's) state based on the `target.value` of the handled `Event`. The function automatically handles conversion of the `checked` attribute to a boolean value in the target state property.
-
-```html
-<input type="text" onchange="this.linkState('name')(event)">
-```
 
 ## Component
 
-The `component` module enables self contained web components. These are custom to `tlx` and similar to those described on the [Little ToDo](https://codeburst.io/little-todo-javascript-html-components-without-frameworks-87914d6dd2e) Medium article. `Tlx` also supports more standard components with custom HTML tags using the `polyfill` module.
+Requires: `tlx-core.js`, `tlx-vtdom.js` and `tlx-component.js`
 
-The `component` module is typically used with the `html` module, but `html` is not strictly required.
+Components are associated with HTML tags and are created using `tlx.component(tagName,factory)` or `tlx.component(tagName,mvcSpec)`. If a `factory` is used it can take one argument, the attributes associated with the specific tag instance. It should return a function that takes one argument which will be called with the DOM node that is the element. The function is free to manipulate the DOM node as its sees fit. 
 
-Components are just functions that take two arguments, apply a Mixin, initialize themselves and supply a `render` function. They also have to be declared to `tlx` using a `define` statement. The rest is up to you!
-
-First, we cover the API and then provide a general template and finish with an example.
-
-`tlx.define(tagName,component)` - Registers the `tagName` with `tlx` as corresponding to the `component` creation function.
- 
-`function tlx.get(tagName)` - Returns the component creation function associated with the `tagName`. Used internally but rarely by developers.
-
-`tlx.mount(...tagNames)` - Turns all of the HTML elements in the document with the provided tag names into components. Callend automatically unless turned off using `tlx.enable`.
-
-`Promise tlx.whenDefined(tagName)` - Returns a promise that will resolve if a component function is ever registered with thew `tagName`. Rarely used. Provided for consistency with web standards.
-	
-`string tlx.getTagName(component)` - Returns the tag name associated with the 	`component` creation function. Used in every component definition. See example below.
-
-Here is the general template:
-
-```javascript
-// always provide a default element using el=document.createElement(tlx.getTagName(<your component variable>))
-const myComponent = function(defaultAttributes={},el=document.createElement(tlx.getTagName(myComponent))) {
-	// add capability required of all components
-	Object.assign(el,tlx.Mixin);
-	// all components must be initialized
-	el.initialize(Object.assign({},defaultAttributes));
-	
-	... your code here ...
-	
-	// all components must provide a render function that returns HTML
-	el.render = (attributes) =>  {
-		... your code here ...
-		return <html>;
-	}
-	// all components must return their implementing HTMLElement
-	return el;
-}
-// all components must be declared to tlx
-tlx.define(<tagName>,myComponent);
-
-```
-
-The below example, available in `examples/component.html` will render two interactive Todo lists. The first is created directly as HTML the other is created via JavaScript and then appended to the DOM.
+The below example, available in `examples/component.html`, will render 4 buttons using mvc specs. Each button behaves identically but is implemented using different approaches to reactivity or model immutability through the use of partials.
 
 
 ```html
@@ -283,124 +291,123 @@ The below example, available in `examples/component.html` will render two intera
 <html>
 <head>
 <script src="../src/tlx-core.js"></script>
-<script src="../src/tlx-html.js"></script>
+<script src="../src/tlx-vtdom.js"></script>
 <script src="../src/tlx-component.js"></script>
-<script>
-
-
-const ToDo = function({title="",listid="",done=false},el = document.createElement(tlx.getTagName(ToDo))) {
-	Object.assign(el,tlx.Mixin);
-	
-	// Note the use of default destructuring to provide both define time defaults and runtime overrides
-	el.initialize(Object.assign({title,listid,done},arguments[0])); 
-	
-	el.remove = () => {
-		el.parentElement.removeChild(el);
-	}
-	
-	// Note how we assign and return innerHTML. You could also build the DOM and then return innerHTML
-	// The escaped template literals are why we need the html module for this example.
-	el.render = (attributes) => el.innerHTML = el.resolve(`
-		<li id="\${id}">\${title} <input type="checkbox" \${(done ? "checked" : "")} onclick="(()=>{ \${listid||id}.remove('\${id}')})()"></li>
-	`,attributes);
-	return el;
-}
-tlx.define("todo",ToDo);
-
-const ToDoList = function({title="",todos=[]},el = document.createElement(tlx.getTagName(ToDoList))) {
-	const genId = () => "tid" + (Math.random()+"").substring(2); // not a great id generator, but fine for demo
-	Object.assign(el,tlx.Mixin);
-	el.initialize(Object.assign({title,todos},arguments[0]));
-	el.todos.forEach(todo => todo.id || (todo.id = genId())); 
-	el.add = () => {
-		const title = prompt("ToDo Name");
-		if(title) {
-			el.todos.push({title,id:genId()});
-			el.render();
-		}
-	}
-	el.remove = (id) => {
-		const i = el.todos.findIndex((item) => item.id===id);
-		if(i>=0) {
-			el.todos.splice(i,1);
-			el.render();
-		}
-	}
-	el.render = (attributes) => el.innerHTML = el.resolve(`
-			<p>\${title}</p>
-			<button onclick="\${id}.add()">Add Task</button>
-			<ul>
-			\${el.todos.reduce((accum,todo) => accum += ToDo(todo).render({listid:el.id}),"")}
-			</ul>
-	`,attributes);
-	return el;
-}
-tlx.define("todolist",ToDoList);
-
-
-tlx.enable();
-</script>
 </head>
 <body>
-
-<todolist title="My Tasks" todos="${[{title:'Task One'}]}"></todolist>
-
-<div id="yourtasks"></div>
-
-<script>
-const todos = ToDoList({title:"Your Tasks",todos:[{title:"Task One"}]});
-document.getElementById("anotherlist").appendChild(todos);
-</script>
+<button-counter1></button-counter1>
+<button-counter2></button-counter2>
+<button-counter3></button-counter3>
+<button-counter4></button-counter4>
 </body>
+<script>
+tlx.component('button-counter1', {
+  model: function () {
+    return {
+      count: 0
+    }
+  },
+  controller: function() {
+  	return {
+  		onclick: function(event) { this.count++; }
+  	}
+  },
+  template: '<button title="${attributes.title}" onclick="${controller.onclick}">You clicked me ${model.count} times.</button>',
+  options: {reactive: true}
+});
+tlx.component('button-counter2', {
+  model: function () {
+    return {
+      count: 0
+    }
+  },
+  controller: function() {
+  	return {
+  		onclick: function(event) { return {count: ++this.count}; }
+  	}
+  },
+  template: '<button title="${attributes.title}" onclick="${controller.onclick}">You clicked me ${model.count} times.</button>',
+  options: {reactive: true, partials: true}
+});
+tlx.component('button-counter3', {
+  model: function () {
+    return {
+      count: 0
+    }
+  },
+  controller: function() {
+  	return {
+  		onclick: function(event) { this.count++; this.update(); }
+  	}
+  },
+  template: '<button title="${attributes.title}" onclick="${controller.onclick}">You clicked me ${model.count} times.</button>'
+});
+tlx.component('button-counter4', {
+  model: function () {
+    return {
+      count: 0
+    }
+  },
+  controller: function() {
+  	return {
+  		onclick: function(event) { this.update({count: ++this.count}); }
+  	}
+  },
+  template: '<button title="${attributes.title}" onclick="${controller.onclick}">You clicked me ${model.count} times.</button>',
+  options: {partials: true}
+});
+</script>
 </html>
 ```
 
-## Template
+## Template Tag
 
-Similar to `Riot`, the `template` module lets you define components directly in your HTML file!
+Requires: `tlx-core.js` and `tlx-component.js`. `tlx-vdom` will also be very useful.
 
-The `template` module exposes no functions for use by application developers. Once enbaled, its behavior is automatic.
+Similar to `Riot`, you can also define components in an HTML `template` block. 
 
-The `component` and `html` modules are required for this to work. The code beow can be found in `examples/template.html`. Note the use of scoped styles.
+When using templates the following are true:
+
+1) The required attribute `t-tagname` is used to asociate a custom element with the template.
+
+2) The optional boolean attribute `t-reactive` can be present to automatically re-render the component if any of its data changes.
+
+3) Other attributes will be available as properties on the instance of the component.
+
+4) The `this` keyword will refer to the instance of the component.
+
+5) The `style` block will be scoped to the instances of the component.
+
+The code beow can be found in `examples/template.html`. Note the use of scoped styles.
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
-<script src="../src/tlx-core.js"></script>
-<script src="../src/tlx-html.js"></script>
-<script src="../src/tlx-component.js"></script>
-<script src="../src/tlx-template.js"></script>
-
-<script>tlx.enable();</script>
-
-<template t-tagname="x-todo" title="Untitled Tasks">
-	<h3 onclick="${id}.changeTitle(event)">${title}</h3>
-	
-	// render the actual list
-  	<ul onclick="${id}.addTask()" >${tasks.reduce((accum,item) => accum += (`<li>${item}</li>`),"")}</ul>
+<script src="../src/tlx.js"></script>
+<template t-tagname="testtag" t-reactive="true" title="Untitled Tasks (click to title)">
+	<h3 onclick="${this.changeTitle}">${this.title}</h3>
+	<button onclick="${this.addTask}">Add Task</button>
+  	<ul t-foreach="${this.tasks}"><li>${value}</li></ul>
   	
-  	// these will be scoped automatically
 	<style>
 		h3 { font-size: 120% }
 		font-style: italic;
 	</style>
-  
+	
 	<script>
 		this.tasks = ["Task One"];
 		this.addTask = function() {
 			const task = prompt("Task Name:");
 			if(task) {
 				this.tasks.push(task);
-				this.render();
 			}
 			event.stopPropagation();
 		};
 		this.changeTitle = function(event) { 
 			const title = prompt("New Title:");
 			if(title) {
-				this.setAttribute("title",title);
-				this.render(); // the reactive module has not be loaded, so we need to force render
+				this.title = title;
 			}
 			event.stopPropagation();
 		}
@@ -408,109 +415,17 @@ The `component` and `html` modules are required for this to work. The code beow 
 </template>
 </head>
 <body>
-
-
-<x-todo id="mytodos" title="My Tasks"></x-todo>
-
-<div id="yourtasks"></div>
-
-<script>
-setTimeout(() => {
-	const todos = tlx.get("x-todo")({title:"Your Tasks",tasks:["Your First Task"]});
-	todos.render();
-	document.getElementById("yourtasks").appendChild(todos);
-});
-</script>
-
 </body>
 </html>
 ```
 
-## Polyfill
+## Protect
 
-The `polyfill` module let's you create custom elements based on the [HTML standard](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Custom_Elements).
+`escapedData tlx.escape(data)` - Used internally to provide a measure of HTML injection protection, but exposed to developers as a convenience. `tlx.escape` takes any argument type and replaces angle brackets with entities in strings, removes functions from objects, and returns `undefined` if the argument is a function or convertable into a function. It also converts input strings to numbers or booleans if possible. This reduces the possibility that a user will be able to enter executable code via a URL that fills in a form which is then presented to another user or enter code that gets stored and then re-rendered for another individual. See [Finding HTML Injection Vulns](https://blog.qualys.com/technology/2013/05/30/finding-html-injection-vulns-part-i) or search Google for more information about the risks of HTML injection. 
 
-Loading the polyfill will automatically patch non-compliant browsers when `tlx.enable` is called. You can force compliant browsers to use the polyfill code with the option `{polyfill: force}`.
+# API
 
-The polyfill wraps `HTMLElement` in some additional code so that `super` can take and argument which is the tag name to use for the custom element. The wrapper code creates the element in non-compliant browsers and sets it onto the property `__el__`. This property should subsequently be used and returned. If `__el__` is undefined, then the browser is compliant and `this` can be used. By using a simple convention, `const el = this.__el__ || this;`, as the first line after calling super, elements will work on both compliant and non-compliant browsers without additional work.
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<script src="../src/tlx-core.js"></script>
-<script src="../src/tlx-html.js"></script>
-<script src="../src/tlx-component.js"></script>
-<script src="../src/tlx-polyfill.js"></script>
-<script>tlx.enable({polyfill:"force"})</script>
-
-<script>
-class XTodo extends HTMLElement {
-	constructor() { 
-		super(tlx.getTagName(XTodo));
-		
-		// If the polyfill if being used, then super creates a native element and assigns it to el.
-		// The property '__el__' should be used as a replacement for 'this', if it exists, and returned.
-		const el = this.__el__ || this;
-		
-		// Define tasks local to the instance
-		el.tasks = ["Task One"];
-		
-		return el;
-	}
-	// Custom methods for the Todo component.
-	addTask(event) {
-		const task = prompt("Task Name:");
-		if(task) {
-			this.tasks.push(task);
-			event.currentTarget.innerHTML = this.buildList();
-		} 
-		event.stopPropagation();
-	}
-	buildList() {
-		return this.tasks.reduce((accum,item) => accum += `<li>${item}</li>`,"");
-	}
-	changeTitle(event) {
-		const title = prompt("New Title:");
-		if(title) {
-			this.setAttribute("title",title);
-			event.target.innerHTML = title;
-		}
-		event.stopPropagation();
-	}
-	render(attributes) { // Always define a render function that takes an attribute map, i.e. {<name>:<value>,...}, as an argument.
-		this.innerHTML = "";
-		const h3 = document.createElement("h3"),
-			ul = document.createElement("ul"),
-			title = (attributes ? attributes.title : this.title || "Untitled Tasks");
-		h3.innerHTML = title;
-		ul.innerHTML = this.buildList();
-		h3.onclick = (event) => this.changeTitle(event);
-		ul.onclick = (event) => this.addTask(event);
-		this.appendChild(h3);
-		this.appendChild(ul);
-	}
-	connectedCallback() {
-		console.log("Connected");
-	}
-	attributeChangedCallback(name,oldValue,newValue) {
-		console.log(arguments);
-	}
-	static get observedAttributes() { return ["title"]; }
-}
-customElements.define("x-todo",XTodo);
-
-</script>
-
-</head>
-<body>
-
-<x-todo id="mytodos" title="My Tasks"></x-todo>
-
-</body>
-</html>
-```
+To be written
 
 # Design Notes
 
@@ -529,11 +444,11 @@ The HTML5 standard data attribute type and the `dataset` property on HTMLElement
 
 The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 
-Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular` and `Riot`. We also got inspiration from `Ractive`, `moon`, and `hyperapp`. 
-
-Portions of TLX were drawn from another AnyWhichWay codebase `fete`, which reached its architectural limits and is no longer maintained.
+Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-05-24 v0.2.9b - Renamed `state` to `t-state`. Modified `t-for` and `t-in` to parse text instead of taking object arguments. Dropped custom elements polyfill. Added `t-reactive` tag for Riot like templates. Eliminated need to call `tlx.enable()`. Renamed `tlx-sanitize` to `tlx-protect`. ***NOTE***: Unit tests not yet updated, but lots of examples!
 
 2018-01-21 v0.2.8b - BETA regorganized modules. WARNING: Docs out of date. Server side unit tests and bundles `tlx.js` file not working.
 

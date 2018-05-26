@@ -1,0 +1,15 @@
+const h = tlx.h;
+
+const form = (model,controller) => h("div",{},[h("input",{value:model.value,onchange:(event) => controller.onchange.call(model,event)}),model.value]);
+
+tlx.defaults = {protect:(value) => { alert(`${value} is executable and invalid`); return ""; }};
+tlx.mvc({
+	model: {value:"test"},
+	view: form,
+	controller: {
+			onchange: function(event) { 
+				this.value = event.target.value;
+			}
+		}
+	},
+	document.getElementById("form"));

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-vtdom.js"></script>
+<script src="../src/tlx-component.js"></script>
+</head>
+<template t-tagname="template-demo" t-reactive="true" title="Untitled Demo (click to title)">
+	<h3 onclick="${this.changeTitle}">${this.title}</h3>
+
+	<button onclick="${this.onclick}">You clicked me ${this.count} times.</button>
+  	  	
+	<style>
+		h3 { font-style: italic }
+	</style>
+	
+	<script>
+		this.count = 0;
+		this.onclick = function(event) {
+			this.count++;
+		};
+		this.changeTitle = function(event) { 
+			const title = prompt("New Title:");
+			if(title) {
+				this.title = title;
+			}
+		}
+	</script>
+</template>
+<body onload="tlx.mvc()">
+<template-demo></template-demo>
+</body>
+</html>

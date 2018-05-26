@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-vtdom.js"></script>
+<script src="../src/tlx-directives.js"></script>
+</head>
+<body>
+<div>
+<ul t-for="item of [1,2,3]"><li>${value}</li></ul>
+
+<ul t-forEach="${[1,2,3]}"><li>${value}</li></ul>
+
+<ul t-for="value in {name:'Joe',age:27}"><li>${key}: ${value}</li></ul>
+
+<ul t-forEach="${{name:'Joe',age:27}}"><li>${key}: ${value}</li></ul>
+
+<div t-if="false">false</div>
+
+<div t-if="${false}">false</div>
+
+<div t-if="true">true</div>
+
+<div t-if="${true}">true</div>
+
+<div t-on="${{click: function(event) { alert('ok'); }}}" t-if="${3}">Click Me</div>
+
+<div @="${{click: function(event) { alert('ok'); }}}" t-if="${3}">Click Me</div>
+
+</div>
+</body>
+<script>
+tlx.mvc({template:document.body.innerHTML},document.body)
+</script>
+</html>

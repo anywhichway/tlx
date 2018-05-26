@@ -41,19 +41,33 @@ Tlx can also be used in a manner that respects the separation or intergration of
 # Contents
 
 *[Installation](#installation)
+
 *[Usage](#usage)
+
     *[Model View Controller Apps](#model-view-controller-apps)
+    
     *[HTMLTemplates](#html-templates)
+    
     *[Reactivity](#reactivity)
+    
     *[Directives](#directives)
+    
     *[Iterating Directives](#iterating-directives)
+    
     *[Custom Directives](#custom-directives)
+    
     *[Component](#component)
+    
     *[HTML Templates](#html-templates)
+    
     *[Protect](#protect)
+    
 *[API](#api)
+
 *[Design Notes](#design-notes)
+
 *[Acknowledgements](#acknowledgements)
+
 *[Release History](#release)
 
 

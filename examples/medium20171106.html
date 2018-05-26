@@ -1,0 +1,55 @@
+<html>
+<head>
+<script src="../browser/tlx-core.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/preact@8.2.6/dist/preact.min.js"></script>
+</head>
+<body>
+
+<div id="helloworld"></div>
+<script>
+	const el = document.getElementById("helloworld"),
+		message = "Hello World";
+	//preact.render((<div>{message}</div>),el);
+	preact.render(tlx`<div>${message}</div>`,el);
+</script>
+
+<div id="todos"></div>
+<script>
+const todos = ["task one","task two"],
+	addItem = (event) => {
+		todos.push(event.target.value);
+		runTodo();
+	},
+	removeItem = (event) => {
+		const i = todos.indexOf(event.target.innerText);
+		todos.splice(i,1);
+		runTodo();
+		return false;
+	}
+	runTodo = () => {
+		const el = document.getElementById("todos");
+		while(el.lastChild) el.removeChild(el.lastChild);
+		/* preact.render((
+				<div>
+					<p>My Tasks</p>
+					<form>
+						<input type="text" onChange="{addItem}">
+						<ul>{todos.map(item => (<li><a href="javascript:" onClick="{removeItem}">{item}</a></li>))}</ul>
+					</form>
+				</div>),
+			el); */
+		preact.render(tlx`
+				<div>
+				<p>My Tasks</p>
+				<form>
+					<input type="text" onChange="${addItem}">
+					<ul>${todos.map(item => tlx`<li><a href="javascript:" onClick="${removeItem}">${item}</a></li>`)}</ul>
+				</form>
+				</div>`,
+			el);
+	};
+runTodo();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+<html>
+<head>
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-render.js"></script>
+<script src="../src/tlx-directives.js"></script>
+<script>
+const replacements = {
+		data: {
+			name: "Joe",
+			pii: {
+				age: 27,
+				phone: "(555)-555-1212"
+			}
+		},
+		html: {
+			title: "TLX Example"
+		}
+	};
+</script>
+</head>
+<body onload="document.tlxRender(replacements)">
+${!(document.title=html.title)||""}
+Hello <b>${data.name}</b>, we have the following information about you:
+<ul t-foreach="${data.pii}">
+<li>${key} : ${value}</li>
+</ul>
+</body>
+</html>

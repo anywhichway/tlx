@@ -1,3 +1,113 @@
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function() {
+	const tlx = require("./src/tlx-core.js");
+	require("./src/tlx-render.js");
+	require("./src/tlx-directives.js");
+	require("./src/tlx-reactive.js");
+	require("./src/tlx-component.js");
+})();
+},{"./src/tlx-component.js":2,"./src/tlx-core.js":3,"./src/tlx-directives.js":4,"./src/tlx-reactive.js":5,"./src/tlx-render.js":6}],2:[function(require,module,exports){
+if(!window.customElements) {
+	function getConstructorText(cls) {
+		if(cls.prototype.constructor) {
+			let source = (cls.prototype.constructor+"").replace(/\n/g," "),
+				start = source.indexOf("constructor"),
+				count = 1,
+				end = 0;
+			if(start>=0) {
+				source = source.substring(start+11).trim();
+				start = source.indexOf("{");
+				source = source.substring(start+1);
+				while(count!=0 && end<source.length) {
+					if(source[end]==="{") {
+						count++;
+					} else if(source[end]==="}") {
+						count--;
+					}
+					end++;
+				}
+				return source.substring(0,--end);
+			}
+		}
+		return "";
+	}
+	const customElements = window.customElements = {};
+	const promises = {};
+	Object.defineProperty(customElements,"define",{enumerable:false,configurable:true,writable:true,value:(name,constructor,options={}) => {
+		const promise = (customElements[name] && customElements[name] instanceof Promise ?  customElements[name] : null);
+		customElements[name] = constructor;
+		!promise || promise.resolve();
+	}});
+	Object.defineProperty(customElements,"get",{enumerable:false,configurable:true,writable:true,value:(name) => {
+		if(!customElements[name] || customElements[name] instanceof Promise) {
+			return;
+		}
+		return customElements[name];
+	}});
+	Object.defineProperty(customElements,"when",{enumerable:false,configurable:true,writable:true,value:(name) => {
+		if(!promises[name]) {
+			let resolver;
+			promises[name] = new Promise((resolve) => resolver = resolve);
+			promises[name].resolve = resolver;
+		}
+		customElements[name] || (customElements[name] = promises[name]);
+		return promises[name];
+	}});
+	__createElement = document.createElement;
+	document.createElement = (tagName,options={}) => {
+		const ctor = customElements.get(tagName),
+			el = __createElement.call(document,tagName);
+		if(ctor) {
+			if(ctor.create) {
+				ctor.create(null,el);
+			} else {
+				Object.setPrototypeOf(el,ctor.prototype);
+				const source = getConstructorText(ctor);
+				!source || (Function(source.replace("super()","true"))).call(el);
+			}
+		}
+		!el.adoptedCallback || el.adoptedCallback(null,document);
+		return el;
+	}
+	__adoptNode = document.adoptNode;
+	document.adoptNode = function(node) {
+		const owner = node.ownerDocument;
+		__adoptNode.call(document,node);
+		!node.adoptedCallback || node.adoptedCallback(owner,document);
+		return node;
+	};
+
+	(function() {
+		const observer = new MutationObserver(mutations => {
+			for(let mutation of mutations) {
+				const target = mutation.target;
+				if(mutation.type==="childList") {
+					for(let child of [].slice.call(mutation.addedNodes)) {
+						const ctor = customElements.get(child.localName);
+						if(ctor && !(child instanceof ctor)) {
+							if(ctor.create) {
+								ctor.create(null,child);
+							} else {
+								Object.setPrototypeOf(el,ctor.prototype);
+								const source = getConstructorText(ctor);
+								!source || (Function(source.replace("super()","true"))).call(child);
+							}
+						}
+						!child.connectedCallback || child.connectedCallback.call(child);
+					}
+					for(let child of [].slice.call(mutation.removedNodes)) {
+						!child.disconnectedCallback || child.disconnectedCallback.call(child);
+					}
+				} else if(mutation.type==="attributes" && target.attributeChangedCallback) {
+					target.attributeChangedCallback(target.attributeName,target.oldValue,target.getAttribute(target.attributeName),target.attributeNamespace);
+				}
+			}
+		});
+		observer.observe(document,{childList: true, subtree: true, attributes: true});
+	})();
+}
+document.registerTlxComponent = function(tagName,cls) { customElements.define(tagName,cls); } // deprecating Nov 2017, v0.1.6
+},{}],3:[function(require,module,exports){
 (function() {
 
 	/* Copyright 2017, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -552,3 +662,396 @@
 		window.tlx = tlx;
 	}
 }).call(this);
+},{}],4:[function(require,module,exports){
+(function(tlx) {
+	"use strict";
+	tlx.directives = {
+		VNode: {
+			"t-if": (value,vnode) => {
+				if(!value) {
+					vnode.children = null;
+				}
+			},
+			"t-for": (value,vnode,node) => {
+				if(typeof(value)==="string") {
+					const [key,op] = value.replace(/\</g,"\\<").split(" "),
+						newchildren = [];
+					if(op==="of") {
+						const target = value.substring(value.indexOf(" of ")+4),
+							array = JSON.parse(target);
+						let extras = {array};
+						for(let index=0;index<array.length;index++) {
+							extras = Object.assign({},extras);
+							extras.index = index;
+							extras.value = array[index];
+							extras[key] = array[index];
+							for(let child of vnode.children) {
+								const newchild = Object.assign(Object.create(Object.getPrototypeOf(child)),child);
+								if(child.attributes) {
+									newchild.attributes = Object.assign({},child.attributes);
+									newchild.attributes.state = extras
+								} else {
+									newchild.state = extras;
+								}
+								newchildren.push(newchild);
+							}
+						}
+					} else if(op==="in") {
+						const target = value.substring(value.indexOf(" in ")+4),
+							object = JSON.parse(target);
+						for(let property in object) {
+							let extras = {object};
+							for(let child of vnode.children) {
+								extras = Object.assign({},extras);
+								extras.key = property;
+								extras[key] = property;
+								const newchild = Object.assign(Object.create(Object.getPrototypeOf(child)),child);
+								if(child.attributes) {
+									newchild.attributes = Object.assign({},child.attributes);
+									newchild.attributes.state = extras
+								} else {
+									newchild.state = extras;
+								}
+								newchildren.push(newchild);
+							}
+						}
+					}
+					vnode.children = newchildren;
+				}
+			},
+			"t-foreach": (value,vnode,node) => {
+				const object = value,
+					newchildren = [];
+				if(Array.isArray(value)) {
+					for(let key=0;key<object.length;key++) {
+						const value = object[key];
+						for(let child of vnode.children) {
+							const newchild = Object.assign(Object.create(Object.getPrototypeOf(child)),child);
+							if(child.attributes) {
+								newchild.attributes = Object.assign({},child.attributes);
+								newchild.attributes.state = {value,key,object};
+							} else {
+								newchild.state = {value,key,object};
+							}
+							newchildren.push(newchild);
+						}
+					}
+				} else {
+					for(let key in object) {
+						const value = object[key];
+						for(let child of vnode.children) {
+							const newchild = Object.assign(Object.create(Object.getPrototypeOf(child)),child);
+							if(child.attributes) {
+								newchild.attributes = Object.assign({},child.attributes);
+								newchild.attributes.state = {value,key,object};
+							}  else {
+								newchild.state = {value,key,object};
+							}
+						}
+					}
+				}
+				vnode.children = newchildren;
+			}
+		},
+		HTMLElement: {
+			"t-if": (value,vnode,node) => {
+				if(!value) {
+					while(node.lastChild) {
+						node.removeChild(node.lastChild);
+					}
+				}
+			},
+			"t-on": (value,vnode,node) => {
+				node.removeAttribute("t-on");
+				for(let event in value) {
+					//node.addEventListener(event,(event) => {
+					//	value[event](event);
+					//});
+					node["on"+event] = (e) => {
+						setTimeout(() => value[event](e));
+					}
+				}
+			}
+		}
+	};
+}(tlx));
+},{}],5:[function(require,module,exports){
+(function(tlx) {
+	"use strict";
+	HTMLElement.prototype.linkState = function(property) {
+		const f = function(event) {
+			const target = event.target;
+			if([HTMLInputElement,HTMLTextAreaElement,HTMLSelectElement,HTMLAnchorElement].some(cls => target instanceof cls)) {
+				let value;
+				if(target.type==="checkbox") {
+					value = target.checked;
+				}
+				else if(target.type==="select-multiple") {
+					value = [];
+					for(let option of [].slice.call(target.options)) {
+						!option.selected || value.push(tlx.fromJSON(option.value));
+					}
+				} else {
+					value = tlx.fromJSON(target.value);
+				}
+				const parts = property.split(".");
+				let state = this;
+				property = parts.pop(); // get final property
+				for(let key of parts) {
+					state = state[key] || {};
+				} // walk tree
+				state[property] = value; // set property
+			}
+		};
+		return f.bind(tlx.getState(this)||(this.state={}));
+	};
+	HTMLElement.prototype.setState = function(state) {
+		this.state || (tlx.options.active ? tlx.activate({}) : {});
+		Object.assign(this.state,state);
+	};
+	tlx.activate = (object) => {
+		if(!object || typeof(object)!=="object" || object.tlxDependents) {
+			return object;
+		}
+		const dependents = {},
+			proxy = new Proxy(object,{
+				get: (target,property) => {
+					if(property==="tlxDependents") {
+						return dependents;
+					}
+					const value = target[property],
+						type = typeof(value);
+					if(tlx._NODE && type!=="function" && type!=="undefined") {
+						dependents[property] || (dependents[property] = new Set());
+						dependents[property].add(tlx._NODE);
+					}
+					return value;
+				},
+				set: (target,property,value) => {
+					const oldvalue = target[property];
+					if(oldvalue!==value) {
+						const type = typeof(value);
+						!value || type!=="object" || value.tlxDependents || (value = tlx.activate(value));
+						if(typeof(oldvalue)===type==="object") {
+							const olddependents = oldvalue.tlxDependents,
+								newdependents = value.tlxDependents;
+							if(olddependents) {
+								for(let key in olddependents) {
+									newdependents[key] = olddependents[key];
+								}
+							}
+						}
+						target[property] = value;
+						if(dependents[property]) {
+							for(let dependent of dependents[property]) {
+								if(!dependent.ownerElement && !dependent.parentElement) {
+									dependents[property].delete(dependent);
+								} else {
+									dependent.vnode.node = dependent;
+									tlx.render(dependent.vnode);
+									dependent.vnode.node = null;
+								}
+							}
+						}
+					}
+					return true;
+				}
+			});
+		for(let key in object) {
+			object[key] = tlx.activate(object[key]);
+		}
+		return proxy;
+	};
+	tlx.getState = (node) => { // force resolution of parent states first
+		if(!node) {
+			return;
+		}
+		if(node.state) {
+			return node.state;
+		}
+		return tlx.getState(node.parentElement||node.ownerElement);
+	};
+	tlx.options || (tlx.options={});
+	tlx.options.reactive = true;
+		
+}(tlx));
+},{}],6:[function(require,module,exports){
+(function(tlx) {
+	
+const resolve = function(template,node,extras={},nonReactive) { // walk up the DOM tree for state data, n=node,p=property,e=extras
+	if(typeof(template)==="string" && template.indexOf("${")>=0) {
+	const code = // left align, 2 char indent, single char variables to reduce size since templates not minimized
+`let _tlx_state=n.state;
+while(!_tlx_state && n && n.parentElement||n.ownerElement) { n = n.parentElement||n.ownerElement; _tlx_state = !n || n.state; }
+if(!_tlx_state) return;
+do{
+try {
+with(e){with(_tlx_state){return $.parse__template__;}}
+}catch(err){
+if(err instanceof ReferenceError){
+const p=err.message.split(" ")[0];
+let prnt=n.parentElement||n.ownerElement,v;
+while(prnt){
+_tlx_state = prnt.state;
+if(_tlx_state && typeof(_tlx_state)==="object" && p in _tlx_state){v=_tlx_state[p];break;}
+prnt=prnt.parentElement||prnt.ownerElement;
+}
+if(typeof(v)==="undefined") return; 
+else e[p]=v;
+}else throw(err);
+}
+}while(true)`.replace(/__template__/g,"`"+template+"`");
+	tlx._NODE = (nonReactive ? null : node);
+	let value = new Function("n","$","e",code).call(node,node,tlx.$,extras);
+	tlx._NODE = null;
+	return tlx.fromJSON(value);
+	}
+	return tlx.fromJSON(template);
+};
+
+	tlx.render = (vnode,target,parent,extras) => {
+		function renderVNode(vnode,node,parent) {
+			if(vnode instanceof tlx.VText) {
+				const text = vnode.text;
+				node || (node = document.createTextNode(text));
+				!vnode.state || (node.state = vnode.state);
+				!extras || (node.tlxExtras = extras);
+				extras = node.tlxExtras;
+				!parent || node.parentNode===parent || parent.appendChild(node);
+				const value = resolve(text,node,extras);
+				if(typeof(value)==="undefined") {
+					parent && parent.removeChild(node); // should not happen, but does!
+				} else {
+					requestAnimationFrame(() => node.data = (typeof(value)==="string" ? value.replace(/&#(\d+);/g, function(match, dec) {
+						return String.fromCharCode(dec);
+					}) : value));
+				}
+				return node;
+			}
+			node || (node = document.createElement(vnode.nodeName));
+			node.vnode = vnode;
+			!extras || (node.tlxExtras = extras);
+			extras = node.tlxExtras;
+			!parent || node.parentNode===parent || parent.appendChild(node);
+			if(["template","script"].includes(vnode.nodeName)) {
+				return node;
+			}
+			const attributes = vnode.attributes || {},
+			handled = {},
+			component = (typeof(customElements)!=="undefined" ? customElements.get(node.localName) : null);
+		let value;
+		
+		if(attributes.state) {
+			const value = resolve(attributes.state,node,extras);
+			node.state = (tlx.options.reactive && tlx.options.activate ? tlx.options.activate(value) : value);
+			handled.state = node.state;
+		}
+		if(component) {
+			const attrs = Object.assign({},component.attributes,attributes);
+			!node.state || delete attrs.state;
+			tlx.render(tlx.hCompress(node.render(attrs)),null,node,extras); //component.create(node)
+		} else {
+				if(attributes.type) {
+					const value = resolve(attributes.type,node,extras);
+					tlx.setAttribute(node,"type",value);
+					handled.type = value;
+				}
+				if(attributes.options) {
+					const value =  resolve(attributes.options,node,extras);
+					tlx.setAttribute(node,"options",value);
+					handled.options = value;
+				}
+				if(attributes.value) {
+					value =  resolve(attributes.value,node,extras,true);
+					tlx.setAttribute(node,"value",value);
+					node.value = value;
+					handled.value = value;
+				}
+				for(let name in attributes) {
+					if(typeof(handled[name])==="undefined") {
+						const value = handled[name] = resolve(attributes[name],node,extras);
+						if(!tlx.directives || !tlx.directives.VNode || !(tlx.directives.VNode[name] || tlx.directives.HTMLElement[name])) {
+							tlx.setAttribute(node,name,value,extras);
+						}
+					}
+				}
+				if(tlx.directives && tlx.directives.VNode) {
+					const directives =  tlx.directives.VNode;
+					for(let name in attributes) {
+						!directives[name] || directives[name](handled[name],vnode,node);
+					}
+				}
+			}
+			const children = vnode.children||[];
+			for(let child of children) {
+				Array.isArray(child) || (child = [child]); // not sure why this needs to happen sometimes, child should never be an array
+				for(let vnode of child) {
+					const childnode = renderVNode(vnode,null,node);
+					if(!childnode) {
+						return;
+					}
+					childnode.vnode = vnode;
+				}
+			}
+			if(typeof(value)!=="undefined") {
+				tlx.setAttribute(node,"value",value,extras);
+			}
+	
+			if(tlx.directives && tlx.directives.HTMLElement) {
+				const directives =  tlx.directives.HTMLElement;
+				for(let name in attributes) {
+					!directives[name] || directives[name](handled[name] || resolve(attributes[name],node),vnode,node,extras);
+				}
+			}
+			if([HTMLInputElement,HTMLTextAreaElement].some(cls => node instanceof cls)) {
+				node.focus();
+				try { node.selectionStart = node.value.length; } catch(e) { true; }
+			}
+			return node;
+		}
+		tlx.hCompress(vnode);
+		let node = vnode.node;
+		if(node) {
+			while(node.lastChild) {
+				node.removeChild(node.lastChild);
+			}
+		}
+		node = renderVNode(vnode,node,parent);
+		if(target && target!==node) {
+			target.appendChild(node);
+		}
+		return node;
+	};
+	tlx.resolve = (template,node,extras={},nonReactive) => {
+		if(template && typeof(template)=="object") {
+			for(let key in template) {
+				template[key] = tlx.resolve(template[key],node,Object.assign({},extras),nonReactive);
+			}
+			return template;
+		} else {
+			return resolve(template,node,extras={},nonReactive);
+		}
+	};
+	tlx._NODE = null;
+	tlx.$ = {
+			parse(strings,...values) {
+				if(values.length===1 && strings.filter(item => item.length>0).length===0) {
+					return values[0];
+				}
+				let result = "";
+				for(let i=0;i<strings.length;i++) {
+					result += (strings[i] + (i<values.length ? (values[i] && typeof(values[i])==="object" ? JSON.stringify(values[i]) : values[i]) : ""));
+				}
+				return result;
+			},
+			parseValues(strings,...values) {
+				return values;
+			}
+	};
+	document.tlxRender = (data={},embedded,rerender) => {
+		!rerender || (document.tlxRender.rendered = false);
+		document.tlxRender.rendered || setTimeout(() => tlx.bind(data)(document.body,embedded));
+		document.tlxRender.rendered = true;
+	}
+}(tlx));
+},{}]},{},[1]);

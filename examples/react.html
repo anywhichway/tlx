@@ -1,0 +1,37 @@
+<html>
+<head>
+
+</head>
+<body onload="run()">
+
+<div id="render"></div>
+<div id="bound"></div>
+<div id="list"></div>
+<script id="example">
+const run = () => {
+	let el = document.getElementById("render");
+	ReactDOM.render(tlx`<p>ReactDOM.render <span>Hello, world!</span> <button onClick="() => { alert('hi!'); }">Click Me</button></p>`,el);
+	
+	el = document.getElementById("bound");
+	const model = {	onclick() { alert('hi!'); } };
+	ReactDOM.render(tlx.bind(model)`<p>bound tlx + ReactDOM.render <span>Hello, world!</span> <button onClick=${model.onclick}>Click Me</button></p>`,el);
+	
+	el = document.getElementById("list");
+	ReactDOM.render(tlx`<span>
+		ReactDOM.render list
+		<ul>
+			${[1,2,3].map(item => (tlx`<li>${item}</li>`))}
+		</ul>
+	</span>`,el);
+}	
+</script>
+<pre id="code"></pre>
+<script>
+const el = document.getElementById("code");
+el.innerHTML = document.getElementById("example").innerText.replace(/\</g,"&lt;");
+</script>
+<script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+<script src="../browser/tlx.js"></script>
+</body>
+</html>

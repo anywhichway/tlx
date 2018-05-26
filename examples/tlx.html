@@ -1,0 +1,49 @@
+<html>
+<head>
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-render.js"></script>
+<script src="../src/tlx-reactive.js"></script>
+<script src="../src/tlx-directives.js"></script>
+<script src="../src/tlx-component.js"></script>
+<script>
+class Message extends HTMLElement {
+	static get attributes() {
+		return {
+			style: "font-weight:bold"
+		}
+	}
+	render(attributes) {
+		return tlx`<div>\${message}</div>`;
+	}
+}
+customElements.define("x-message",Message);
+</script>
+</head>
+<body onload="tlx.bind({name:'Joe',address:{city:'Seattle',state:'WA'},optin:true,preferences:[1,3]})(document.getElementById('app'))">
+<div id="app">
+	
+	<div>
+	Name: <input value="${name}" oninput="${this.linkState('name')}">
+	City: <input state="${address}" value="${city}" oninput="${this.linkState('city')}">
+	State: <span state="${address}"><input value="${state}" oninput="${this.linkState('state')}"></span>
+	Opt In: <input value="${optin}" type="checkbox" onchange="${this.linkState('optin')}">
+	</div>
+	<div><select value="${preferences}" onchange="${this.linkState('preferences')}" multiple><option>1</option><option>2</option><option>3</option></select></div>
+	<div>${name}, ${address.city} ${address.state}, Optin: ${optin}, Preferences: ${preferences}</div>
+	<div state="${{name: 'Bill'}}">${name}</div>
+	<div state="${{name: 'John'}}">${name}</div>
+	<div t-if="true">True</div>
+	<div t-if="false">False</div>
+	<ul t-foreach="${['A','B','C']}"><li>${key}: ${value}</li></ul>
+	<ul t-foreach="${{name:'Joe',age:24}}"><li>${key}: ${value}</li></ul>
+	<ul t-for="item of ${[{message:'Hello'},{message:'Goodbye'}]}"><li>${item.message}</li></ul>
+	<ul t-for="property in ${{name:'Joe',age:24}}"><li>${property}: ${object[property]}</li></ul>
+	<script>function a() {}</script>
+	<x-message state="${{message:'Hello World'}}"></x-message>
+	
+	
+</div>
+
+	
+</body>
+</html>

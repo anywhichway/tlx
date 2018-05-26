@@ -1,0 +1,64 @@
+<html>
+<head>
+<script src="../browser/tlx-core.js"></script>
+<script src="../browser/tlx-render.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/preact/8.2.5/preact.min.js"></script>
+</head>
+<body>
+<div id="content"></div>
+<script id="example">
+const el = document.getElementById("content");
+
+tlx.render(tlx`<p>tlx.render 
+		<span>Hello, world! </span>
+		<button onclick="() => { alert('hi') }">Click Me</button>
+		</p>`,el);
+
+preact.render(tlx`<p>preact.render
+	<span>Hello, world! </span> 
+	<button onclick="() => { alert('hi') }">Click Me</button>
+	</p>`,el);
+
+const model = {	onclick() { alert('hi!'); } };
+
+tlx.render(tlx.bind(model)`<p>bound tlx + tlx.render
+	<span>Hello, world! </span>
+	<button onclick=${model.onclick}>Click Me</button>
+	</p>`,el);
+
+preact.render(tlx.bind(model)`<p>bound tlx + preact.render
+	<span>Hello, world!</span>
+	<button onclick=${model.onclick}>Click Me</button>
+	</p>`,el);
+
+tlx.render(tlx`<p>
+	tlx.render list
+	<ul>
+		${[1,2,3].map(item => (tlx`<li>${item}</li>`))}
+	</ul>
+	</p>`,el);
+
+preact.render(tlx`<p>
+	preact.render list
+	<ul>
+		${[1,2,3].map(item => (tlx`<li>${item}</li>`))}
+	</ul>
+	</p>`,el);
+	
+const nested = [[1,2,3],[4,5,6]];
+tlx.render(tlx`<p>
+	tlx.render nested
+	${nested.map(list => (tlx`<ul>${list.map(item => (tlx`<li>${item}</li>`))}</ul>`))}
+	</p>`,el);
+		
+</script>
+
+
+<pre id="code"></pre>
+<script>
+document.getElementById("code").innerHTML = document.getElementById("example").innerText.replace(/\</g,"&lt;");
+</script>
+
+
+</body>
+</html>

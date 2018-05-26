@@ -40,42 +40,28 @@ Tlx can also be used in a manner that respects the separation or intergration of
 
 # Contents
 
-<h2>[Installation](#installation)</h2>
-
-<h2>[Usage](#usage)</h2>
-
-<h3>[Model View Controller Apps](#model-view-controller-apps)</h3>
-
-<h3>[HTMLTemplates](#html-templates)</h3>
-
-<h3>[Reactivity](#reactivity)</h3>
-
-<h3>[Directives](#directives)</h3>
-
-<h4>[Iterating Directives](#iterating-directives)</h4>
-
-<h4>[Custom Directives](#custom-directives)</h4>
-
-<h3>[Component](#component)</h3>
-
-<h3>[Template Tag](#template-tag)</h3>
-
-<h3>[Protect](#protect)</h3>
-
-<h3>[API](#api)</h3>
-
-<h2>[Design Notes](#design-notes)</h2>
-
-<h2>[Acknowledgements](#acknowledgements)</h2>
-
-<h2>[Release History](#release-history)</h2>
+*[Installation](#installation)
+*[Usage](#usage)
+    *[Model View Controller Apps](#model-view-controller-apps)
+    *[HTMLTemplates](#html-templates)
+    *[Reactivity](#reactivity)
+    *[Directives](#directives)
+    *[Iterating Directives](#iterating-directives)
+    *[Custom Directives](#custom-directives)
+    *[Component](#component)
+    *[HTML Templates](#html-templates)
+    *[Protect](#protect)
+*[API](#api)
+*[Design Notes](#design-notes)
+*[Acknowledgements](#acknowledgements)
+*[Release History](#release)
 
 
-# Installation<a name="installation"></a>
+# Installation
 
 `npm install tlx`
 
-## Usage<a name="usage"></a>
+# Usage
 
 Load the files you need from the `dist` directory. The required files are named next to each section. For simplicity, if you wish, you can simply load `dist/tlx.js`.
 
@@ -324,7 +310,7 @@ tlx.component('button-counter4', {
 </html>
 ```
 
-## Template Tag
+## HTML Templates
 
 Requires: `tlx-core.js` and `tlx-component.js`. `tlx-vdom` will also be very useful.
 
@@ -409,7 +395,7 @@ The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
-# Release History (reverse chronological order)
+# Release History (reverse chronological order)<a name="release"></a>
 
 2018-05-26 v0.2.11b - Documentation refinements. Unit tests updated. Corrected issues with t-foreach looking at children rather than childNodes. Benchmarks still pending.
 

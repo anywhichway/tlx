@@ -20,11 +20,44 @@
 	SOFTWARE.
 	*/
 	const booleanAttribute = ["checked","disabled","hidden","multiple","nowrap","selected","required"],
-		createElement = (vnode,options) => {
-			const el = document.createElement(vnode.nodeName);
-			if(options.protect) tlx.protect(el,options.protect);
-			setAttributes(el,vnode);
-			return el;
+		createNode = (vnode,node,parent,options) => {
+			const type = typeof(vnode);
+			let append;
+			if(type==="function") {
+				vnode(node)
+			} if(vnode && type==="object") {
+				if(!node) {
+					node = append = document.createElement(vnode.nodeName);
+				} else if(node.nodeName.toLowerCase()!==vnode.nodeName) {
+					const newnode = document.createElement(vnode.nodeName);
+					node.parentNode.replaceChild(newnode,node);
+					node = newnode;
+				}
+				if(node.attributes) {
+					const remove = [];
+					for(let i=0;i<node.attributes.length;i++) {
+						const attribute = node.attributes[i];
+						if(!vnode.attributes[attribute.name]) remove.push(attribute.name);
+					}
+					while(remove.length>0) node.removeAttribute(remove.pop());
+				}
+				setAttributes(node,vnode,options);
+				while(node.childNodes.length>vnode.children.length) node.removeChild(node.lastChild);
+				vnode.children.forEach((child,i) => {
+					if(child) createNode(child,node.childNodes[i],node,options);
+				});
+			} else {
+				if(!node) {
+					node = append = new Text(vnode);
+				} else if(node instanceof Text){
+					if(node.data!==vnode) node.data = vnode;
+				} else {
+					parent = node;
+					append = new Text(vnode);
+				}
+			}
+			if(parent && append) parent.appendChild(append);
+			return node;
 		},
 		different = (o1,o2) => {
 			const t1 = typeof(o1),
@@ -52,14 +85,14 @@
 			}
 			return {nodeName,attributes,children}; 
 		},
-		mvc = function({model={},view,controller,template},target,options={}) {
+		mvc = function(config={template:document.body.firstElementChild.outerHTML},target=document.body.firstElementChild,options={}) {
+			let {model={},view,controller=model,template} = config;
 			if(!target || !(target instanceof Node)) throw new TypeError("tlx.mvc or tlx.app target must be DOM Node");
 			options = Object.assign({},tlx.defaults,options);
 			if(options.protect) {
 				if(!tlx.escape) throw new Error("tlx options.protect is true, but tlx.escape is null");
 				if(typeof(window)!=="undefined") tlx.protect(window);
 			}
-			if(!controller) controller = model;
 			if(!template && !view) throw new TypeError("tlx.mvc must specify a view or template");
 			if(!view && template) {
 				if(!tlx.vtdom) throw new Error("tlx-vtdom.js must be loaded to use templates.")
@@ -76,65 +109,24 @@
 			proxy.render(model,true);
 			return proxy;
 		},
-		realize = (vnode,target,parent,options) => {
+		realize = (vnode,target,parent,options) => { //target,parent
 			const type = typeof(vnode.valueOf());
-			// shorten target children
-			if(target && target.childNodes && target.childNodes.length>0) {
-				const start = vnode.children ? (target.childNodes.length>vnode.children.length ? vnode.children.length-1 : target.childNodes.length) : 0;
-				for(let i=start;i<target.childNodes.length;i++) target.removeChild(target.childNodes[i]);
-			}
-			// replace text vnodes;
-			if(!vnode || (type!=="object" && type!=="function")) {
-				if(target) {
-					if(target.data!=vnode) parent.replaceChild(new Text(vnode),target);
-				}	else parent.appendChild(new Text(vnode));
-				return;
-			}
 			if(target) {
-				if(type==="function") {
-					vnode(target);
-					return;
-				}
-				// remove extra attributes
-				if(target.attributes) {
-					const remove = [];
-					for(let i=0;i<target.attributes.length;i++) {
-						const attribute = target.attributes[i];
-						if(!vnode.attributes[attribute.name]) remove.push(attribute.name);
-					}
-					while(remove.length>0) target.removeAttribute(remove.pop());
-				}
-				// set current attribute values
-				setAttributes(target,vnode);
-				// create new or replacement vnodes
-				if((target.id && target.id!==vnode.key) || target instanceof Text || target.tagName.toLowerCase()!==vnode.nodeName) {
-					const element = createElement(vnode,options);
-					parent.replaceChild(element,target);
-					target = element;
-				}
-			} else {
-				if(type==="function") {
-					const div = document.createElement("div");
-					parent.appendChild(div);
-					vnode(div);
-					return;
-				}
-				target = createElement(vnode,options);
-				parent.appendChild(target);
+				return createNode(vnode,target,parent,options);
 			}
-			//handle children
-			vnode.children.forEach((child,i) => {
-				if(child) realize(child,target.childNodes[i],target,options);
-			});
 		},
-		setAttributes = (element,vnode) => {
+		setAttributes = (element,vnode,options) => {
 			for(const aname in vnode.attributes) {
 				const value  = vnode.attributes[aname];
 				if(aname==="style" && value && typeof(value)==="object") value = Object.keys(value).reduce((accum,key) => accum += `${key}:${value};`);
 				if(!booleanAttribute.some(name => name===aname && falsy(value))) {
 					const type = typeof(value);
 					if(type==="function" || (value && type==="object") || aname==="t-template") element[aname] = value;
-					else element.setAttribute(aname,value);
+					else {
+						if(options.protect && aname==="value") tlx.escape(value);
+						element.setAttribute(aname,value);
+						if(["checked","selected","value"].includes(aname) && element[aname]!==value) element[aname] = value;
+					}
 				}
 			}
 			if(vnode.key && !vnode.attributes.id) element.id = vnode.key;
@@ -147,14 +139,14 @@
 					Object.assign(state,newState);
 					if(force) {
 						if(updating) updating = clearTimeout(updating);
-						realize(view(model,proxy),target.firstChild,target,options);
+						target = realize(view(model,proxy),target,target.parentNode,options);
 					} else if(!updating) {
 						updating = setTimeout((...args) => { 
-								realize(...args);
+								target = realize(...args);
 								updating = false; 
 							},
 							0,
-							view(model,proxy),target.firstChild,target,options);
+							view(model,proxy),target,target.parentNode,options);
 					}
 				},
 				proxy = new Proxy(controller,{
@@ -175,7 +167,7 @@
 										if(different(compare,model)) render(model);  
 									});
 								} else {
-									if(options.partials) compare = result;
+									if(options.partials) Object.assign(model,result);
 									if(different(compare,model)) render(model); 
 								}
 							}
@@ -195,6 +187,7 @@
 	
 	const tlx = {};
 	tlx.app = (model,actions,view,target) => tlx.mvc({model,view,controller:actions},target,{reactive:true,partials:true});
+	tlx.defaults = {};
 	tlx.different = different;
 	tlx.falsy = falsy;
 	tlx.truthy = value => !falsy(value);

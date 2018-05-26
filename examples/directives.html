@@ -2,6 +2,7 @@
 <html>
 <head>
 <script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-vtdom.js"></script>
 <script src="../src/tlx-directives.js"></script>
 </head>
 <body>
@@ -18,11 +19,14 @@
 
 <div t-if="${false}">false</div>
 
-<div t-if="true">${value}</div>
+<div t-if="true">true</div>
 
-<div t-if="${true}">${value}</div>
+<div t-if="${true}">true</div>
 
-<div t-on="${{click: function(event) { alert('ok'); }}}" t-if="${3}">${value}</div>
+<div t-on="${{click: function(event) { alert('ok'); }}}" t-if="${3}">Click Me</div>
+
+<div @="${{click: function(event) { alert('ok'); }}}" t-if="${3}">Click Me</div>
+
 </div>
 </body>
 <script>

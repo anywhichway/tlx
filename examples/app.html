@@ -10,6 +10,13 @@ const h = tlx.h;
 
 const form = (model,controller) => h("div",{},[h("input",{value:model.value,onchange:(event) => controller.onchange.call(model,event)}),model.value]);
 
-tlx.app({value:"test"},{onchange: function(event) { this.value = event.target.value; }},form,document.getElementById("form"));
+tlx.app({value:"test"},
+		{onchange: 
+			function(event) { 
+				return {value:event.target.value}; 
+			}
+		},
+		form,
+		document.getElementById("form"));
 </script>
 </html>

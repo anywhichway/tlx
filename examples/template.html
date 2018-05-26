@@ -1,62 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
+<script src="../src/tlx-core.js"></script>
 <script src="../src/tlx-vtdom.js"></script>
-<script src="../src/tlx-sanitize.js"></script>
 <script src="../src/tlx-component.js"></script>
-<script src="../src/tlx-polyfill.js"></script>
-<script src="../src/tlx-template.js"></script>
+</head>
+<template t-tagname="template-demo" t-reactive="true" title="Untitled Demo (click to title)">
+	<h3 onclick="${this.changeTitle}">${this.title}</h3>
 
-<script>
-tlx.polyfill(true);
-</script>
-<template t-tagname="x-todo" title="Untitled Tasks">
-	<h3 onclick="${id}.changeTitle(event)">${title}</h3>
-	
-  	<!-- render the actual list --> 
-  	<ul onclick="${id}.addTask()" >${tasks.reduce((accum,item) => accum += (`<li>${item}</li>`),"")}</ul>
-  	
-  	<!-- these will be scoped automatically, h3's at 120%, everything italic -->
+	<button onclick="${this.onclick}">You clicked me ${this.count} times.</button>
+  	  	
 	<style>
-		h3 { font-size: 120% }
-		font-style: italic;
+		h3 { font-style: italic }
 	</style>
-  
+	
 	<script>
-		this.tasks = ["Task One"];
-		this.addTask = function() {
-			event.stopPropagation();
-			const task = prompt("Task Name:");
-			if(task) {
-				this.tasks.push(task);
-				this.render();
-			}
+		this.count = 0;
+		this.onclick = function(event) {
+			this.count++;
 		};
-		this.changeTitle = function(event) {
-			event.stopPropagation();
+		this.changeTitle = function(event) { 
 			const title = prompt("New Title:");
 			if(title) {
-				this.attributes["title"]=title;
-				this.render();
+				this.title = title;
 			}
 		}
 	</script>
 </template>
-</head>
-<body>
-
-
-<x-todo id="mytodos" title="My Tasks"></x-todo>
-
-<div id="yourtasks"></div>
-
-<script>
-/*setTimeout(() => {
-	const todos = tlx.get("x-todo")({title:"Your Tasks",tasks:["Your First Task"]});
-	todos.render();
-	document.getElementById("yourtasks").appendChild(todos);
-});*/
-</script>
-
+<body onload="tlx.mvc()">
+<template-demo></template-demo>
 </body>
 </html>

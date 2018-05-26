@@ -1,6 +1,4 @@
-
-
-# TLX v0.2.9b.
+# TLX v0.2.11b.
 
 Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.
 
@@ -16,8 +14,26 @@ Optional modules for routing and HTML sanitizing are on the way.
 `tlx-protect.js` - Adds HTML script injection protection.  0.8K K minifed and Gzipped, 1.6K minified,  2.8K raw.
 `tlx.js` - All files combined. Roughly equivalent to Vue. 3.9K minifed and Gzipped, 12.5K minified, 19.5K raw. 
 
+`tlx-route.js` - COMING SOON.
 
-`tlx-route.js` - COMING SOON. K minifed and Gzipped, minified,  raw. Adds a router.
+Tlx provides a set of layered functions to support the implementation of reactive HTML front ends using the programming style most appropriate to the team or job at hand. While doing this it attempts to leverage as much built-in Javascript capability as possible and add minimal things to learn that can't be directly applied elsewhere. 
+
+Tlx is not harder to learn than Vue and might actually be simpler since template literal substitution can be used for attributes and content; whereas, Vue does not allow mustache templates for attribute values. Tlx even supports the `@` shorthand for `t-on` like Vue does for `v-on`. No analogous shorthand is provided for `v-bind`, because it is un-necessary with template literal attribute substitution.
+
+Tlx is less opinionated than most front end libraries. It supports:
+
+1) One way or two way data binding
+2) Immutable state or mutable state in controllers/actions
+3) Distinct model and controller/action objects or single objects providing both model and controller
+4) POJOs or class instances in arbitrary depth heirarchies as models and controllers/actions 
+5) `h` function vDOM creation, string template vDOM creation, or HTML template vDom creation
+6) Pseudo-compatibility options that can make it familiar to developers accustomed to other libraries or allow the overaly of architectural concerns, e.g. @ handler shorthand like Vue, style and functional code clustering ala Riot templates, similar function names (`tlx.directive` vs `Vue.directive` or `tlx.linkState` vs `preact.linkState`).
+
+All the above should allow you to gradually move existing vanilla JavaScript into Tlx.
+
+Tlx is agnostic as to the use of build tools and development pipelines. In fact, it is only delivered in ES16 format since most people doing substantive development have their own preferred build pipleline that will do any necesssary transpiling.
+
+Tlx can also be used in a manner that respects the separation or intergration of development responsibilites between those with a focus on style and layout (HTML and CSS) vs. those with a focus of logic (JavaScript).
 
 
 ***Don't forget***, give us a star if you like what you see!
@@ -25,8 +41,6 @@ Optional modules for routing and HTML sanitizing are on the way.
 # Contents
 
 <h2>[Installation](#installation)</h2>
-
-<h3>[Overview](#overview)</h3>
 
 <h2>[Usage](#usage)</h2>
 
@@ -57,69 +71,11 @@ Optional modules for routing and HTML sanitizing are on the way.
 <h2>[Release History](#release-history)</h2>
 
 
-# Installation
+# Installation<a name="installation"></a>
 
 `npm install tlx`
 
-# Usage
-
-Load the files you need from the `dist` directory.
-
-## Overview
-
-Tlx provides a set of layered functions to support the implementation of reactive HTML front ends using the programming style most appropriate to the team or job at hand. While doing this it attempts to leverage as much built-in Javascript capability as possible and add minimal things to learn that can't be directly applied elsewhere. 
-
-For example, although most people feel Vue is far easier to learn than React and Angular, it still adds ...
-
-Vue
-
-```javascript
-
-```
-
-vs Tlx
-
-```javascript
-
-```
-
-Deep in-side Tlx uses, for the most part, a functional programming style that simulates data immutability. However, on the surface, you can use either the immutable style prefered with Hyperapp or instances of classic JavaScript objects that combine functionality and data. These classic objects can be used at one and the same time for data models and controllers. For example, where in Hyperapp you would do the following:
-
-```javascript
-
-```
-
-In Tlx you can any of of the below:
-
-```javascript
-
-```
-
-```javascript
-
-```
-
-Note, with Hyperapp the objects you pass in are always cloned to copies of themselves which do not have any functionality specified at the prototype or ancestor class level. With Tlx, even clones keep the functionality of the original object.
-
-Since Tlx supports inheritance you can use classic structure/data/functionality inhertiance in a single tree or two separate inhertiance trees for data and functionality or no inhertiance at all. The architectural decision is left to you and not dictated by the framework.
-
-Tlx also provides pseudo-compatibility options that can make it familiar to developers accustomed to other libraries or allow the overaly of architectural concerns, e.g. watcher functions in Vue or clustering related layout, style and functional code ala Riot templates.
-
-
-```javascript
-
-```
-
-```html
-
-
-```
-
-Tlx is agnostic as to the use of build tools and development pipelines. In fact, it is only delivered in ES16 format since most people doing substantive development have their own preferred build pipleline that will do any necesssary transpiling.
-
-Tlx can also be used in a manner that respects the separation or intergration of development responsibilites between those with a focus on style and layout (HTML and CSS) vs. those with a focus of logic (JavaScript).
-
-## Usage
+## Usage<a name="usage"></a>
 
 Load the files you need from the `dist` directory. The required files are named next to each section. For simplicity, if you wish, you can simply load `dist/tlx.js`.
 
@@ -135,19 +91,23 @@ Controllers can be POJO's or instances of classes. In fact, if no controller is 
 
 Apps are created using 
 
-```
+```javascript
 tlx.mvc({model:object,view:function,controller:function},
          target:HTMLElement,
          {reactive:boolean,partials:boolean,protect:boolean})
 ```
 
+When  called with no arguments, `tlx.mvc()`, will use `document.body.innerHTML` as the template and `document.body` as the target.
+
 For convenience, you can also call `tlx.app(model,controller,view,target)` like Hyperapp; although, Hyperapp denotes the `controller` as `actions`.
 
-When controller functions are called, `this` is bound to the `model` unless `partials` is truthy in the options, in which case `this` will be a copy of the `model` and from the perspective of the `controller` the `model` will be immutable. When `partials` is truthy, since the `model` is not directly available to the controller it needs to return the changes it wishes made to the model (the way Hyperapp behaves). In either case, Tlx will determine what nodes need to be re-rendered and will re-render them if `reactive` is truthy. By default `reactive` and `partials` are false when apps are created with `tlx.mvc`. When apps are created with `tlx.app`, the `reactive` and `partials` options are set to true, since this is the behavior in Hyperapp.
+When controller functions are called, `this` is bound to the `model` unless `partials` is truthy in the options, in which case `this` will be a copy of the `model` and from the perspective of the `controller` the `model` will be immutable. When `partials` is truthy, since the `model` is not directly available to the controller it needs to return the changes it wishes made to the model (the way Hyperapp behaves). In either case, Tlx will determine what nodes need to be re-rendered and will re-render them if `reactive` is truthy. 
 
-The when the option `protect` is truthy, attribute values and the text of Text nodes are escaped to help prevent HTML script injection. The function `window.prompt` is also wrapped and its return value escaped. If the return value contains executable code, then prompt is re-run asking the user to enter a new value. If the value of a `protect` is a function, it is called with the invalid value and the return value is used as a substitute. If `protect` is truthy but not a function, then the invalid value is replaced with an empty string.
+By default `reactive` and `partials` are false when apps are created with `tlx.mvc`. When apps are created with `tlx.app`, the `reactive` and `partials` options are set to true, since this is the behavior in Hyperapp.
 
-You can change the default option values by setting `tlx.defaults` to the value you desire.
+The when the option `protect` is truthy, attribute values and the text of Text nodes are escaped to help prevent HTML script injection. The function `window.prompt` is also wrapped and its return value escaped. If the return value contains executable code, then prompt is re-run asking the user to enter a new value. If the value of a `protect` is a function, it is called with the invalid value and the return value is used as a substitute. If `protect` is truthy but not a function, then the invalid value is replaced with an empty string. For convenience tlx provides `tlx.escape` as the value of `protect`, which will remove or replace executable content.
+
+You can change the default option values by setting `tlx.defaults` to the value you desire, e.g. `tlx.defaults = {reactive:true}`.
 
 The below example displays a form that updates a model every time the input field is changed. The form is protected against script injection.
 
@@ -213,16 +173,18 @@ Tlx supports resolving string template literals embedded in HTML.
 
 Requires: `tlx-core.js` and `tlx-reactive.js`
 
-In addition to the reactivity that can be enabled using the `reactive` option to `tlx.mvc`, reactivity can be based on the `linkState(path:string,targetSelector:string)` function, a concept borrowed from Preact and enhanced. This removes the complexity of creating views and controllers.
+In addition to the reactivity that can be enabled using the `reactive` option to `tlx.mvc`, reactivity can be based on the `linkState(path:string,...targetSelector:string)` function, a concept borrowed from Preact and enhanced. This removes the complexity of creating views and controllers.
 
-In its basic form, `linkState` takes a dot delimitted `path` and `targetSelector` (usually an id including #) of an HTML element that has a model bound to it. If no model is bound to the target, one will get created and bound. Whenever `linkState` is called, the `path` on the model bound to the target will be updated with the value of the `event.target` and the element identified by `targetSelector` will be re-rendered.
+In its basic form, `linkState` takes a dot delimitted `path` and any number of `targetSelector` (usually ids including #) of HTML elementd that have models bound to them. If no model is bound to the target, one will get created and bound. Whenever `linkState` is called, the `path` on the model bound to the target will be updated with the value of the `event.target` and the element identified by `targetSelector` will be re-rendered.
 
-This can be used completely independent of the use of `tlx.mvc`, as shown below:
+This can be used completely independent of the use of `tlx.mvc` and automatically prevent direct and indirect looping, as shown below from `examples/linkstate.html`:
 
 ```html
-<input type="text" onchange="this.linkState('name.first','#firstName')(event)">
+First Name:<input id="firstName1" value="${name.first}" type="text" onchange="this.linkState('name.first','#firstName2','#firstName3')(event)">
 
-<div id="firstName">Name:${name.first}</div>
+<div id="firstName2">First Name:${name.first}</div>
+
+First Name:<input id="firstName3" value="${name.first}" type="text" onchange="this.linkState('name.first','#firstName2','#firstName1')(event)">
 ```
 
 ## Directives
@@ -264,7 +226,7 @@ Not only was it easier to implement this way as part of Tlx, we think it is also
 
 ### Custom Directives
 
-New directives can be added by augmenting the object `tlx.directives` with a key representing the directive name, e.g. `x-mydirective`, and a function as the value with the signature, `(vnode,node,attributeValue) ...`. `attributeValue` will be a string or a JavaScript value if the string is parseable using `JSON.parse`. The function is free to modify the `vnode` or `node` as it sees fit. The function should return a value if child nodes of `node` should be processed. If it returns `undefined`, then further processing of the `node` will be aborted. Internally the iterating directives return `undefined`. Below is the actual implementation of `t-on`.
+New directives can be added by augmenting the object `tlx.directives` with a key representing the directive name, e.g. `x-mydirective`, and a function as the value with the signature, `(vnode,node,attributeValue)`. `attributeValue` will be a string or a JavaScript value if the string is parseable using `JSON.parse`. The function is free to modify the `vnode` or `node` as it sees fit. The function should return a value if child nodes of `node` should be processed. If it returns `undefined`, then further processing of the `node` will be aborted. Internally the iterating directives return `undefined`. Below is the actual implementation of `t-on`.
 
 
 ```js
@@ -281,9 +243,11 @@ tlx.directives["t-on"] =  function(vnode,node,spec) {
 
 Requires: `tlx-core.js`, `tlx-vtdom.js` and `tlx-component.js`
 
-Components are associated with HTML tags and are created using `tlx.component(tagName,factory)` or `tlx.component(tagName,mvcSpec)`. If a `factory` is used it can take one argument, the attributes associated with the specific tag instance. It should return a function that takes one argument which will be called with the DOM node that is the element. The function is free to manipulate the DOM node as its sees fit. 
+Components are associated with HTML tags and are created using `tlx.component(tagName,factory)` or `tlx.component(tagName,mvcSpec)`. If a `factory` is used it can take one argument, the attributes associated with the specific tag instance. It should return a function that takes one argument which will be called with the DOM node that is the element. The function is free to manipulate the DOM node as its sees fit and need not return a value. 
 
 The below example, available in `examples/component.html`, will render 4 buttons using mvc specs. Each button behaves identically but is implemented using different approaches to reactivity or model immutability through the use of partials.
+
+Note, when a template is used the values `attributes`, `controller`, and `model` are available. When using a `controller` function, `this` is bound to the `model` and also has one method `update(partial)` added to it. The argument `partial` is optional and only used if the component is configured to use partials.
 
 
 ```html
@@ -384,37 +348,34 @@ The code beow can be found in `examples/template.html`. Note the use of scoped s
 <!DOCTYPE html>
 <html>
 <head>
-<script src="../src/tlx.js"></script>
-<template t-tagname="testtag" t-reactive="true" title="Untitled Tasks (click to title)">
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-vtdom.js"></script>
+<script src="../src/tlx-component.js"></script>
+</head>
+<template t-tagname="template-demo" t-reactive="true" title="Untitled Demo (click to title)">
 	<h3 onclick="${this.changeTitle}">${this.title}</h3>
-	<button onclick="${this.addTask}">Add Task</button>
-  	<ul t-foreach="${this.tasks}"><li>${value}</li></ul>
-  	
+
+	<button onclick="${this.onclick}">You clicked me ${this.count} times.</button>
+  	  	
 	<style>
-		h3 { font-size: 120% }
-		font-style: italic;
+		h3 { font-style: italic }
 	</style>
 	
 	<script>
-		this.tasks = ["Task One"];
-		this.addTask = function() {
-			const task = prompt("Task Name:");
-			if(task) {
-				this.tasks.push(task);
-			}
-			event.stopPropagation();
+		this.count = 0;
+		this.onclick = function(event) {
+			this.count++;
 		};
 		this.changeTitle = function(event) { 
 			const title = prompt("New Title:");
 			if(title) {
 				this.title = title;
 			}
-			event.stopPropagation();
 		}
 	</script>
 </template>
-</head>
-<body>
+<body onload="tlx.mvc()">
+<template-demo></template-demo>
 </body>
 </html>
 ```
@@ -422,6 +383,8 @@ The code beow can be found in `examples/template.html`. Note the use of scoped s
 ## Protect
 
 `escapedData tlx.escape(data)` - Used internally to provide a measure of HTML injection protection, but exposed to developers as a convenience. `tlx.escape` takes any argument type and replaces angle brackets with entities in strings, removes functions from objects, and returns `undefined` if the argument is a function or convertable into a function. It also converts input strings to numbers or booleans if possible. This reduces the possibility that a user will be able to enter executable code via a URL that fills in a form which is then presented to another user or enter code that gets stored and then re-rendered for another individual. See [Finding HTML Injection Vulns](https://blog.qualys.com/technology/2013/05/30/finding-html-injection-vulns-part-i) or search Google for more information about the risks of HTML injection. 
+
+To activate protection, set `protect` to truthy as documents in the introduction section on `tlx.mvc`. Or, if you wish to use protection with `linkState`, then set the global option `tlx.defaults.protect` to true, `tlx.escape` or your own escape function.
 
 # API
 
@@ -447,6 +410,10 @@ The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-05-26 v0.2.11b - Documentation refinements. Unit tests updated. Corrected issues with t-foreach looking at children rather than childNodes. Benchmarks still pending.
+
+2018-05-25 v0.2.10b - Added lots of documentation and examples.  ***NOTE***: Unit tests still not updated.
 
 2018-05-24 v0.2.9b - Renamed `state` to `t-state`. Modified `t-for` and `t-in` to parse text instead of taking object arguments. Dropped custom elements polyfill. Added `t-reactive` tag for Riot like templates. Eliminated need to call `tlx.enable()`. Renamed `tlx-sanitize` to `tlx-protect`. ***NOTE***: Unit tests not yet updated, but lots of examples!
 

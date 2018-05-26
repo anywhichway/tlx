@@ -27,15 +27,15 @@
 				vnode.children = [];
 				if(Array.isArray(items)) {
 					items.forEach((value,index,array) => {
-						for(const child of node.children) {
+						for(const child of node.childNodes) {
 							const vdom = tlx.vtdom(child,{currentValue:value,value,index,array});
 							if(vdom) vnode.children.push(vdom);
 						}
 					});
 				} else {
 					Object.keys(items).forEach((key,index,object) => {
-						value = items[key];
-						for(const child of node.children) {
+						const value = items[key];
+						for(const child of node.childNodes) {
 							const vdom = tlx.vtdom(child,{currentValue:value,key,value,index,object});
 							if(vdom) vnode.children.push(vdom);
 						}
@@ -80,6 +80,8 @@
 				return true;
 			}
 	};
+	directives["@"] = directives["t-on"];
+	tlx.directive = (key,f) => directives[key] = f;
 	if(typeof(module)!=="undefined") module.exports = (tlx) => tlx.directives = directives;
 	if(typeof(window)!=="undefined") tlx.directives = directives;
 }).call(this)

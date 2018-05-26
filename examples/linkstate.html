@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-vtdom.js"></script>
+<script src="../src/tlx-reactive.js"></script>
+</head>
+<body>
+<div>
+First Name:<input id="firstName1" value="${name.first}" type="text" onchange="this.linkState('name.first','#firstName2','#firstName3')(event)">
+
+<div id="firstName2">First Name:${name.first}</div>
+
+First Name:<input id="firstName3" value="${name.first}" type="text" onchange="this.linkState('name.first','#firstName2','#firstName1')(event)">
+</div>
+</body>
+<script>
+tlx.mvc();
+</script>
+</html>

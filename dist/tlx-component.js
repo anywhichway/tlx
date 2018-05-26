@@ -27,9 +27,9 @@
 		const	styles = clone.querySelectorAll("style")||[],
 			scripts = clone.querySelectorAll("script")||[];
 		for(let style of [].slice.call(styles)) {
-			let spec = style.innerText,
+			let spec = style.innerText||"",
 				matches = spec.match(/.*\{.+\}/g),
-				text = (matches ? matches.reduce((accum,item) => accum += `${tagname} ${item.trim()} `,"") : "");
+				text = (matches ? matches.reduce((accum,item) => accum += `.${tagname} ${item.trim()} `,"") : "");
 			spec = (matches ? matches.reduce((accum,item) => accum = accum.replace(item,""),spec) : spec);
 			matches = spec.match(/.*;/g),
 			text = (matches ? matches.reduce((accum,item) => accum += `${tagname} * {${item.trim()}} `,text) : text);
@@ -42,9 +42,9 @@
 			!newmodel || (model = newmodel);
 			clone.removeChild(script);
 		}
-		const templatehtml = "<div>"+(clone.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").trim()||"<span></span>")+"</div>";
+		const templatehtml = `<div>${(clone.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").trim()||"<span></span>")}</div>`;
 		return function(attributes) {
-			const view = () => tlx.vtdom(templatehtml,model);
+			const view = () => tlx.vtdom(templatehtml,model,tagname);
 			return target => tlx.mvc({model,view},target,{reactive}); //,options
 		}
 	},
@@ -71,8 +71,7 @@
 		for(const element of elements) {
 			customElements[tagName](element.attributes)(element);
 		}
-	},
-	onload = () => tlx.mvc({template:document.body.innerHTML},document.body);
+	};
 	
 	if(typeof(module)!=="undefined") module.exports = (tlx) => { 
 		tlx.define = tlx.component = component;

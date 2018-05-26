@@ -46,7 +46,7 @@ Tlx can also be used in a manner that respects the separation or intergration of
 
    [Model View Controller Apps](#model-view-controller-apps)
    
-   [HTMLTemplates](#html-templates)
+   [HTML](#html)
    
    [Reactivity](#reactivity)
    
@@ -56,7 +56,7 @@ Tlx can also be used in a manner that respects the separation or intergration of
    
    [Custom Directives](#custom-directives)
    
-   [Component](#component)
+   [Components](#components)
    
    [HTML Templates](#html-templates)
    
@@ -238,8 +238,7 @@ tlx.directives["t-on"] =  function(vnode,node,spec) {
 }
 ```
 
-
-## Component
+## Components
 
 Requires: `tlx-core.js`, `tlx-vtdom.js` and `tlx-component.js`
 

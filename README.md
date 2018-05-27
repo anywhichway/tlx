@@ -4,14 +4,18 @@ Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but us
 
 TLX is a tiny (from 1.6 to 3.3K) multi-paradigm, less opinionated, front-end toolkit that lets you use core aspects of your favorite framework programming style. With TLX you can use the style appropriate to the job or skills of the team.
 
-Optional modules for routing and HTML sanitizing are on the way.
-
 `tlx-core.js` - Roughly equivalent to Hyperapp. 1.9K minifed and Gzipped, 4.5K minified, 9.9K raw. 
-`tlx-vtdom.js` - Replaces JSX with HTML string literal substitution. 0.9K minifed and Gzipped, 1.8K minified, 4K raw. 
+
+`tlx-vtdom.js` - Replaces JSX with HTML string literal substitution. 0.9K minifed and Gzipped, 1.8K minified, 4K raw.
+ 
 `tlx-reactive.js` -  Adds basic reactivity without the need for controllers and views. 0.5K minifed and Gzipped, 0.7K minified, 2.3K raw.
+
 `tlx-directives.js` - Adds standard directives like `t-if`, `t-on`, `t-foreach`, `t-for`. Supports custom directives. 0.6K minifed and Gzipped, 1.2K minified, 3.3K raw. 
+
 `tlx-component.js` - Adds custom tags and Riot like components. 0.8K K minifed and Gzipped, 1.6K minified,  4.1K raw.
+
 `tlx-protect.js` - Adds HTML script injection protection.  0.8K K minifed and Gzipped, 1.6K minified,  2.8K raw.
+
 `tlx.js` - All files combined. Roughly equivalent to Vue. 4.3K minifed and Gzipped, 13.9K minified, 21.2K raw. 
 
 `tlx-route.js` - COMING SOON.

@@ -20,6 +20,25 @@
 	SOFTWARE.
 	*/
 	const booleanAttribute = ["checked","disabled","hidden","multiple","nowrap","selected","required"],
+	 clone = (data) => {
+			if(Array.isArray(data)) {
+				const result = [];
+				for(const item of data) {
+					const value = clone(item);
+					if(value!==undefined) result.push(value);
+				}
+				return result;
+			} 
+			if(data && typeof(data)==="object") {
+				const result = Object.create(Object.getPrototypeOf(data)); //{};
+				for(const key in data) {
+					const value = clone(data[key]);
+					if(value!==undefined) result[key] = value;
+				}
+				return result;
+			}
+			return data;
+		},
 		createNode = (vnode,node,parent,options) => {
 			const type = typeof(vnode);
 			let append;
@@ -86,7 +105,26 @@
 			}
 			return {nodeName,attributes,children}; 
 		},
-		mvc = function(config={template:document.body.firstElementChild.outerHTML},target=document.body.firstElementChild,options={}) {
+		merge = (target,...sources) => {
+			sources.forEach(source => {
+				if(!source || typeof(source)!=="object" || !target) return target = clone(source);
+				if(Array.isArray(source)) {
+					if(!Array.isArray(target)) return target = clone(source);
+					target.length = source.length;
+					source.forEach((item,i) => target[i] = merge(target[i],item));
+				} else {
+					Object.keys(source).forEach(key => target[key] = merge(target[key],source[key]));
+				}
+			});
+			return target;
+		},
+		mvc = function(config,target,options={}) {
+			if(!options) { 
+				options = {};
+				if(!config && !target) options.reactive = true;
+			}
+			if(!config) config={template:document.body.firstElementChild.outerHTML};
+			if(!target) target=document.body.firstElementChild
 			let {model={},view,controller=model,template} = config;
 			if(!target || !(target instanceof Node)) throw new TypeError("tlx.mvc or tlx.app target must be DOM Node");
 			options = Object.assign({},tlx.defaults,options);
@@ -99,10 +137,12 @@
 			if(!template && !view) throw new TypeError("tlx.mvc must specify a view or template");
 			if(!view && template) {
 				if(!tlx.vtdom) throw new Error("tlx-vtdom.js must be loaded to use templates.")
-				const scope = {};
-				Object.defineProperty(scope,"model",{value:model});
-				Object.defineProperty(scope,"controller",{value:controller});
-				view = (model,controller) => tlx.vtdom(template,scope);
+				view = (model,controller) => {
+					const scope = {};
+					Object.defineProperty(scope,"model",{value:model});
+					Object.defineProperty(scope,"controller",{value:controller});
+					return tlx.vtdom(template,scope);
+				}
 			}
 			const proxy = wire(model,view,controller,target,options);
 			while(target.lastChild) target.removeChild(target.lastChild);
@@ -113,7 +153,6 @@
 			return proxy;
 		},
 		realize = (vnode,target,parent,options) => { //target,parent
-			const type = typeof(vnode.valueOf());
 			if(target) {
 				return createNode(vnode,target,parent,options);
 			}
@@ -137,24 +176,25 @@
 		},
 		wire = (model,view,controller,target,options) => {
 			let updating;
-			const state = target["t-state"] || (target["t-state"] = {}),
+			const state = {}, //target["t-state"] || (target["t-state"] = {}),
 				render = function render(newState=model,force) {
-					Object.assign(state,newState);
+					merge(state,newState);
 					if(force) {
 						if(updating) updating = clearTimeout(updating);
-						target = realize(view(model,proxy),target,target.parentNode,options);
+						target = realize(view(state,proxy),target,target.parentNode,options);
 					} else if(!updating) {
 						updating = setTimeout((...args) => { 
 								target = realize(...args);
 								updating = false; 
 							},
 							0,
-							view(model,proxy),target,target.parentNode,options);
+							view(state,proxy),target,target.parentNode,options);
 					}
 				},
 				proxy = new Proxy(controller,{
 					get(target,property) {
 						if(property==="render") return render;
+						//if(property==="state") return state;
 						const value = target[property],
 							type = typeof(value);
 						if(type==="function") {
@@ -170,7 +210,7 @@
 										if(different(compare,model)) render(model);  
 									});
 								} else {
-									if(options.partials) Object.assign(model,result);
+									if(options.partials) merge(model,result);
 									if(different(compare,model)) render(model); 
 								}
 							}
@@ -190,13 +230,15 @@
 	
 	const tlx = {};
 	tlx.app = (model,actions,view,target) => tlx.mvc({model,view,controller:actions},target,{reactive:true,partials:true});
+	tlx.clone = clone;
 	tlx.defaults = {};
 	tlx.different = different;
 	tlx.falsy = falsy;
-	tlx.truthy = value => !falsy(value);
 	tlx.h = h;
+	tlx.merge = merge;
 	tlx.mvc = mvc;
-	
+	tlx.truthy = value => !falsy(value);
+
 	if(typeof(module)!=="undefined") module.exports = tlx;
 	if(typeof(window)!=="undefined") window.tlx = tlx;
 }).call(this);

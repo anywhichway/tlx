@@ -29,6 +29,25 @@
 	SOFTWARE.
 	*/
 	const booleanAttribute = ["checked","disabled","hidden","multiple","nowrap","selected","required"],
+	 clone = (data) => {
+			if(Array.isArray(data)) {
+				const result = [];
+				for(const item of data) {
+					const value = clone(item);
+					if(value!==undefined) result.push(value);
+				}
+				return result;
+			} 
+			if(data && typeof(data)==="object") {
+				const result = Object.create(Object.getPrototypeOf(data)); //{};
+				for(const key in data) {
+					const value = clone(data[key]);
+					if(value!==undefined) result[key] = value;
+				}
+				return result;
+			}
+			return data;
+		},
 		createNode = (vnode,node,parent,options) => {
 			const type = typeof(vnode);
 			let append;
@@ -95,7 +114,26 @@
 			}
 			return {nodeName,attributes,children}; 
 		},
-		mvc = function(config={template:document.body.firstElementChild.outerHTML},target=document.body.firstElementChild,options={}) {
+		merge = (target,...sources) => {
+			sources.forEach(source => {
+				if(!source || typeof(source)!=="object" || !target) return target = clone(source);
+				if(Array.isArray(source)) {
+					if(!Array.isArray(target)) return target = clone(source);
+					target.length = source.length;
+					source.forEach((item,i) => target[i] = merge(target[i],item));
+				} else {
+					Object.keys(source).forEach(key => target[key] = merge(target[key],source[key]));
+				}
+			});
+			return target;
+		},
+		mvc = function(config,target,options={}) {
+			if(!options) { 
+				options = {};
+				if(!config && !target) options.reactive = true;
+			}
+			if(!config) config={template:document.body.firstElementChild.outerHTML};
+			if(!target) target=document.body.firstElementChild
 			let {model={},view,controller=model,template} = config;
 			if(!target || !(target instanceof Node)) throw new TypeError("tlx.mvc or tlx.app target must be DOM Node");
 			options = Object.assign({},tlx.defaults,options);
@@ -108,10 +146,12 @@
 			if(!template && !view) throw new TypeError("tlx.mvc must specify a view or template");
 			if(!view && template) {
 				if(!tlx.vtdom) throw new Error("tlx-vtdom.js must be loaded to use templates.")
-				const scope = {};
-				Object.defineProperty(scope,"model",{value:model});
-				Object.defineProperty(scope,"controller",{value:controller});
-				view = (model,controller) => tlx.vtdom(template,scope);
+				view = (model,controller) => {
+					const scope = {};
+					Object.defineProperty(scope,"model",{value:model});
+					Object.defineProperty(scope,"controller",{value:controller});
+					return tlx.vtdom(template,scope);
+				}
 			}
 			const proxy = wire(model,view,controller,target,options);
 			while(target.lastChild) target.removeChild(target.lastChild);
@@ -122,7 +162,6 @@
 			return proxy;
 		},
 		realize = (vnode,target,parent,options) => { //target,parent
-			const type = typeof(vnode.valueOf());
 			if(target) {
 				return createNode(vnode,target,parent,options);
 			}
@@ -146,24 +185,25 @@
 		},
 		wire = (model,view,controller,target,options) => {
 			let updating;
-			const state = target["t-state"] || (target["t-state"] = {}),
+			const state = {}, //target["t-state"] || (target["t-state"] = {}),
 				render = function render(newState=model,force) {
-					Object.assign(state,newState);
+					merge(state,newState);
 					if(force) {
 						if(updating) updating = clearTimeout(updating);
-						target = realize(view(model,proxy),target,target.parentNode,options);
+						target = realize(view(state,proxy),target,target.parentNode,options);
 					} else if(!updating) {
 						updating = setTimeout((...args) => { 
 								target = realize(...args);
 								updating = false; 
 							},
 							0,
-							view(model,proxy),target,target.parentNode,options);
+							view(state,proxy),target,target.parentNode,options);
 					}
 				},
 				proxy = new Proxy(controller,{
 					get(target,property) {
 						if(property==="render") return render;
+						//if(property==="state") return state;
 						const value = target[property],
 							type = typeof(value);
 						if(type==="function") {
@@ -179,7 +219,7 @@
 										if(different(compare,model)) render(model);  
 									});
 								} else {
-									if(options.partials) Object.assign(model,result);
+									if(options.partials) merge(model,result);
 									if(different(compare,model)) render(model); 
 								}
 							}
@@ -199,13 +239,15 @@
 	
 	const tlx = {};
 	tlx.app = (model,actions,view,target) => tlx.mvc({model,view,controller:actions},target,{reactive:true,partials:true});
+	tlx.clone = clone;
 	tlx.defaults = {};
 	tlx.different = different;
 	tlx.falsy = falsy;
-	tlx.truthy = value => !falsy(value);
 	tlx.h = h;
+	tlx.merge = merge;
 	tlx.mvc = mvc;
-	
+	tlx.truthy = value => !falsy(value);
+
 	if(typeof(module)!=="undefined") module.exports = tlx;
 	if(typeof(window)!=="undefined") window.tlx = tlx;
 }).call(this);
@@ -299,142 +341,80 @@
 	if(typeof(window)!=="undefined") tlx.directives = directives;
 }).call(this)
 },{}],4:[function(require,module,exports){
-(function(tlx) {
-	"use strict";
-	HTMLElement.prototype.linkState = function(property) {
-		const f = function(event) {
-			const target = event.target;
+(function() {
+	"use strict"
+	/* Copyright 2017,2018, AnyWhichWay, Simon Y. Blackwell, MIT License
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+	*/
+	HTMLElement.prototype.linkState = (path, ...elements) => event => {
+		const target = event.target;
+		for(let element of elements) {
+			if(typeof(element)==="string") element = document.querySelector(element);
 			if([HTMLInputElement,HTMLTextAreaElement,HTMLSelectElement,HTMLAnchorElement].some(cls => target instanceof cls)) {
 				let value;
-				if(target.type==="checkbox") {
-					value = target.checked;
-				}
+				if(target.type==="checkbox") value = target.checked;
 				else if(target.type==="select-multiple") {
 					value = [];
 					for(let option of [].slice.call(target.options)) {
-						!option.selected || value.push(tlx.fromJSON(option.value));
+						!option.selected || value.push(tlx.options.sanitize ? tlx.escape(option.value) : option.value);
 					}
 				} else {
-					value = tlx.fromJSON(target.value);
+					value = (tlx.defaults.protect ? tlx.escape(target.value) : target.value);
 				}
-				const parts = property.split(".");
-				let state = this;
-				property = parts.pop(); // get final property
-				for(let key of parts) {
-					state = state[key] || {};
-				} // walk tree
-				state[property] = value; // set property
+				const parts = path.split("."),
+					model = {};
+				let scope = model;
+				const property = parts.pop(); // get final path
+				for(let key of parts) { // walk tree
+					scope = scope[key] || (scope[key] = {});
+				} 
+				//if(scope[property]!==value) {
+					scope[property] = value; // set path
+					if(element.render) element.render(model);
+					else tlx.mvc({model:model,controller:element["t-controller"],template:element["t-template"]||element.outerHTML},element);
+				//}
 			}
-		};
-		return f.bind(tlx.getState(this)||(this.state={}));
-	};
-	HTMLElement.prototype.setState = function(state) {
-		this.state || (tlx.options.active ? tlx.activate({}) : {});
-		Object.assign(this.state,state);
-	};
-	tlx.activate = (object) => {
-		if(!object || typeof(object)!=="object" || object.tlxDependents) {
-			return object;
 		}
-		const dependents = {},
-			proxy = new Proxy(object,{
-				get: (target,property) => {
-					if(property==="tlxDependents") {
-						return dependents;
-					}
-					const value = target[property],
-						type = typeof(value);
-					if(tlx._NODE && type!=="function" && type!=="undefined") {
-						dependents[property] || (dependents[property] = new Set());
-						dependents[property].add(tlx._NODE);
-					}
-					return value;
-				},
-				set: (target,property,value) => {
-					const oldvalue = target[property];
-					if(oldvalue!==value) {
-						const type = typeof(value);
-						!value || type!=="object" || value.tlxDependents || (value = tlx.activate(value));
-						if(typeof(oldvalue)===type==="object") {
-							const olddependents = oldvalue.tlxDependents,
-								newdependents = value.tlxDependents;
-							if(olddependents) {
-								for(let key in olddependents) {
-									newdependents[key] = olddependents[key];
-								}
-							}
-						}
-						target[property] = value;
-						if(dependents[property]) {
-							for(let dependent of dependents[property]) {
-								if(!dependent.ownerElement && !dependent.parentElement) {
-									dependents[property].delete(dependent);
-								} else {
-									dependent.vnode.node = dependent;
-									tlx.render(dependent.vnode);
-									dependent.vnode.node = null;
-								}
-							}
-						}
-					}
-					return true;
-				}
-			});
-		for(let key in object) {
-			object[key] = tlx.activate(object[key]);
-		}
-		return proxy;
 	};
-	tlx.getState = (node) => { // force resolution of parent states first
-		if(!node) {
-			return;
-		}
-		if(node.state) {
-			return node.state;
-		}
-		return tlx.getState(node.parentElement||node.ownerElement);
-	};
-	tlx.options || (tlx.options={});
-	tlx.options.reactive = true;
-		
-}(tlx));
+}).call(this)
 },{}],5:[function(require,module,exports){
 (function() {
-	const bind = (model,element=(typeof(document)!=="undefined" ? document.body.firstElementChild : null),options) => {
+	const bind = (model={},element=(typeof(document)!=="undefined" ? document.body.firstElementChild : null),options) => {
 		if(typeof(element)==="string") element = document.querySelector(element);
 		if(!element) throw new TypeError("null element passed to tlx.bind");
 		options = Object.assign({},tlx.defaults,options);
 		const controller = tlx.mvc({model,template:element.outerHTML},element,options);
-		if(options.reactive) {
-			return new Proxy(model,{
+		if(options.reactive) return makeProxy(model,controller);
+		return model;
+	 },
+		domParser = new DOMParser(),
+		makeProxy = (data,controller) => {
+			if(!data || typeof(data)!=="object") return data;
+			if(Array.isArray(data)) data.forEach((item,i) => data[i] = makeProxy(item,controller))
+			else Object.keys(data).forEach(key => data[key] = makeProxy(data[key],controller))
+			return new Proxy(data,{
 				set(target,property,value) {
 					target[property] = value;
 					controller.render();
 				}
 			})
 		}
-		return model;
-	 },
-	 clone = (data) => {
-			if(Array.isArray(data)) {
-				const result = [];
-				for(const key of data) {
-					const value = clone(data[key]);
-					if(value!==undefined) result.push(value);
-				}
-				return result;
-			} 
-			if(data && typeof(data)==="object") {
-				const result = Object.create(Object.getPrototypeOf(data)); //{};
-				for(const key in data) {
-					const value = clone(data[key]);
-					if(value!==undefined) result[key] = value;
-				}
-				return result;
-			}
-			return data;
-		},
-		domParser = new DOMParser(),
 		parse = (strings,...values) => {
 			if(strings[0]==="" && strings[1]==="" && values.length===1) return values[0]===undefined ? "" : values[0];
 			if(values.length===0) return strings[0];
@@ -458,11 +438,11 @@
 						if(typeof(value)==="function") {
 							const render = scope.controller ? scope.controller.render : scope.render,
 								partials = render ? render.partials : false,
-								model = partials ? clone(scope.model||scope) : scope.model||scope,
+								model = partials ? tlx.clone(scope.model||scope) : scope.model||scope,
 								f = value.bind(model),
-								current = clone(model),
+								current = tlx.clone(model),
 								update = (partial) => {
-									if(partials) Object.assign(scope.model||scope,partial);
+									if(partials) tlx.merge(scope.model||scope,partial);
 									if(tlx.different(current,scope.model||scope) && render) render();
 								};
 							Object.defineProperty(model,"update",{enumerable:false,configurable:true,writable:true,value:update});
@@ -483,9 +463,9 @@
 							for(const aname in vnode.attributes) {
 								if(aname==="t-state" || (tlx.directives && tlx.directives[aname])) {
 									let value = vnode.attributes[aname];
-									if(!Array.isArray(value) && value && typeof(value)==="object" && scope && typeof(scope)==="object") value = Object.assign({},scope,value);
+									if(!Array.isArray(value) && value && typeof(value)==="object" && scope && typeof(scope)==="object") value = tlx.merge({},scope,value);
 									if(aname==="t-state") {
-										if(scope.model) Object.assign(scope.model,value);
+										if(scope.model) tlx.merge(scope.model,value);
 										else Object.assign(scope,value);
 									} else {
 										const next = tlx.directives[aname](vnode,node,value);

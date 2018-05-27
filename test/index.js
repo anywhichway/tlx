@@ -71,28 +71,34 @@ describe("Test",function() {
 		tlx.bind(testobject,app.firstChild);
 		expect(document.getElementById("result").innerHTML).to.equal("");
 	});
-	it("reactive primitive",function() {
+	it("reactive primitive",function(done) {
 		const app = document.getElementById("app");
 		app.innerHTML = "${name}";
-		const object = tlx.bind(testobject,app);
+		const object = tlx.bind(testobject,app,{reactive:true});
 		object.name = "Mary";
-		app.render(null,true);
-		expect(document.getElementById("app").innerHTML).to.equal("Mary");
+		setTimeout(() => {
+			expect(document.getElementById("app").innerHTML).to.equal("Mary");
+			done();
+		});
 	});
-	it("reactive object",function() {
+	it("reactive object",function(done) {
 		const app = document.getElementById("app");
 		app.innerHTML = "${address.city}";
-		const object = tlx.bind(testobject,app);
+		const object = tlx.bind(testobject,app,{reactive:true});
 		object.address.city = "Portland";
-		app.render(null,true);
-		expect(document.getElementById("app").innerHTML).to.equal("Portland");
+		setTimeout(() => {
+			expect(document.getElementById("app").innerHTML).to.equal("Portland");
+			done();
+		});
 	});
-	it("reactive object parent",function() {
+	it("reactive object parent",function(done) {
 		const app = document.getElementById("app");
 		app.innerHTML = "${address.city}";
-		const object = tlx.bind(testobject,app);
+		const object = tlx.bind(testobject,app,{reactive:true});
 		object.address = {city: "Seattle"};
-		app.render(null,true);
-		expect(document.getElementById("app").innerHTML).to.equal("Seattle");
+		setTimeout(() => {
+			expect(document.getElementById("app").innerHTML).to.equal("Seattle");
+			done();
+		});
 	});
 });

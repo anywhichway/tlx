@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="../src/tlx-core.js"></script>
+<script src="../src/tlx-vtdom.js"></script>
+<script src="../src/tlx-reactive.js"></script>
+</head>
+
+<body onload="tlx.bind()">
+<div id="app">
+<input onchange="linkState('name.first','#app')(event)">
+<input onchange="linkState('name.last','#app')(event)">
+
+<div id="firstName">First Name:${name.first}</div>
+<div id="lastName">Last Name:${name.last}</div>
+</div>
+</body>
+</html>

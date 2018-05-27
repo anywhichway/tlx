@@ -1,4 +1,4 @@
-# TLX v0.2.12
+# TLX v0.2.13
 
 Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.
 
@@ -6,13 +6,13 @@ TLX is a tiny (from 1.6 to 3.3K) multi-paradigm, less opinionated, front-end too
 
 Optional modules for routing and HTML sanitizing are on the way.
 
-`tlx-core.js` - Roughly equivalent to Hyperapp. 1.7K minifed and Gzipped, 3.8K minified, 8.7K raw. 
+`tlx-core.js` - Roughly equivalent to Hyperapp. 1.9K minifed and Gzipped, 4.5K minified, 9.9K raw. 
 `tlx-vtdom.js` - Replaces JSX with HTML string literal substitution. 0.9K minifed and Gzipped, 1.8K minified, 4K raw. 
 `tlx-reactive.js` -  Adds basic reactivity without the need for controllers and views. 0.5K minifed and Gzipped, 0.7K minified, 2.3K raw.
 `tlx-directives.js` - Adds standard directives like `t-if`, `t-on`, `t-foreach`, `t-for`. Supports custom directives. 0.6K minifed and Gzipped, 1.2K minified, 3.3K raw. 
 `tlx-component.js` - Adds custom tags and Riot like components. 0.8K K minifed and Gzipped, 1.6K minified,  4.1K raw.
 `tlx-protect.js` - Adds HTML script injection protection.  0.8K K minifed and Gzipped, 1.6K minified,  2.8K raw.
-`tlx.js` - All files combined. Roughly equivalent to Vue. 3.9K minifed and Gzipped, 12.5K minified, 19.5K raw. 
+`tlx.js` - All files combined. Roughly equivalent to Vue. 4.3K minifed and Gzipped, 13.9K minified, 21.2K raw. 
 
 `tlx-route.js` - COMING SOON.
 
@@ -419,6 +419,8 @@ The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)<a name="release"></a>
+
+2018-05-27 v0.2.13 - Branch merge dropped most recent `examples/component.html` and `src/reactive.js`. Added back.
 
 2018-05-26 v0.2.12 - Resolve branch merge into master.
 

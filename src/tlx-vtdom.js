@@ -1,39 +1,24 @@
 (function() {
-	const bind = (model,element=(typeof(document)!=="undefined" ? document.body.firstElementChild : null),options) => {
+	const bind = (model={},element=(typeof(document)!=="undefined" ? document.body.firstElementChild : null),options) => {
 		if(typeof(element)==="string") element = document.querySelector(element);
 		if(!element) throw new TypeError("null element passed to tlx.bind");
 		options = Object.assign({},tlx.defaults,options);
 		const controller = tlx.mvc({model,template:element.outerHTML},element,options);
-		if(options.reactive) {
-			return new Proxy(model,{
+		if(options.reactive) return makeProxy(model,controller);
+		return model;
+	 },
+		domParser = new DOMParser(),
+		makeProxy = (data,controller) => {
+			if(!data || typeof(data)!=="object") return data;
+			if(Array.isArray(data)) data.forEach((item,i) => data[i] = makeProxy(item,controller))
+			else Object.keys(data).forEach(key => data[key] = makeProxy(data[key],controller))
+			return new Proxy(data,{
 				set(target,property,value) {
 					target[property] = value;
 					controller.render();
 				}
 			})
 		}
-		return model;
-	 },
-	 clone = (data) => {
-			if(Array.isArray(data)) {
-				const result = [];
-				for(const key of data) {
-					const value = clone(data[key]);
-					if(value!==undefined) result.push(value);
-				}
-				return result;
-			} 
-			if(data && typeof(data)==="object") {
-				const result = Object.create(Object.getPrototypeOf(data)); //{};
-				for(const key in data) {
-					const value = clone(data[key]);
-					if(value!==undefined) result[key] = value;
-				}
-				return result;
-			}
-			return data;
-		},
-		domParser = new DOMParser(),
 		parse = (strings,...values) => {
 			if(strings[0]==="" && strings[1]==="" && values.length===1) return values[0]===undefined ? "" : values[0];
 			if(values.length===0) return strings[0];
@@ -57,11 +42,11 @@
 						if(typeof(value)==="function") {
 							const render = scope.controller ? scope.controller.render : scope.render,
 								partials = render ? render.partials : false,
-								model = partials ? clone(scope.model||scope) : scope.model||scope,
+								model = partials ? tlx.clone(scope.model||scope) : scope.model||scope,
 								f = value.bind(model),
-								current = clone(model),
+								current = tlx.clone(model),
 								update = (partial) => {
-									if(partials) Object.assign(scope.model||scope,partial);
+									if(partials) tlx.merge(scope.model||scope,partial);
 									if(tlx.different(current,scope.model||scope) && render) render();
 								};
 							Object.defineProperty(model,"update",{enumerable:false,configurable:true,writable:true,value:update});
@@ -82,9 +67,9 @@
 							for(const aname in vnode.attributes) {
 								if(aname==="t-state" || (tlx.directives && tlx.directives[aname])) {
 									let value = vnode.attributes[aname];
-									if(!Array.isArray(value) && value && typeof(value)==="object" && scope && typeof(scope)==="object") value = Object.assign({},scope,value);
+									if(!Array.isArray(value) && value && typeof(value)==="object" && scope && typeof(scope)==="object") value = tlx.merge({},scope,value);
 									if(aname==="t-state") {
-										if(scope.model) Object.assign(scope.model,value);
+										if(scope.model) tlx.merge(scope.model,value);
 										else Object.assign(scope,value);
 									} else {
 										const next = tlx.directives[aname](vnode,node,value);

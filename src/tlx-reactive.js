@@ -1,99 +1,52 @@
-(function(tlx) {
-	"use strict";
-	HTMLElement.prototype.linkState = function(property) {
-		const f = function(event) {
-			const target = event.target;
+(function() {
+	"use strict"
+	/* Copyright 2017,2018, AnyWhichWay, Simon Y. Blackwell, MIT License
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+	*/
+	HTMLElement.prototype.linkState = (path, ...elements) => event => {
+		const target = event.target;
+		for(let element of elements) {
+			if(typeof(element)==="string") element = document.querySelector(element);
 			if([HTMLInputElement,HTMLTextAreaElement,HTMLSelectElement,HTMLAnchorElement].some(cls => target instanceof cls)) {
 				let value;
-				if(target.type==="checkbox") {
-					value = target.checked;
-				}
+				if(target.type==="checkbox") value = target.checked;
 				else if(target.type==="select-multiple") {
 					value = [];
 					for(let option of [].slice.call(target.options)) {
-						!option.selected || value.push(tlx.fromJSON(option.value));
+						!option.selected || value.push(tlx.options.sanitize ? tlx.escape(option.value) : option.value);
 					}
 				} else {
-					value = tlx.fromJSON(target.value);
+					value = (tlx.defaults.protect ? tlx.escape(target.value) : target.value);
 				}
-				const parts = property.split(".");
-				let state = this;
-				property = parts.pop(); // get final property
-				for(let key of parts) {
-					state = state[key] || {};
-				} // walk tree
-				state[property] = value; // set property
+				const parts = path.split("."),
+					model = {};
+				let scope = model;
+				const property = parts.pop(); // get final path
+				for(let key of parts) { // walk tree
+					scope = scope[key] || (scope[key] = {});
+				} 
+				//if(scope[property]!==value) {
+					scope[property] = value; // set path
+					if(element.render) element.render(model);
+					else tlx.mvc({model:model,controller:element["t-controller"],template:element["t-template"]||element.outerHTML},element);
+				//}
 			}
-		};
-		return f.bind(tlx.getState(this)||(this.state={}));
-	};
-	HTMLElement.prototype.setState = function(state) {
-		this.state || (tlx.options.active ? tlx.activate({}) : {});
-		Object.assign(this.state,state);
-	};
-	tlx.activate = (object) => {
-		if(!object || typeof(object)!=="object" || object.tlxDependents) {
-			return object;
 		}
-		const dependents = {},
-			proxy = new Proxy(object,{
-				get: (target,property) => {
-					if(property==="tlxDependents") {
-						return dependents;
-					}
-					const value = target[property],
-						type = typeof(value);
-					if(tlx._NODE && type!=="function" && type!=="undefined") {
-						dependents[property] || (dependents[property] = new Set());
-						dependents[property].add(tlx._NODE);
-					}
-					return value;
-				},
-				set: (target,property,value) => {
-					const oldvalue = target[property];
-					if(oldvalue!==value) {
-						const type = typeof(value);
-						!value || type!=="object" || value.tlxDependents || (value = tlx.activate(value));
-						if(typeof(oldvalue)===type==="object") {
-							const olddependents = oldvalue.tlxDependents,
-								newdependents = value.tlxDependents;
-							if(olddependents) {
-								for(let key in olddependents) {
-									newdependents[key] = olddependents[key];
-								}
-							}
-						}
-						target[property] = value;
-						if(dependents[property]) {
-							for(let dependent of dependents[property]) {
-								if(!dependent.ownerElement && !dependent.parentElement) {
-									dependents[property].delete(dependent);
-								} else {
-									dependent.vnode.node = dependent;
-									tlx.render(dependent.vnode);
-									dependent.vnode.node = null;
-								}
-							}
-						}
-					}
-					return true;
-				}
-			});
-		for(let key in object) {
-			object[key] = tlx.activate(object[key]);
-		}
-		return proxy;
 	};
-	tlx.getState = (node) => { // force resolution of parent states first
-		if(!node) {
-			return;
-		}
-		if(node.state) {
-			return node.state;
-		}
-		return tlx.getState(node.parentElement||node.ownerElement);
-	};
-	tlx.options || (tlx.options={});
-	tlx.options.reactive = true;
-		
-}(tlx));
+}).call(this)

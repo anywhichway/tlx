@@ -2,11 +2,99 @@
 (function() {
 	const tlx = require("./src/tlx-core.js");
 	require("./src/tlx-vtdom.js")(tlx);
-	require("./src/tlx-reactive.js")(tlx);
 	require("./src/tlx-directives.js")(tlx);
-	//require("./src/tlx-sanitize.js");
+	require("./src/tlx-reactive.js")(tlx);
+	require("./src/tlx-component.js")(tlx);
+	require("./src/tlx-protect.js")(tlx);
 })();
-},{"./src/tlx-core.js":2,"./src/tlx-directives.js":3,"./src/tlx-reactive.js":4,"./src/tlx-vtdom.js":5}],2:[function(require,module,exports){
+},{"./src/tlx-component.js":2,"./src/tlx-core.js":3,"./src/tlx-directives.js":4,"./src/tlx-protect.js":5,"./src/tlx-reactive.js":6,"./src/tlx-vtdom.js":7}],2:[function(require,module,exports){
+(function() {
+	"use strict"
+	/* Copyright 2017,2018, AnyWhichWay, Simon Y. Blackwell, MIT License
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+	*/
+	const	compile = function(template) {
+		const tagname = template.getAttribute("t-tagname"),
+			reactive = tlx.truthy(template.getAttribute("t-reactive")),
+			clone = document.createElement(tagname);
+		clone.innerHTML = template.innerHTML;
+		const	styles = clone.querySelectorAll("style")||[],
+			scripts = clone.querySelectorAll("script")||[];
+		for(let style of [].slice.call(styles)) {
+			let spec = style.innerText||"",
+				matches = spec.match(/.*\{.+\}/g),
+				text = (matches ? matches.reduce((accum,item) => accum += `.${tagname} ${item.trim()} `,"") : "");
+			spec = (matches ? matches.reduce((accum,item) => accum = accum.replace(item,""),spec) : spec);
+			matches = spec.match(/.*;/g),
+			text = (matches ? matches.reduce((accum,item) => accum += `${tagname} * {${item.trim()}} `,text) : text);
+			style.innerText = text.trim();
+			document.head.appendChild(style);
+		}
+		const model = [].slice.call(template.attributes).reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
+		for(let script of [].slice.call(scripts)) {
+			const newmodel = Function(`with(this) { ${script.innerText}; }`).call(model);
+			!newmodel || (model = newmodel);
+			clone.removeChild(script);
+		}
+		const templatehtml = `<div>${(clone.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").trim()||"<span></span>")}</div>`;
+		return function(attributes) {
+			const view = () => tlx.vtdom(templatehtml,model,tagname);
+			return target => tlx.mvc({model,view},target,{reactive}); //,options
+		}
+	},
+	customElements = {},
+	component = (tagName,ctorOrObject) => {
+		const type = typeof(ctorOrObject);
+		if(type==="function") {
+			customElements[tagName] = ctorOrObject;
+		} else if(ctorOrObject && type==="object") {
+			customElements[tagName] = function(attributes) {
+				const model = ctorOrObject.model(),
+					controller = ctorOrObject.controller(),
+					scope = {},
+					view = () => tlx.vtdom(ctorOrObject.template,scope);
+				Object.defineProperty(scope,"attributes",{value:attributes});
+				Object.defineProperty(scope,"model",{value:model});
+				Object.defineProperty(scope,"controller",{value:controller});
+				return target => tlx.mvc({model,view,controller},target,ctorOrObject.options);
+			}
+		} else {
+			throw new TypeError(`Custom element definition must be function or object, not ${ctorOrObject==null ? ctorOrObject : type}`);
+		}
+		const elements = document.getElementsByTagName(tagName);
+		for(const element of elements) {
+			customElements[tagName](element.attributes)(element);
+		}
+	};
+	
+	if(typeof(module)!=="undefined") module.exports = (tlx) => { 
+		tlx.define = tlx.component = component;
+		tlx.compile = compile;
+		tlx.customElements = customElements;
+	}
+	if(typeof(window)!=="undefined") {
+		tlx.define = tlx.component = component;
+		tlx.compile = compile;
+		tlx.customElements = customElements;
+	}
+}).call(this)
+},{}],3:[function(require,module,exports){
 (function() {
 	"use strict"
 	/* Copyright 2017,2018, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -48,7 +136,7 @@
 			}
 			return data;
 		},
-		createNode = (vnode,node,parent,options) => {
+		realize = (vnode,node,parent,options) => {
 			const type = typeof(vnode);
 			let append;
 			if(type==="function") {
@@ -73,7 +161,7 @@
 				setAttributes(node,vnode,options);
 				while(node.childNodes.length>vnode.children.length) node.removeChild(node.lastChild);
 				vnode.children.forEach((child,i) => {
-					if(child) createNode(child,node.childNodes[i],node,options);
+					if(child) realize(child,node.childNodes[i],node,options);
 				});
 			} else {
 				if(!node) {
@@ -97,7 +185,7 @@
 		},
 		falsy = value => !value || (typeof(value)==="string" && (value==="false" || value==="0")),
 		h = (nodeName,attributes={},children=[]) => {
-			if(typeof(tlx.customElements)!=="undefined") {
+			if(tlx.customElements!==undefined) {
 				const template = document.querySelector(`template[t-tagname=${nodeName}]`);
 				if(template) tlx.customElements[nodeName] = tlx.compile(template);
 				if(tlx.customElements[nodeName]) {
@@ -122,12 +210,12 @@
 					target.length = source.length;
 					source.forEach((item,i) => target[i] = merge(target[i],item));
 				} else {
-					Object.keys(source).forEach(key => target[key] = merge(target[key],source[key]));
+					Object.keys(source).forEach(key => source[key]===undefined ? delete target[key] : target[key] = merge(target[key],source[key]));
 				}
 			});
 			return target;
 		},
-		mvc = function(config,target,options={}) {
+		mvc = function(config,target,options) {
 			if(!options) { 
 				options = {};
 				if(!config && !target) options.reactive = true;
@@ -139,9 +227,10 @@
 			options = Object.assign({},tlx.defaults,options);
 			if(options.protect) {
 				if(!tlx.escape) throw new Error("tlx options.protect is true, but tlx.escape is null");
-				if(typeof(window)!=="undefined") 
+				if(typeof(window)!=="undefined") {
 					if(typeof(options.protect)==="function") tlx.protect(window,options.protect);
 					else tlx.protect(window);
+				}
 			}
 			if(!template && !view) throw new TypeError("tlx.mvc must specify a view or template");
 			if(!view && template) {
@@ -160,11 +249,6 @@
 			controller.render.partials = options.partials;
 			proxy.render(model,true);
 			return proxy;
-		},
-		realize = (vnode,target,parent,options) => { //target,parent
-			if(target) {
-				return createNode(vnode,target,parent,options);
-			}
 		},
 		setAttributes = (element,vnode,options) => {
 			for(const aname in vnode.attributes) {
@@ -188,16 +272,19 @@
 			const state = {}, //target["t-state"] || (target["t-state"] = {}),
 				render = function render(newState=model,force) {
 					merge(state,newState);
+					if(model!==newState) merge(model,newState);
+					if(!options.partials) {
+						Object.keys(state).forEach(key => typeof(state[key])==="function" || newState[key]!==undefined || (delete state[key]));
+						Object.keys(model).forEach(key => typeof(model[key])==="function" || newState[key]!==undefined || (delete model[key]));
+					}
 					if(force) {
 						if(updating) updating = clearTimeout(updating);
 						target = realize(view(state,proxy),target,target.parentNode,options);
 					} else if(!updating) {
 						updating = setTimeout((...args) => { 
-								target = realize(...args);
+								target = realize(view(state,proxy),target,target.parentNode,options);
 								updating = false; 
-							},
-							0,
-							view(state,proxy),target,target.parentNode,options);
+							});
 					}
 				},
 				proxy = new Proxy(controller,{
@@ -251,8 +338,7 @@
 	if(typeof(module)!=="undefined") module.exports = tlx;
 	if(typeof(window)!=="undefined") window.tlx = tlx;
 }).call(this);
-
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 (function() {
 	"use strict"
 	/* Copyright 2017,2018, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -340,7 +426,207 @@
 	if(typeof(module)!=="undefined") module.exports = (tlx) => tlx.directives = directives;
 	if(typeof(window)!=="undefined") tlx.directives = directives;
 }).call(this)
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
+(function() {
+	"use strict";
+	/* Copyright 2017,2018, AnyWhichWay, Simon Y. Blackwell, MIT License
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+	*/
+		const cleaner = (data,extensions={},options=cleaner.options) => {
+			// include extensions, to exclude standard options pass {coerce:[],accept:[],reject:[],escape:[],eval:false} as third argument
+			options = Object.keys(options).reduce((accum,key) => 
+					{ 
+						if(Array.isArray(options[key])) { // use union of arrays
+							accum[key] = (extensions[key]||[]).reduce((accum,item) => { accum.includes(item) || accum.push(item); return accum; },options[key].slice());
+						} else if(typeof(extensions[key])==="undefined") {
+							accum[key] = options[key];
+						} else {
+							accum[key] = extensions[key];
+						} 
+						return accum;
+					},
+				{});
+			// data may be safe if coerced into a proper format
+			data = options.coerce.reduce((accum,coercer) => coercer(accum),data);
+			//these are always safe
+			if(options.accept.some(test => test(data))) return data;
+		    //these are always unsafe
+			if(options.reject.some(test => test(data))) return;
+		    //remove unsafe data from arrays
+			if(Array.isArray(data)) {
+				data.forEach((item,i) => data[i] = cleaner(data)); 
+				return data;
+			}
+	    //recursively clean data on objects
+			if(data && typeof(data)==="object") { 
+				for(let key in data) {
+					const cleaned = cleaner(data[key]);
+					if(typeof(cleaned)==="undefined") {
+						delete data[key];
+					} else {
+						data[key] = cleaned;
+					}
+				}
+				return data;
+			}
+			if(typeof(data)==="string") {
+				data = options.escape.reduce((accum,escaper) => escaper(accum),data); // escape the data
+				if(options.eval) {
+					try {
+						// if data can be converted into something that is legal JavaScript, clean it
+						// make sure that options.reject has already removed undesireable self evaluating or blocking functions
+						// call with null to block global access
+						return cleaner(Function("return " + data).call(null));
+					} catch(error) {
+						// otherwise, just return it
+						return data;
+					}
+				}
+			}
+		return data;
+	}
+	// statically merge extensions into default options
+	cleaner.extend = (extensions) => {
+		const options = cleaner.options;
+		cleaner.options = Object.keys(options).reduce((accum,key) => 
+			{ 
+				if(Array.isArray(options[key])) { // use union of arrays
+					accum[key] = (extensions[key]||[]).reduce((accum,item) => { accum.includes(item) || accum.push(item); return accum; },options[key].slice());
+				} else if(typeof(extensions[key])==="undefined") {
+					accum[key] = options[key];
+				} else {
+					accum[key] = extensions[key];
+				} 
+				return accum;
+			},
+		{});
+	}
+	// default options/support for coerce, accept, reject, escape, eval
+	cleaner.options = {
+		coerce: [],
+		accept: [data => !data || ["number","boolean"].includes(typeof(data))],
+		reject: [
+			// executable data
+			data => typeof(data)==="function",
+			// possible server execution like <?php
+			data => typeof(data)==="string" && data.match(/<\s*\?\s*.*\s*/),
+			// direct eval, might block or negatively impact cleaner itself,
+			data => typeof(data)==="string" && data.match(/eval|alert|prompt|dialog|void|cleaner\s*\(/),
+			// very suspicious,
+			data => typeof(data)==="string" && data.match(/url\s*\(/),
+			// might inject nastiness into logs,
+			data => typeof(data)==="string" && data.match(/console\.\s*.*\s*\(/),
+			// contains javascript,
+			data => typeof(data)==="string" && data.match(/javascript:/),
+			// arrow function
+			data => typeof(data)==="string" && data.match(/\(\s*.*\s*\)\s*.*\s*=>/),
+			// self eval, might negatively impact cleaner itself
+			data => typeof(data)==="string" && data.match(/[Ff]unction\s*.*\s*\(\s*.*\s*\)\s*.*\s*\{\s*.*\s*\}\s*.*\s*\)\s*.*\s*\(\s*.*\s*\)/),	
+		],
+		escape: [ 
+			data => { // handle possible query strings
+				if(typeof(data)==="string" && data[0]==="?") { 
+					const parts = data.split("&");
+					let max = parts.length;
+					return parts.reduce((accum,part,i) => { 
+							const [key,value] = decodeURIComponent(part).split("="),
+								type = typeof(value), // if type undefined, then may not even be URL query string, so clean "key"
+								cleaned = (type!=="undefined" ? cleaner(value) : cleaner(key)); 
+							if(typeof(cleaned)!=="undefined") {
+								// keep only those parts of query string that are clean
+								accum += (type!=="undefined" ? `${key}=${cleaned}` : cleaned) + (i<max-1 ? "&" : "");
+							} else {
+								max--;
+							}
+							return accum;
+						},"?");
+				}
+				return data;
+			},
+			data => { // handle escaping html entities
+				if(typeof(data)==="string" && data[0]!=="?" && typeof(document)!=="undefined") {
+						// on client or a server DOM is operable
+			  	 const div = document.createElement('div');
+			  	 div.appendChild(document.createTextNode(data));
+			  	 return div.innerHTML;
+			  	}
+				return data;
+			}
+		],
+		eval: true
+	}
+	const protect = (el,violated=() => "") => {
+		// on client or a server pseudo window is available
+		if(typeof(window)!=="undefined" && window.prompt && el===window) {
+			const _prompt = window.prompt.bind(window);
+			window.prompt = function(title) {
+				const input = _prompt(title),
+					cleaned = cleaner(input);
+				if(typeof(cleaned)=="undefined") {
+					window.alert("Invalid input: " + input);
+				} else {
+					return cleaned;
+				} 
+			}
+			return;
+		}
+		if(el instanceof HTMLInputElement) {
+			 el.addEventListener("change",(event) => {
+				 const desc = {enumerable:true,configurable:true,writable:false};
+				 desc.value = new Proxy(event.target,{
+					 get(target,property) {
+						 let value = target[property];
+						 if(property==="value" && value) {
+							 const cleaned =  cleaner(value);
+							 if(cleaned===undefined) {
+								 value = typeof(violated)==="function" ? violated(value) : "";
+							 }
+							 else value = cleaned;
+						 }
+						 return value;
+					 }
+				 });
+				 Object.defineProperty(event,"target",desc);
+				 desc.value = new Proxy(event.currentTarget,{
+					 get(target,property) {
+						 let value = target[property];
+						 if(property==="value" && value) {
+							 const cleaned =  cleaner(value);
+							 if(cleaned===undefined) value = violated(value);
+							 else value = cleaned;
+						 }
+						 return value;
+					 }
+				 });
+				 Object.defineProperty(event,"currentTarget",desc);
+			 })
+		}
+		if(el.children) {
+		  for(let child of [].slice.call(el.children)) protect(child,violated);
+		}
+	  return el;
+	}
+
+	if(typeof(module)!=="undefined") module.exports = (tlx) => { tlx.escape = cleaner; tlx.protect = protect; }
+	if(typeof(window)!=="undefined") tlx.escape = cleaner; tlx.protect = protect;
+}).call(this);
+},{}],6:[function(require,module,exports){
 (function() {
 	"use strict"
 	/* Copyright 2017,2018, AnyWhichWay, Simon Y. Blackwell, MIT License
@@ -392,13 +678,16 @@
 			}
 		}
 	};
+	
+	if(typeof(module)!=="undefined") module.exports = () => {};
 }).call(this)
-},{}],5:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 (function() {
-	const bind = (model={},element=(typeof(document)!=="undefined" ? document.body.firstElementChild : null),options) => {
+	const bind = function(model={},element=(typeof(document)!=="undefined" ? document.body.firstElementChild : null),options) {
 		if(typeof(element)==="string") element = document.querySelector(element);
 		if(!element) throw new TypeError("null element passed to tlx.bind");
 		options = Object.assign({},tlx.defaults,options);
+		if(arguments.length<3) { options.reactive = true; options.partials = true; }
 		const controller = tlx.mvc({model,template:element.outerHTML},element,options);
 		if(options.reactive) return makeProxy(model,controller);
 		return model;
@@ -412,6 +701,11 @@
 				set(target,property,value) {
 					target[property] = value;
 					controller.render();
+					return true;
+				},
+				deleteProperty(target,property) {
+					delete target[property];
+					controller.render();
 				}
 			})
 		}
@@ -421,7 +715,7 @@
 			return strings.reduce((html,string,i) => html += string + (i<strings.length-1 ? (typeof(values[i])==="string" ? values[i] : (values[i]===undefined ? "" : JSON.stringify(values[i]))) : ""),"");
 		},
 		vtdom = (data,scope,classes,skipResolve) => {
-			const resolve = value => {try { return scope && !skipResolve ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(scope,parse) : value } catch(e) { return value; }},
+			const resolve = value => {try { return scope && !skipResolve ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(scope,parse) : value } catch(e) { return ""; }}, //value
 				vnode = (() => {
 					const type = typeof(data);
 					let node = data;
@@ -454,7 +748,7 @@
 						if(attributes.class) attributes.class += " " + classes;
 						else attributes.class = classes;
 					}
-					attributes["t-template"] = node.outerHTML; //"<div>"+node.innerHTML+"</div>";
+					attributes["t-template"] = node.outerHTML;
 					
 					const vnode = tlx.h(node.tagName.toLowerCase(),attributes);
 					if(typeof(vnode)!=="function") {

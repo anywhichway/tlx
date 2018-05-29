@@ -39,7 +39,7 @@
 			}
 			return data;
 		},
-		createNode = (vnode,node,parent,options) => {
+		realize = (vnode,node,parent,options) => {
 			const type = typeof(vnode);
 			let append;
 			if(type==="function") {
@@ -64,7 +64,7 @@
 				setAttributes(node,vnode,options);
 				while(node.childNodes.length>vnode.children.length) node.removeChild(node.lastChild);
 				vnode.children.forEach((child,i) => {
-					if(child) createNode(child,node.childNodes[i],node,options);
+					if(child) realize(child,node.childNodes[i],node,options);
 				});
 			} else {
 				if(!node) {
@@ -88,7 +88,7 @@
 		},
 		falsy = value => !value || (typeof(value)==="string" && (value==="false" || value==="0")),
 		h = (nodeName,attributes={},children=[]) => {
-			if(typeof(tlx.customElements)!=="undefined") {
+			if(tlx.customElements!==undefined) {
 				const template = document.querySelector(`template[t-tagname=${nodeName}]`);
 				if(template) tlx.customElements[nodeName] = tlx.compile(template);
 				if(tlx.customElements[nodeName]) {
@@ -113,12 +113,12 @@
 					target.length = source.length;
 					source.forEach((item,i) => target[i] = merge(target[i],item));
 				} else {
-					Object.keys(source).forEach(key => target[key] = merge(target[key],source[key]));
+					Object.keys(source).forEach(key => source[key]===undefined ? delete target[key] : target[key] = merge(target[key],source[key]));
 				}
 			});
 			return target;
 		},
-		mvc = function(config,target,options={}) {
+		mvc = function(config,target,options) {
 			if(!options) { 
 				options = {};
 				if(!config && !target) options.reactive = true;
@@ -130,9 +130,10 @@
 			options = Object.assign({},tlx.defaults,options);
 			if(options.protect) {
 				if(!tlx.escape) throw new Error("tlx options.protect is true, but tlx.escape is null");
-				if(typeof(window)!=="undefined") 
+				if(typeof(window)!=="undefined") {
 					if(typeof(options.protect)==="function") tlx.protect(window,options.protect);
 					else tlx.protect(window);
+				}
 			}
 			if(!template && !view) throw new TypeError("tlx.mvc must specify a view or template");
 			if(!view && template) {
@@ -151,11 +152,6 @@
 			controller.render.partials = options.partials;
 			proxy.render(model,true);
 			return proxy;
-		},
-		realize = (vnode,target,parent,options) => { //target,parent
-			if(target) {
-				return createNode(vnode,target,parent,options);
-			}
 		},
 		setAttributes = (element,vnode,options) => {
 			for(const aname in vnode.attributes) {
@@ -179,16 +175,19 @@
 			const state = {}, //target["t-state"] || (target["t-state"] = {}),
 				render = function render(newState=model,force) {
 					merge(state,newState);
+					if(model!==newState) merge(model,newState);
+					if(!options.partials) {
+						Object.keys(state).forEach(key => typeof(state[key])==="function" || newState[key]!==undefined || (delete state[key]));
+						Object.keys(model).forEach(key => typeof(model[key])==="function" || newState[key]!==undefined || (delete model[key]));
+					}
 					if(force) {
 						if(updating) updating = clearTimeout(updating);
 						target = realize(view(state,proxy),target,target.parentNode,options);
 					} else if(!updating) {
 						updating = setTimeout((...args) => { 
-								target = realize(...args);
+								target = realize(view(state,proxy),target,target.parentNode,options);
 								updating = false; 
-							},
-							0,
-							view(state,proxy),target,target.parentNode,options);
+							});
 					}
 				},
 				proxy = new Proxy(controller,{

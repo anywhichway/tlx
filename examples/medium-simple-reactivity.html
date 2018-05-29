@@ -1,18 +1,53 @@
 <!DOCTYPE html>
 <html>
-<head>
-<script src="../src/tlx-core.js"></script>
-<script src="../src/tlx-vtdom.js"></script>
-<script src="../src/tlx-reactive.js"></script>
-</head>
-
-<body onload="tlx.bind()">
+<body>
 <div id="app">
-<input onchange="linkState('name.first','#app')(event)">
-<input onchange="linkState('name.last','#app')(event)">
-
-<div id="firstName">First Name:${name.first}</div>
-<div id="lastName">Last Name:${name.last}</div>
+<p>
+Search By Email: <input onchange="search(this.value)">
+</p>
+<p>
+Email:<input value="${email}" disabled="${email.length>0}" onchange="linkState('email','#app')(event)"><br>
+First Name:<input value="${name.first}" onchange="linkState('name.first','#app')(event)"><br>
+Last Name: <input value="${name.last}" onchange="linkState('name.last','#app')(event)">
+</p>
+<p t-if="${email.length>0}">
+<button onclick="save()">Save</button> 
+<button onclick="remove()">Delete</button>
+</p>
 </div>
 </body>
+<script src="../dist/tlx.js"></script>
+<script>
+const model = tlx.bind(),
+search = key => {
+  let object,
+    i = 0;
+  while(!object && i<localStorage.length) {
+// look through all the keys until one matches  
+    if(localStorage.key(i)===key) {
+      object = JSON.parse(localStorage.getItem(key));
+    }
+    i++;
+  }
+  if(object) {
+    Object.assign(model,object)
+  } else {
+    Object.keys(model).forEach(key => {
+      if(typeof(model[key])!=="function") {
+         model[key] = undefined;
+      }})
+  }
+},
+remove = () => {
+	if(model.email) { 
+	  localStorage.removeItem(model.email); 
+	  search(); 
+	}
+},
+save = () => { 
+	if(model.email) {    
+	  localStorage.setItem(model.email,JSON.stringify(model)); 
+	}
+};
+</script>
 </html>

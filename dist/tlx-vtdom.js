@@ -1,8 +1,9 @@
 (function() {
-	const bind = (model={},element=(typeof(document)!=="undefined" ? document.body.firstElementChild : null),options) => {
+	const bind = function(model={},element=(typeof(document)!=="undefined" ? document.body.firstElementChild : null),options) {
 		if(typeof(element)==="string") element = document.querySelector(element);
 		if(!element) throw new TypeError("null element passed to tlx.bind");
 		options = Object.assign({},tlx.defaults,options);
+		if(arguments.length<3) { options.reactive = true; options.partials = true; }
 		const controller = tlx.mvc({model,template:element.outerHTML},element,options);
 		if(options.reactive) return makeProxy(model,controller);
 		return model;
@@ -16,6 +17,11 @@
 				set(target,property,value) {
 					target[property] = value;
 					controller.render();
+					return true;
+				},
+				deleteProperty(target,property) {
+					delete target[property];
+					controller.render();
 				}
 			})
 		}
@@ -25,7 +31,7 @@
 			return strings.reduce((html,string,i) => html += string + (i<strings.length-1 ? (typeof(values[i])==="string" ? values[i] : (values[i]===undefined ? "" : JSON.stringify(values[i]))) : ""),"");
 		},
 		vtdom = (data,scope,classes,skipResolve) => {
-			const resolve = value => {try { return scope && !skipResolve ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(scope,parse) : value } catch(e) { return value; }},
+			const resolve = value => {try { return scope && !skipResolve ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(scope,parse) : value } catch(e) { return ""; }}, //value
 				vnode = (() => {
 					const type = typeof(data);
 					let node = data;
@@ -58,7 +64,7 @@
 						if(attributes.class) attributes.class += " " + classes;
 						else attributes.class = classes;
 					}
-					attributes["t-template"] = node.outerHTML; //"<div>"+node.innerHTML+"</div>";
+					attributes["t-template"] = node.outerHTML;
 					
 					const vnode = tlx.h(node.tagName.toLowerCase(),attributes);
 					if(typeof(vnode)!=="function") {

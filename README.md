@@ -1,8 +1,8 @@
-# TLX v0.2.14
+# TLX v0.2.15
 
 Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.
 
-TLX is a tiny (from 1.6 to 3.3K) multi-paradigm, less opinionated, front-end toolkit that lets you use core aspects of your favorite framework programming style. With TLX you can use the style appropriate to the job or skills of the team.
+TLX is a tiny (from 1.9 to 5.3K) multi-paradigm, less opinionated, front-end toolkit that lets you use core aspects of your favorite framework programming style. With TLX you can use the style appropriate to the job or skills of the team.
 
 `tlx-core.js` - Roughly equivalent to Hyperapp. 1.9K minifed and Gzipped, 4.7K minified, 10K raw. 
 
@@ -423,6 +423,8 @@ The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)<a name="release"></a>
+
+2018-05-30 v0.2.15 - Re-enabled benchmark tests. Added `open` as a boolean attribute.
 
 2018-05-29 v0.2.14 -Added `tlx-protect.js` to `tlx.js` bundle.  Added Simple Reactive Front End example for Medium article. 
 

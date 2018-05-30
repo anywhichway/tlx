@@ -30,9 +30,16 @@
 			if(values.length===0) return strings[0];
 			return strings.reduce((html,string,i) => html += string + (i<strings.length-1 ? (typeof(values[i])==="string" ? values[i] : (values[i]===undefined ? "" : JSON.stringify(values[i]))) : ""),"");
 		},
+		resolve = (scope,value) => {
+			if(typeof(value)!=="string" || !value.includes("$")) return value+"";
+			try { 
+				return scope ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(scope,parse) : value
+			} catch(e) { 
+				return ""; 
+			}
+		},
 		vtdom = (data,scope,classes,skipResolve) => {
-			const resolve = value => {try { return scope && !skipResolve ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(scope,parse) : value } catch(e) { return ""; }}, //value
-				vnode = (() => {
+			const vnode = (() => {
 					const type = typeof(data);
 					let node = data;
 					if(type==="string") {
@@ -40,11 +47,11 @@
 						node = doc.body.childNodes[0];
 					} else if(!node || type!=="object" || !(node instanceof Node)) throw new TyperError("Argument to tlx.vtdom must be string or object");
 					
-					if(node instanceof Text) return resolve(node.data);
+					if(node instanceof Text) return skipResolve ? node.data : resolve(scope,node.data);
 					
 					const attributes = {};
 					for(const attr of node.attributes) {
-						let value = resolve(attr.value);
+						let value = skipResolve ? attr.value : resolve(scope,attr.value);
 						if(typeof(value)==="function") {
 							const render = scope.controller ? scope.controller.render : scope.render,
 								partials = render ? render.partials : false,
@@ -86,7 +93,7 @@
 						}
 						for(const child of node.childNodes) {
 							if(child instanceof Text) {
-								const value = resolve(child.data);
+								const value = skipResolve ? child.data : resolve(scope,child.data);
 								vnode.children.push(typeof(value)==="string" ? value : JSON.stringify(value));
 							} else if(child.nodeName!=="SCRIPT"){
 								vnode.children.push(vtdom(child,scope,classes,skipResolve));

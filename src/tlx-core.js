@@ -19,8 +19,8 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 	SOFTWARE.
 	*/
-	const booleanAttribute = ["checked","disabled","hidden","multiple","nowrap","selected","required"],
-	 clone = (data) => {
+	const booleanAttribute = ["checked","disabled","hidden","multiple","nowrap","selected","required","open"],
+	 clone = (data) => { // deep copy data and preserve prototypes
 			if(Array.isArray(data)) {
 				const result = [];
 				for(const item of data) {
@@ -39,12 +39,12 @@
 			}
 			return data;
 		},
-		realize = (vnode,node,parent,options) => {
+		realize = (vnode,node,parent,options) => { // map the vnode into the DOM
 			const type = typeof(vnode);
 			let append;
 			if(type==="function") {
 				vnode(node)
-			} if(vnode && type==="object") {
+			} else if(vnode && type==="object") {
 				if(!node) {
 					node = append = document.createElement(vnode.nodeName);
 				} else if(node.nodeName.toLowerCase()!==vnode.nodeName) {
@@ -79,7 +79,7 @@
 			if(parent && append) parent.appendChild(append);
 			return node;
 		},
-		different = (o1,o2) => {
+		different = (o1,o2) => { // deep equal test
 			const t1 = typeof(o1),
 				t2 = typeof(o2);
 			if(t1!==t2) return true;
@@ -87,8 +87,8 @@
 			return Object.keys(o1).some(key => different(o1[key],o2[key])) || Object.keys(o2).some(key => different(o1[key],o2[key]));
 		},
 		falsy = value => !value || (typeof(value)==="string" && (value==="false" || value==="0")),
-		h = (nodeName,attributes={},children=[]) => {
-			if(tlx.customElements!==undefined) {
+		h = (nodeName,attributes={},children=[]) => { // create vNode, potentially using custom tags
+			if(tlx.customElements) {
 				const template = document.querySelector(`template[t-tagname=${nodeName}]`);
 				if(template) tlx.customElements[nodeName] = tlx.compile(template);
 				if(tlx.customElements[nodeName]) {
@@ -105,7 +105,7 @@
 			}
 			return {nodeName,attributes,children}; 
 		},
-		merge = (target,...sources) => {
+		merge = (target,...sources) => { // deep Object.assign with removal of keys specifically marked undefined
 			sources.forEach(source => {
 				if(!source || typeof(source)!=="object" || !target) return target = clone(source);
 				if(Array.isArray(source)) {
@@ -184,7 +184,7 @@
 						if(updating) updating = clearTimeout(updating);
 						target = realize(view(state,proxy),target,target.parentNode,options);
 					} else if(!updating) {
-						updating = setTimeout((...args) => { 
+						updating = setTimeout(() => { 
 								target = realize(view(state,proxy),target,target.parentNode,options);
 								updating = false; 
 							});
@@ -193,7 +193,6 @@
 				proxy = new Proxy(controller,{
 					get(target,property) {
 						if(property==="render") return render;
-						//if(property==="state") return state;
 						const value = target[property],
 							type = typeof(value);
 						if(type==="function") {

@@ -28,14 +28,15 @@
     -->
     <div id="app">
 	    <table class="latest-data table table-striped" width="100%">
-	    	<tbody t-foreach="${data.databases}">
-		   		<tr state="${{db:value}}">
+	    	<tbody t-for="db of ${data.databases}">
+		   		<tr>
 			    	<td class=dbname width="20%">${db.dbname}</td>
 			    	<td class=query-count width="20%">
 			    		<span class="${db.lastSample.countClassName}">${db.lastSample.nbQueries}</span>
 			    	</td>
-			    	<td t-foreach="${db.lastSample.topFiveQueries}">
-						<div state="${{q:object[key]}}" class="${q.elapsedClassName}" title="${q.query}">
+			    	<td t-for="q of ${db.lastSample.topFiveQueries}">
+						<div class="${q.elapsedClassName}" 
+						    title="${q.query}">
 							${q.formatElapsed}
 			       		</div>
 			    	</td>
@@ -46,19 +47,21 @@
 
     <script src="./ENV.js"></script>
     <script src="./lib/monitor.js"></script>
-    <script src="../../browser/tlx.js"></script>
+    <script src="../../dist/tlx.js"></script>
     <script>
     ENV.timeout = 250;
     //const fete = new Fete();
 	perfMonitor.startFPSMonitor()
 	perfMonitor.startMemMonitor()
 	perfMonitor.initProfiler("render")
-	tlx.bind({data:{databases:ENV.generateData(true).toArray()}})(document.getElementById("app"));
+	const model = tlx.bind({data:{databases:ENV.generateData(true).toArray()}},document.getElementById("app"),{reactive:false});
+	let tm;
 	function run() {
 		perfMonitor.startProfile("render");
 		perfMonitor.endProfile("render");
 		ENV.generateData(true).toArray();
-		setTimeout(run, ENV.timeout);
+		model.render();
+		if(!tm) tm = setTimeout(() => { tm = false; run(); }, ENV.timeout);
 	}
 	run();
 	</script>

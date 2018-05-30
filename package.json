@@ -1,6 +1,6 @@
 {
   "name": "tlx",
-  "version": "v0.2.14",
+  "version": "v0.2.15",
   "description": "Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.",
   "engines": {},
   "license": "MIT",

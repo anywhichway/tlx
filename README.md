@@ -1,4 +1,4 @@
-# TLX v0.2.15
+# TLX v0.2.17
 
 Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.
 
@@ -423,6 +423,10 @@ The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)<a name="release"></a>
+
+2018-06-08 v0.2.17 - Provide access to outer scope in directives.
+
+2018-06-01 v0.2.16 - Performance improvments. Added infinite/recursive object reference loop protection to object cloning.
 
 2018-05-30 v0.2.15 - Re-enabled benchmark tests. Added `open` as a boolean attribute.
 

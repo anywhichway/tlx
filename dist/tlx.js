@@ -117,21 +117,24 @@
 	SOFTWARE.
 	*/
 	const booleanAttribute = ["checked","disabled","hidden","multiple","nowrap","selected","required","open"],
-	 clone = (data) => { // deep copy data and preserve prototypes
-			if(Array.isArray(data)) {
+	clone = (data,cloned=new Map()) => { // deep copy data, preserve prototypes, avoid loops
+		 if(cloned.has(data)) return cloned.get(data);
+		 if(Array.isArray(data)) {
 				const result = [];
 				for(const item of data) {
-					const value = clone(item);
+					const value = clone(item,cloned);
 					if(value!==undefined) result.push(value);
 				}
+				cloned.set(data,result);
 				return result;
 			} 
 			if(data && typeof(data)==="object") {
 				const result = Object.create(Object.getPrototypeOf(data)); //{};
 				for(const key in data) {
-					const value = clone(data[key]);
+					const value = clone(data[key],cloned);
 					if(value!==undefined) result[key] = value;
 				}
+				cloned.set(data,result);
 				return result;
 			}
 			return data;
@@ -220,7 +223,8 @@
 				options = {};
 				if(!config && !target) options.reactive = true;
 			}
-			if(!config) config={template:document.body.firstElementChild.outerHTML};
+			//if(!config) config={template:document.body.firstElementChild.outerHTML};
+			if(!config) config={template:document.body.firstElementChild}
 			if(!target) target=document.body.firstElementChild
 			let {model={},view,controller=model,template} = config;
 			if(!target || !(target instanceof Node)) throw new TypeError("tlx.mvc or tlx.app target must be DOM Node");
@@ -234,7 +238,8 @@
 			}
 			if(!template && !view) throw new TypeError("tlx.mvc must specify a view or template");
 			if(!view && template) {
-				if(!tlx.vtdom) throw new Error("tlx-vtdom.js must be loaded to use templates.")
+				if(!tlx.vtdom) throw new Error("tlx-vtdom.js must be loaded to use templates.");
+				if(typeof(template)==="object") template["t-template"]=template.cloneNode(true);
 				view = (model,controller) => {
 					const scope = {};
 					Object.defineProperty(scope,"model",{value:model});
@@ -256,7 +261,7 @@
 				if(aname==="style" && value && typeof(value)==="object") value = Object.keys(value).reduce((accum,key) => accum += `${key}:${value};`);
 				if(!booleanAttribute.some(name => name===aname && falsy(value))) {
 					const type = typeof(value);
-					if(type==="function" || (value && type==="object") || aname==="t-template") element[aname] = value;
+					if(type==="function" || (value && type==="object")) element[aname] = value;
 					else {
 						if(options.protect && aname==="value") tlx.escape(value);
 						element.setAttribute(aname,value);
@@ -365,10 +370,11 @@
 			},
 			"t-foreach": (vnode,node,items) => {
 				vnode.children = [];
+				const scope = Object.assign({},items);
 				if(Array.isArray(items)) {
 					items.forEach((value,index,array) => {
 						for(const child of node.childNodes) {
-							const vdom = tlx.vtdom(child,{currentValue:value,value,index,array});
+							const vdom = tlx.vtdom(child,Object.assign(scope,{currentValue:value,value,index,array}));
 							if(vdom) vnode.children.push(vdom);
 						}
 					});
@@ -376,7 +382,7 @@
 					Object.keys(items).forEach((key,index,object) => {
 						const value = items[key];
 						for(const child of node.childNodes) {
-							const vdom = tlx.vtdom(child,{currentValue:value,key,value,index,object});
+							const vdom = tlx.vtdom(child,Object.assign(scope,{currentValue:value,key,value,index,object}));
 							if(vdom) vnode.children.push(vdom);
 						}
 					});
@@ -394,17 +400,18 @@
 				let value;
 				try {
 					value = Function("return " + target).call(null);
+					const scope = Object.assign({},value);
 					if(type==="of") {
 						for(const item of value) {
 							for(const child of node.childNodes) {
-								const vdom = tlx.vtdom(child,{[vname]:item,value});
+								const vdom = tlx.vtdom(child,Object.assign(scope,{[vname]:item,value}));
 								if(vdom) vnode.children.push(vdom);
 							}
 						}
 					} else {
 							for(const item in value) {
 								for(const child of node.childNodes) {
-									const vdom = tlx.vtdom(child,{[vname]:item,key:item});
+									const vdom = tlx.vtdom(child,Object.assign(scope,{[vname]:item,key:item}));
 									if(vdom) vnode.children.push(vdom);
 								}
 							}
@@ -687,7 +694,7 @@
 		if(!element) throw new TypeError("null element passed to tlx.bind");
 		options = Object.assign({},tlx.defaults,options);
 		if(arguments.length<3) { options.reactive = true; options.partials = true; }
-		const controller = tlx.mvc({model,template:element.outerHTML},element,options);
+		const controller = tlx.mvc({model,template:element.cloneNode(true)},element,options);
 		if(options.reactive) return makeProxy(model,controller);
 		return model;
 	 },
@@ -714,7 +721,7 @@
 			return strings.reduce((html,string,i) => html += string + (i<strings.length-1 ? (typeof(values[i])==="string" ? values[i] : (values[i]===undefined ? "" : JSON.stringify(values[i]))) : ""),"");
 		},
 		resolve = (scope,value) => {
-			if(typeof(value)!=="string" || !value.includes("$")) return value+"";
+			if(value.includes && !value.includes("$")) return value+"";
 			try { 
 				return scope ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(scope,parse) : value
 			} catch(e) { 
@@ -723,19 +730,23 @@
 		},
 		vtdom = (data,scope,classes,skipResolve) => {
 			const vnode = (() => {
+					let node = data["t-template"] || data;
 					const type = typeof(data);
-					let node = data;
 					if(type==="string") {
 						const doc = domParser.parseFromString(data,"text/html");
 						node = doc.body.childNodes[0];
-					} else if(!node || type!=="object" || !(node instanceof Node)) throw new TyperError("Argument to tlx.vtdom must be string or object");
+					} else if(!node || type!=="object" || !(node instanceof Node)) throw new TyperError("Argument to tlx.vtdom must be string or Node");
 					
-					if(node instanceof Text) return skipResolve ? node.data : resolve(scope,node.data);
+					node["t-template"] || (node["t-template"]=data["t-template"]||node.cloneNode(true));
 					
-					const attributes = {};
+					if(node instanceof Text) {
+						return skipResolve ? node.data: resolve(scope,node.data);
+					}
+					
+					const attributes = {"t-template":node["t-template"]};
 					for(const attr of node.attributes) {
-						let value = skipResolve ? attr.value : resolve(scope,attr.value);
-						if(typeof(value)==="function") {
+						const value = skipResolve ? attr.value : resolve(scope,attr.value);
+						if(value.call) { //typeof(value)==="function", faster to check .call
 							const render = scope.controller ? scope.controller.render : scope.render,
 								partials = render ? render.partials : false,
 								model = partials ? tlx.clone(scope.model||scope) : scope.model||scope,
@@ -746,18 +757,18 @@
 									if(tlx.different(current,scope.model||scope) && render) render();
 								};
 							Object.defineProperty(model,"update",{enumerable:false,configurable:true,writable:true,value:update});
-							value = (...args) => { update(f(...args)); };
+							attributes[attr.name] = (...args) => { update(f(...args)); };
+						} else {
+							attributes[attr.name] =  value;
 						}
-						attributes[attr.name] =  value;
 					}
 					if(classes) {
 						if(attributes.class) attributes.class += " " + classes;
 						else attributes.class = classes;
 					}
-					attributes["t-template"] = node.outerHTML;
 					
 					const vnode = tlx.h(node.tagName.toLowerCase(),attributes);
-					if(typeof(vnode)!=="function") {
+					if(!vnode.call) { //typeof(vnode)!=="function"
 						if(node.id) vnode.key = node.id;
 						if(!skipResolve) {
 							for(const aname in vnode.attributes) {
@@ -777,7 +788,8 @@
 						for(const child of node.childNodes) {
 							if(child instanceof Text) {
 								const value = skipResolve ? child.data : resolve(scope,child.data);
-								vnode.children.push(typeof(value)==="string" ? value : JSON.stringify(value));
+								//vnode.children.push(typeof(value)==="string" ? value : JSON.stringify(value));
+								vnode.children.push(value+"");
 							} else if(child.nodeName!=="SCRIPT"){
 								vnode.children.push(vtdom(child,scope,classes,skipResolve));
 							}

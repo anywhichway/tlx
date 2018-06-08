@@ -20,21 +20,24 @@
 	SOFTWARE.
 	*/
 	const booleanAttribute = ["checked","disabled","hidden","multiple","nowrap","selected","required","open"],
-	 clone = (data) => { // deep copy data and preserve prototypes
-			if(Array.isArray(data)) {
+	clone = (data,cloned=new Map()) => { // deep copy data, preserve prototypes, avoid loops
+		 if(cloned.has(data)) return cloned.get(data);
+		 if(Array.isArray(data)) {
 				const result = [];
 				for(const item of data) {
-					const value = clone(item);
+					const value = clone(item,cloned);
 					if(value!==undefined) result.push(value);
 				}
+				cloned.set(data,result);
 				return result;
 			} 
 			if(data && typeof(data)==="object") {
 				const result = Object.create(Object.getPrototypeOf(data)); //{};
 				for(const key in data) {
-					const value = clone(data[key]);
+					const value = clone(data[key],cloned);
 					if(value!==undefined) result[key] = value;
 				}
+				cloned.set(data,result);
 				return result;
 			}
 			return data;
@@ -123,7 +126,8 @@
 				options = {};
 				if(!config && !target) options.reactive = true;
 			}
-			if(!config) config={template:document.body.firstElementChild.outerHTML};
+			//if(!config) config={template:document.body.firstElementChild.outerHTML};
+			if(!config) config={template:document.body.firstElementChild}
 			if(!target) target=document.body.firstElementChild
 			let {model={},view,controller=model,template} = config;
 			if(!target || !(target instanceof Node)) throw new TypeError("tlx.mvc or tlx.app target must be DOM Node");
@@ -137,7 +141,8 @@
 			}
 			if(!template && !view) throw new TypeError("tlx.mvc must specify a view or template");
 			if(!view && template) {
-				if(!tlx.vtdom) throw new Error("tlx-vtdom.js must be loaded to use templates.")
+				if(!tlx.vtdom) throw new Error("tlx-vtdom.js must be loaded to use templates.");
+				if(typeof(template)==="object") template["t-template"]=template.cloneNode(true);
 				view = (model,controller) => {
 					const scope = {};
 					Object.defineProperty(scope,"model",{value:model});
@@ -159,7 +164,7 @@
 				if(aname==="style" && value && typeof(value)==="object") value = Object.keys(value).reduce((accum,key) => accum += `${key}:${value};`);
 				if(!booleanAttribute.some(name => name===aname && falsy(value))) {
 					const type = typeof(value);
-					if(type==="function" || (value && type==="object") || aname==="t-template") element[aname] = value;
+					if(type==="function" || (value && type==="object")) element[aname] = value;
 					else {
 						if(options.protect && aname==="value") tlx.escape(value);
 						element.setAttribute(aname,value);

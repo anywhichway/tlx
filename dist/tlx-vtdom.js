@@ -4,7 +4,7 @@
 		if(!element) throw new TypeError("null element passed to tlx.bind");
 		options = Object.assign({},tlx.defaults,options);
 		if(arguments.length<3) { options.reactive = true; options.partials = true; }
-		const controller = tlx.mvc({model,template:element.outerHTML},element,options);
+		const controller = tlx.mvc({model,template:element.cloneNode(true)},element,options);
 		if(options.reactive) return makeProxy(model,controller);
 		return model;
 	 },
@@ -31,7 +31,7 @@
 			return strings.reduce((html,string,i) => html += string + (i<strings.length-1 ? (typeof(values[i])==="string" ? values[i] : (values[i]===undefined ? "" : JSON.stringify(values[i]))) : ""),"");
 		},
 		resolve = (scope,value) => {
-			if(typeof(value)!=="string" || !value.includes("$")) return value+"";
+			if(value.includes && !value.includes("$")) return value+"";
 			try { 
 				return scope ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(scope,parse) : value
 			} catch(e) { 
@@ -40,19 +40,23 @@
 		},
 		vtdom = (data,scope,classes,skipResolve) => {
 			const vnode = (() => {
+					let node = data["t-template"] || data;
 					const type = typeof(data);
-					let node = data;
 					if(type==="string") {
 						const doc = domParser.parseFromString(data,"text/html");
 						node = doc.body.childNodes[0];
-					} else if(!node || type!=="object" || !(node instanceof Node)) throw new TyperError("Argument to tlx.vtdom must be string or object");
+					} else if(!node || type!=="object" || !(node instanceof Node)) throw new TyperError("Argument to tlx.vtdom must be string or Node");
 					
-					if(node instanceof Text) return skipResolve ? node.data : resolve(scope,node.data);
+					node["t-template"] || (node["t-template"]=data["t-template"]||node.cloneNode(true));
 					
-					const attributes = {};
+					if(node instanceof Text) {
+						return skipResolve ? node.data: resolve(scope,node.data);
+					}
+					
+					const attributes = {"t-template":node["t-template"]};
 					for(const attr of node.attributes) {
-						let value = skipResolve ? attr.value : resolve(scope,attr.value);
-						if(typeof(value)==="function") {
+						const value = skipResolve ? attr.value : resolve(scope,attr.value);
+						if(value.call) { //typeof(value)==="function", faster to check .call
 							const render = scope.controller ? scope.controller.render : scope.render,
 								partials = render ? render.partials : false,
 								model = partials ? tlx.clone(scope.model||scope) : scope.model||scope,
@@ -63,18 +67,18 @@
 									if(tlx.different(current,scope.model||scope) && render) render();
 								};
 							Object.defineProperty(model,"update",{enumerable:false,configurable:true,writable:true,value:update});
-							value = (...args) => { update(f(...args)); };
+							attributes[attr.name] = (...args) => { update(f(...args)); };
+						} else {
+							attributes[attr.name] =  value;
 						}
-						attributes[attr.name] =  value;
 					}
 					if(classes) {
 						if(attributes.class) attributes.class += " " + classes;
 						else attributes.class = classes;
 					}
-					attributes["t-template"] = node.outerHTML;
 					
 					const vnode = tlx.h(node.tagName.toLowerCase(),attributes);
-					if(typeof(vnode)!=="function") {
+					if(!vnode.call) { //typeof(vnode)!=="function"
 						if(node.id) vnode.key = node.id;
 						if(!skipResolve) {
 							for(const aname in vnode.attributes) {
@@ -94,7 +98,8 @@
 						for(const child of node.childNodes) {
 							if(child instanceof Text) {
 								const value = skipResolve ? child.data : resolve(scope,child.data);
-								vnode.children.push(typeof(value)==="string" ? value : JSON.stringify(value));
+								//vnode.children.push(typeof(value)==="string" ? value : JSON.stringify(value));
+								vnode.children.push(value+"");
 							} else if(child.nodeName!=="SCRIPT"){
 								vnode.children.push(vtdom(child,scope,classes,skipResolve));
 							}

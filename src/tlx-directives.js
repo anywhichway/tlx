@@ -25,10 +25,11 @@
 			},
 			"t-foreach": (vnode,node,items) => {
 				vnode.children = [];
+				const scope = Object.assign({},items);
 				if(Array.isArray(items)) {
 					items.forEach((value,index,array) => {
 						for(const child of node.childNodes) {
-							const vdom = tlx.vtdom(child,{currentValue:value,value,index,array});
+							const vdom = tlx.vtdom(child,Object.assign(scope,{currentValue:value,value,index,array}));
 							if(vdom) vnode.children.push(vdom);
 						}
 					});
@@ -36,7 +37,7 @@
 					Object.keys(items).forEach((key,index,object) => {
 						const value = items[key];
 						for(const child of node.childNodes) {
-							const vdom = tlx.vtdom(child,{currentValue:value,key,value,index,object});
+							const vdom = tlx.vtdom(child,Object.assign(scope,{currentValue:value,key,value,index,object}));
 							if(vdom) vnode.children.push(vdom);
 						}
 					});
@@ -54,17 +55,18 @@
 				let value;
 				try {
 					value = Function("return " + target).call(null);
+					const scope = Object.assign({},value);
 					if(type==="of") {
 						for(const item of value) {
 							for(const child of node.childNodes) {
-								const vdom = tlx.vtdom(child,{[vname]:item,value});
+								const vdom = tlx.vtdom(child,Object.assign(scope,{[vname]:item,value}));
 								if(vdom) vnode.children.push(vdom);
 							}
 						}
 					} else {
 							for(const item in value) {
 								for(const child of node.childNodes) {
-									const vdom = tlx.vtdom(child,{[vname]:item,key:item});
+									const vdom = tlx.vtdom(child,Object.assign(scope,{[vname]:item,key:item}));
 									if(vdom) vnode.children.push(vdom);
 								}
 							}

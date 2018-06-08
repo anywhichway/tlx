@@ -722,10 +722,18 @@
 		},
 		resolve = (scope,value) => {
 			if(value.includes && !value.includes("$")) return value+"";
-			try { 
-				return scope ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(scope,parse) : value
-			} catch(e) { 
-				return ""; 
+			const extras = {};
+			while(extras) {
+				try { 
+					return scope ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(Object.assign(scope,extras),parse) : value
+				} catch(e) {
+					if(e instanceof ReferenceError) {
+						const vname = e.message.split(" ").shift();
+						extras[vname] = "";
+					} else {
+						return ""; 
+					}
+				}
 			}
 		},
 		vtdom = (data,scope,classes,skipResolve) => {
@@ -743,9 +751,11 @@
 						return skipResolve ? node.data: resolve(scope,node.data);
 					}
 					
-					const attributes = {"t-template":node["t-template"]};
-					for(const attr of node.attributes) {
-						const value = skipResolve ? attr.value : resolve(scope,attr.value);
+					const attributes = {"t-template":node["t-template"]},
+						keys = Object.keys(node.attributes);
+					for(const key of keys) {
+						const attr = node.attributes[key],
+							value = skipResolve ? attr.value : resolve(scope,attr.value);
 						if(value.call) { //typeof(value)==="function", faster to check .call
 							const render = scope.controller ? scope.controller.render : scope.render,
 								partials = render ? render.partials : false,

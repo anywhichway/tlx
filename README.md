@@ -1,4 +1,4 @@
-# TLX v0.2.17
+# TLX v0.2.18
 
 Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.
 
@@ -117,7 +117,7 @@ When controller functions are called, `this` is bound to the `model` unless `par
 
 By default `reactive` and `partials` are false when apps are created with `tlx.mvc`. When apps are created with `tlx.app`, the `reactive` and `partials` options are set to true, since this is the behavior in Hyperapp.
 
-The when the option `protect` is truthy, attribute values and the text of Text nodes are escaped to help prevent HTML script injection. The function `window.prompt` is also wrapped and its return value escaped. If the return value contains executable code, then prompt is re-run asking the user to enter a new value. If the value of a `protect` is a function, it is called with the invalid value and the return value is used as a substitute. If `protect` is truthy but not a function, then the invalid value is replaced with an empty string. For convenience tlx provides `tlx.escape` as the value of `protect`, which will remove or replace executable content.
+When the option `protect` is truthy, attribute values and the text of Text nodes are escaped to help prevent HTML script injection. The function `window.prompt` is also wrapped and its return value escaped. If the return value contains executable code, then prompt is re-run asking the user to enter a new value. If the value of a `protect` is a function, it is called with the invalid value and the return value is used as a substitute. If `protect` is truthy but not a function, then the invalid value is replaced with an empty string. For convenience tlx provides `tlx.escape` as the value of `protect`, which will remove or replace executable content.
 
 You can change the default option values by setting `tlx.defaults` to the value you desire, e.g. `tlx.defaults = {reactive:true}`.
 
@@ -189,9 +189,9 @@ Requires: `tlx-core.js` and `tlx-reactive.js`
 
 In addition to the reactivity that can be enabled using the `reactive` option to `tlx.mvc`, reactivity can be based on the `linkState(path:string,...targetSelector:string)` function, a concept borrowed from Preact and enhanced. This removes the complexity of creating views and controllers.
 
-In its basic form, `linkState` takes a dot delimitted `path` and any number of `targetSelector` (usually ids including #) of HTML elementd that have models bound to them. If no model is bound to the target, one will get created and bound. Whenever `linkState` is called, the `path` on the model bound to the target will be updated with the value of the `event.target` and the element identified by `targetSelector` will be re-rendered.
+In its basic form, `linkState` takes a dot delimitted `path` and any number of `targetSelector` (usually ids including #) of HTML elements that have models bound to them. If no model is bound to the target, one will get created and bound. Whenever `linkState` is called, the `path` on the model bound to the target will be updated with the value of the `event.target` and the element identified by `targetSelector` will be re-rendered.
 
-This can be used completely independent of the use of `tlx.mvc` and automatically prevent direct and indirect looping, as shown below from `examples/linkstate.html`:
+This can be used completely independent of the use of `tlx.mvc`. It automatically prevents direct and indirect looping, as shown below from `examples/linkstate.html`:
 
 ```html
 First Name:<input id="firstName1" value="${name.first}" type="text" onchange="this.linkState('name.first','#firstName2','#firstName3')(event)">
@@ -423,6 +423,8 @@ The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)<a name="release"></a>
+
+2018-06-08 v0.2.18 - Improved Edge compatibility.
 
 2018-06-08 v0.2.17 - Provide access to outer scope in directives.
 

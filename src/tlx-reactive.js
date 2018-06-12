@@ -21,6 +21,7 @@
 	*/
 	HTMLElement.prototype.linkState = (path, ...elements) => event => {
 		const target = event.target;
+		if(elements.length===0) elements[0] = document.body;
 		for(let element of elements) {
 			if(typeof(element)==="string") element = document.querySelector(element);
 			if([HTMLInputElement,HTMLTextAreaElement,HTMLSelectElement,HTMLAnchorElement].some(cls => target instanceof cls)) {

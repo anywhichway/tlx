@@ -1,4 +1,4 @@
-# TLX v0.2.18
+# TLX v0.2.19
 
 Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.
 
@@ -423,6 +423,8 @@ The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)<a name="release"></a>
+
+2018-06-12 v0.2.19 - Improved Edge compatibility.
 
 2018-06-08 v0.2.18 - Improved Edge compatibility.
 

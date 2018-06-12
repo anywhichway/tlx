@@ -55,7 +55,13 @@
 		const templatehtml = `<div>${(clone.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").trim()||"<span></span>")}</div>`;
 		return function(attributes) {
 			const view = () => tlx.vtdom(templatehtml,model,tagname);
-			return target => tlx.mvc({model,view},target,{reactive}); //,options
+			return (target,parent) => {
+				if(!target) {
+					target = document.createElement(tagname);
+					parent.appendChild(target);
+				}
+				tlx.mvc({model,view},target,{reactive}); //,options
+			}
 		}
 	},
 	customElements = {},
@@ -143,7 +149,7 @@
 			const type = typeof(vnode);
 			let append;
 			if(type==="function") {
-				vnode(node)
+				vnode(node,parent)
 			} else if(vnode && type==="object") {
 				if(!node) {
 					node = append = document.createElement(vnode.nodeName);
@@ -656,6 +662,7 @@
 	*/
 	HTMLElement.prototype.linkState = (path, ...elements) => event => {
 		const target = event.target;
+		if(elements.length===0) elements[0] = document.body;
 		for(let element of elements) {
 			if(typeof(element)==="string") element = document.querySelector(element);
 			if([HTMLInputElement,HTMLTextAreaElement,HTMLSelectElement,HTMLAnchorElement].some(cls => target instanceof cls)) {
@@ -728,7 +735,8 @@
 					return scope ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(Object.assign(scope,extras),parse) : value
 				} catch(e) {
 					if(e instanceof ReferenceError) {
-						const vname = e.message.split(" ").shift();
+						let vname = e.message.split(" ").shift();
+						if(vname[0]==="'" && vname[vname.length-1]==="'") vname = vname.substring(1,vname.length-1);
 						extras[vname] = "";
 					} else {
 						return ""; 

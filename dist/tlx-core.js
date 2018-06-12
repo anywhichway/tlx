@@ -46,7 +46,7 @@
 			const type = typeof(vnode);
 			let append;
 			if(type==="function") {
-				vnode(node)
+				vnode(node,parent)
 			} else if(vnode && type==="object") {
 				if(!node) {
 					node = append = document.createElement(vnode.nodeName);

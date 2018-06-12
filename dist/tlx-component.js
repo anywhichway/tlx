@@ -45,7 +45,13 @@
 		const templatehtml = `<div>${(clone.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").trim()||"<span></span>")}</div>`;
 		return function(attributes) {
 			const view = () => tlx.vtdom(templatehtml,model,tagname);
-			return target => tlx.mvc({model,view},target,{reactive}); //,options
+			return (target,parent) => {
+				if(!target) {
+					target = document.createElement(tagname);
+					parent.appendChild(target);
+				}
+				tlx.mvc({model,view},target,{reactive}); //,options
+			}
 		}
 	},
 	customElements = {},

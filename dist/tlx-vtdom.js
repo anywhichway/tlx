@@ -38,7 +38,8 @@
 					return scope ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(Object.assign(scope,extras),parse) : value
 				} catch(e) {
 					if(e instanceof ReferenceError) {
-						const vname = e.message.split(" ").shift();
+						let vname = e.message.split(" ").shift();
+						if(vname[0]==="'" && vname[vname.length-1]==="'") vname = vname.substring(1,vname.length-1);
 						extras[vname] = "";
 					} else {
 						return ""; 

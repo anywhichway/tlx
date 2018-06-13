@@ -36,15 +36,23 @@
 			style.innerText = text.trim();
 			document.head.appendChild(style);
 		}
-		const model = [].slice.call(template.attributes).reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
+		// should this only look for t-state and add attributes to t-state?
+		//const model = [].slice.call(template.attributes).reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
+		const model = {}, // added
+			attributes = [].slice.call(template.attributes).reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
+		model.attributes = attributes;
 		for(let script of [].slice.call(scripts)) {
 			const newmodel = Function(`with(this) { ${script.innerText}; }`).call(model);
-			!newmodel || (model = newmodel);
+			Object.assign(model,newmodel);
 			clone.removeChild(script);
 		}
 		const templatehtml = `<div>${(clone.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").trim()||"<span></span>")}</div>`;
 		return function(attributes) {
-			const view = () => tlx.vtdom(templatehtml,model,tagname);
+			const view = () => {
+				const vtnode = tlx.vtdom(templatehtml,model,tagname);
+				Object.assign(vtnode.attributes,attributes); // is this overriding state?
+				return vtnode;
+			}
 			return (target,parent) => {
 				if(!target) {
 					target = document.createElement(tagname);

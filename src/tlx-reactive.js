@@ -37,6 +37,7 @@
 				}
 				const parts = path.split("."),
 					model = {};
+				Object.assign(model,element["t-state"]); // added
 				let scope = model;
 				const property = parts.pop(); // get final path
 				for(let key of parts) { // walk tree

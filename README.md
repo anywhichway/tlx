@@ -1,4 +1,4 @@
-# TLX v0.2.19
+# TLX v0.2.20
 
 Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.
 
@@ -366,9 +366,9 @@ The code beow can be found in `examples/template.html`. Note the use of scoped s
 <script src="../src/tlx-component.js"></script>
 </head>
 <template t-tagname="template-demo" t-reactive="true" title="Untitled Demo (click to title)">
-	<h3 onclick="${this.changeTitle}">${this.title}</h3>
+	<h3 onclick="${changeTitle}">${title}</h3>
 
-	<button onclick="${this.onclick}">You clicked me ${this.count} times.</button>
+	<button onclick="${onclick}">You clicked me ${count} times.</button>
   	  	
 	<style>
 		h3 { font-style: italic }
@@ -423,6 +423,8 @@ The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)<a name="release"></a>
+
+2018-06-13 v0.2.20 - Improved attribute support for components.
 
 2018-06-12 v0.2.19 - Improved Edge compatibility.
 

@@ -34,8 +34,9 @@
 			if(value.includes && !value.includes("$")) return value+"";
 			const extras = {};
 			while(extras) {
-				try { 
-					return scope ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(Object.assign(scope,extras),parse) : value
+				try {
+					// direct assignment to this or this.model takes priority over attributes
+					return scope ? Function("p","with(this.attributes||{}) { with(this) { with(this.model||{}) { return p`" + value + "`; }}}").call(Object.assign(scope,extras),parse) : value
 				} catch(e) {
 					if(e instanceof ReferenceError) {
 						let vname = e.message.split(" ").shift();
@@ -59,11 +60,12 @@
 					node["t-template"] || (node["t-template"]=data["t-template"]||node.cloneNode(true));
 					
 					if(node instanceof Text) {
-						return skipResolve ? node.data: resolve(scope,node.data);
+						return skipResolve || node.data.indexOf("${")===-1 ? node.data.trim() : (resolve(scope,node.data)+"").trim(); 
 					}
 					
 					const attributes = {"t-template":node["t-template"]},
 						keys = Object.keys(node.attributes);
+					//Object.assign(attributes,scope.attributes); 
 					for(const key of keys) {
 						const attr = node.attributes[key],
 							value = skipResolve ? attr.value : resolve(scope,attr.value);
@@ -101,18 +103,20 @@
 										else Object.assign(scope,value);
 									} else {
 										const next = tlx.directives[aname](vnode,node,value);
-										if(!next) return vnode;
+										if(!next) return aname==="t-if" ? undefined : vnode;
 									}
 								}
 							}
 						}
-						for(const child of node.childNodes) {
-							if(child instanceof Text) {
-								const value = skipResolve ? child.data : resolve(scope,child.data);
+						for(const child of node.childNodes) { // added
+							//if(child instanceof Text) {
+							//	const value = skipResolve ? child.data : resolve(scope,child.data);
 								//vnode.children.push(typeof(value)==="string" ? value : JSON.stringify(value));
-								vnode.children.push(value+"");
-							} else if(child.nodeName!=="SCRIPT"){
-								vnode.children.push(vtdom(child,scope,classes,skipResolve));
+							//	vnode.children.push(value+"");
+							//} else 
+							if(child.nodeName!=="SCRIPT"){
+								const vtnode = vtdom(child,scope,classes,skipResolve)
+								if(vtnode) vnode.children.push(vtnode);
 							}
 						}
 					}

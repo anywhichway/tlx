@@ -46,15 +46,23 @@
 			style.innerText = text.trim();
 			document.head.appendChild(style);
 		}
-		const model = [].slice.call(template.attributes).reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
+		// should this only look for t-state and add attributes to t-state?
+		//const model = [].slice.call(template.attributes).reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
+		const model = {}, // added
+			attributes = [].slice.call(template.attributes).reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
+		model.attributes = attributes;
 		for(let script of [].slice.call(scripts)) {
 			const newmodel = Function(`with(this) { ${script.innerText}; }`).call(model);
-			!newmodel || (model = newmodel);
+			Object.assign(model,newmodel);
 			clone.removeChild(script);
 		}
 		const templatehtml = `<div>${(clone.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").trim()||"<span></span>")}</div>`;
 		return function(attributes) {
-			const view = () => tlx.vtdom(templatehtml,model,tagname);
+			const view = () => {
+				const vtnode = tlx.vtdom(templatehtml,model,tagname);
+				Object.assign(vtnode.attributes,attributes); // is this overriding state?
+				return vtnode;
+			}
 			return (target,parent) => {
 				if(!target) {
 					target = document.createElement(tagname);
@@ -678,6 +686,7 @@
 				}
 				const parts = path.split("."),
 					model = {};
+				Object.assign(model,element["t-state"]); // added
 				let scope = model;
 				const property = parts.pop(); // get final path
 				for(let key of parts) { // walk tree
@@ -731,8 +740,9 @@
 			if(value.includes && !value.includes("$")) return value+"";
 			const extras = {};
 			while(extras) {
-				try { 
-					return scope ? Function("p","with(this) { with(this.model||{}) { return p`" + value + "`; }}").call(Object.assign(scope,extras),parse) : value
+				try {
+					// direct assignment to this or this.model takes priority over attributes
+					return scope ? Function("p","with(this.attributes||{}) { with(this) { with(this.model||{}) { return p`" + value + "`; }}}").call(Object.assign(scope,extras),parse) : value
 				} catch(e) {
 					if(e instanceof ReferenceError) {
 						let vname = e.message.split(" ").shift();
@@ -756,11 +766,12 @@
 					node["t-template"] || (node["t-template"]=data["t-template"]||node.cloneNode(true));
 					
 					if(node instanceof Text) {
-						return skipResolve ? node.data: resolve(scope,node.data);
+						return skipResolve || node.data.indexOf("${")===-1 ? node.data.trim() : (resolve(scope,node.data)+"").trim(); 
 					}
 					
 					const attributes = {"t-template":node["t-template"]},
 						keys = Object.keys(node.attributes);
+					//Object.assign(attributes,scope.attributes); 
 					for(const key of keys) {
 						const attr = node.attributes[key],
 							value = skipResolve ? attr.value : resolve(scope,attr.value);
@@ -798,18 +809,20 @@
 										else Object.assign(scope,value);
 									} else {
 										const next = tlx.directives[aname](vnode,node,value);
-										if(!next) return vnode;
+										if(!next) return aname==="t-if" ? undefined : vnode;
 									}
 								}
 							}
 						}
-						for(const child of node.childNodes) {
-							if(child instanceof Text) {
-								const value = skipResolve ? child.data : resolve(scope,child.data);
+						for(const child of node.childNodes) { // added
+							//if(child instanceof Text) {
+							//	const value = skipResolve ? child.data : resolve(scope,child.data);
 								//vnode.children.push(typeof(value)==="string" ? value : JSON.stringify(value));
-								vnode.children.push(value+"");
-							} else if(child.nodeName!=="SCRIPT"){
-								vnode.children.push(vtdom(child,scope,classes,skipResolve));
+							//	vnode.children.push(value+"");
+							//} else 
+							if(child.nodeName!=="SCRIPT"){
+								const vtnode = vtdom(child,scope,classes,skipResolve)
+								if(vtnode) vnode.children.push(vtnode);
 							}
 						}
 					}

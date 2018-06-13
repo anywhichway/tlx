@@ -6,9 +6,9 @@
 <script src="../src/tlx-component.js"></script>
 </head>
 <template t-tagname="template-demo" t-reactive="true" title="Untitled Demo (click to title)">
-	<h3 onclick="${this.changeTitle}">${this.title}</h3>
+	<h3 onclick="${changeTitle}">${title}</h3>
 
-	<button onclick="${this.onclick}">You clicked me ${this.count} times.</button>
+	<button onclick="${onclick}">You clicked me ${count} times.</button>
   	  	
 	<style>
 		h3 { font-style: italic }

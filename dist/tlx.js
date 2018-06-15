@@ -32,8 +32,15 @@
 	const	compile = function(template) {
 		const tagname = template.getAttribute("t-tagname"),
 			reactive = tlx.truthy(template.getAttribute("t-reactive")),
+			state = template.getAttribute("t-state"),
 			clone = document.createElement(tagname);
 		clone.innerHTML = template.innerHTML;
+		for(let i=0;i<template.attributes.length;i++) {
+			const attr = template.attributes[i];
+			if(attr.name!=="t-tagname") {
+				clone.setAttribute(attr.name,attr.value);
+			}
+		}
 		const	styles = clone.querySelectorAll("style")||[],
 			scripts = clone.querySelectorAll("script")||[];
 		for(let style of [].slice.call(styles)) {
@@ -46,21 +53,23 @@
 			style.innerText = text.trim();
 			document.head.appendChild(style);
 		}
-		// should this only look for t-state and add attributes to t-state?
+	// should this only look for t-state and add attributes to t-state?
 		//const model = [].slice.call(template.attributes).reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
-		const model = {}, // added
+		const model = state ? tlx.resolve({},state) : {}, // added
 			attributes = [].slice.call(template.attributes).reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
-		model.attributes = attributes;
+		Object.defineProperty(model,"attributes",{enumerable:false,configurable:true,writable:true,value:attributes});
 		for(let script of [].slice.call(scripts)) {
 			const newmodel = Function(`with(this) { ${script.innerText}; }`).call(model);
 			Object.assign(model,newmodel);
 			clone.removeChild(script);
 		}
-		const templatehtml = `<div>${(clone.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").trim()||"<span></span>")}</div>`;
+		//const templatehtml = `<div>${(clone.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/\n/g,"").trim()||"<span></span>")}</div>`;
+		const templatehtml = clone.outerHTML.replace(new RegExp(tagname,"g"),"div");
 		return function(attributes) {
 			const view = () => {
-				const vtnode = tlx.vtdom(templatehtml,model,tagname);
-				Object.assign(vtnode.attributes,attributes); // is this overriding state?
+				if(attributes["t-state"]) Object.assign(model,attributes["t-state"]);
+				const vtnode = tlx.vtdom(templatehtml,model,tagname); // templatehtml instead of clone
+				Object.assign(vtnode.attributes,attributes);
 				return vtnode;
 			}
 			return (target,parent) => {
@@ -263,7 +272,7 @@
 			}
 			const proxy = wire(model,view,controller,target,options);
 			while(target.lastChild) target.removeChild(target.lastChild);
-			controller.render = proxy.render;
+			Object.defineProperty(controller,"render",{enumerable:false,configurable:true,writable:true,value:proxy.render});
 			controller.render.reactive = options.reactive;
 			controller.render.partials = options.partials;
 			proxy.render(model,true);
@@ -288,7 +297,7 @@
 		},
 		wire = (model,view,controller,target,options) => {
 			let updating;
-			const state = {}, //target["t-state"] || (target["t-state"] = {}),
+			const state = target["t-state"] || (target["t-state"] = {}), //{}, // added
 				render = function render(newState=model,force) {
 					merge(state,newState);
 					if(model!==newState) merge(model,newState);
@@ -384,7 +393,7 @@
 			},
 			"t-foreach": (vnode,node,items) => {
 				vnode.children = [];
-				const scope = Object.assign({},items);
+				const scope = Object.assign({},vnode.attributes["t-state"],items);
 				if(Array.isArray(items)) {
 					items.forEach((value,index,array) => {
 						for(const child of node.childNodes) {
@@ -411,21 +420,22 @@
 				const	type = i===inIndex ? "in" : "of",
 						vname = spec.substring(0,i).trim(),
 						target = spec.substring(i+3,spec.length).trim();
+				if(target==="") throw new TypeError(`Malformed t-for spec '${spec}'`);
 				let value;
 				try {
 					value = Function("return " + target).call(null);
-					const scope = Object.assign({},value);
+					const scope = Object.assign({},vnode.attributes["t-state"],value);
 					if(type==="of") {
 						for(const item of value) {
 							for(const child of node.childNodes) {
-								const vdom = tlx.vtdom(child,Object.assign(scope,{[vname]:item,value}));
+								const vdom = tlx.vtdom(child,Object.assign(scope,{[vname]:item}));
 								if(vdom) vnode.children.push(vdom);
 							}
 						}
 					} else {
 							for(const item in value) {
 								for(const child of node.childNodes) {
-									const vdom = tlx.vtdom(child,Object.assign(scope,{[vname]:item,key:item}));
+									const vdom = tlx.vtdom(child,Object.assign(scope,{[vname]:item}));
 									if(vdom) vnode.children.push(vdom);
 								}
 							}
@@ -800,6 +810,9 @@
 					if(!vnode.call) { //typeof(vnode)!=="function"
 						if(node.id) vnode.key = node.id;
 						if(!skipResolve) {
+							//if(!vnode.attributes["t-state"] && scope) vnode.attributes["t-state"] = scope; // added
+							//if(!vnode.attributes["t-state"]) vnode.attributes["t-state"] = {}; // added
+							vnode.attributes["t-state"] = Object.assign({},vnode.attributes["t-state"],scope); // added
 							for(const aname in vnode.attributes) {
 								if(aname==="t-state" || (tlx.directives && tlx.directives[aname])) {
 									let value = vnode.attributes[aname];
@@ -830,7 +843,7 @@
 				})();
 			return vnode;
 		};
-	if(typeof(module)!=="undefined") module.exports = (tlx) => { tlx.vtdom = vtdom; tlx.bind = bind; }
-	if(typeof(window)!=="undefined") tlx.vtdom = vtdom; tlx.bind = bind;
+	if(typeof(module)!=="undefined") module.exports = (tlx) => { tlx.vtdom = vtdom; tlx.bind = bind; tlx.resolve = resolve; }
+	if(typeof(window)!=="undefined") tlx.vtdom = vtdom; tlx.bind = bind; tlx.resolve = resolve;
 }).call(this)
 },{}]},{},[1]);

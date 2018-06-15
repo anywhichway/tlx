@@ -152,7 +152,7 @@
 			}
 			const proxy = wire(model,view,controller,target,options);
 			while(target.lastChild) target.removeChild(target.lastChild);
-			controller.render = proxy.render;
+			Object.defineProperty(controller,"render",{enumerable:false,configurable:true,writable:true,value:proxy.render});
 			controller.render.reactive = options.reactive;
 			controller.render.partials = options.partials;
 			proxy.render(model,true);
@@ -177,7 +177,7 @@
 		},
 		wire = (model,view,controller,target,options) => {
 			let updating;
-			const state = {}, //target["t-state"] || (target["t-state"] = {}),
+			const state = target["t-state"] || (target["t-state"] = {}), //{}, // added
 				render = function render(newState=model,force) {
 					merge(state,newState);
 					if(model!==newState) merge(model,newState);

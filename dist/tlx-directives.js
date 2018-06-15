@@ -25,7 +25,7 @@
 			},
 			"t-foreach": (vnode,node,items) => {
 				vnode.children = [];
-				const scope = Object.assign({},items);
+				const scope = Object.assign({},vnode.attributes["t-state"],items);
 				if(Array.isArray(items)) {
 					items.forEach((value,index,array) => {
 						for(const child of node.childNodes) {
@@ -52,21 +52,22 @@
 				const	type = i===inIndex ? "in" : "of",
 						vname = spec.substring(0,i).trim(),
 						target = spec.substring(i+3,spec.length).trim();
+				if(target==="") throw new TypeError(`Malformed t-for spec '${spec}'`);
 				let value;
 				try {
 					value = Function("return " + target).call(null);
-					const scope = Object.assign({},value);
+					const scope = Object.assign({},vnode.attributes["t-state"],value);
 					if(type==="of") {
 						for(const item of value) {
 							for(const child of node.childNodes) {
-								const vdom = tlx.vtdom(child,Object.assign(scope,{[vname]:item,value}));
+								const vdom = tlx.vtdom(child,Object.assign(scope,{[vname]:item}));
 								if(vdom) vnode.children.push(vdom);
 							}
 						}
 					} else {
 							for(const item in value) {
 								for(const child of node.childNodes) {
-									const vdom = tlx.vtdom(child,Object.assign(scope,{[vname]:item,key:item}));
+									const vdom = tlx.vtdom(child,Object.assign(scope,{[vname]:item}));
 									if(vdom) vnode.children.push(vdom);
 								}
 							}

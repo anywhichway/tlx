@@ -22,8 +22,15 @@
 	const	compile = function(template) {
 		const tagname = template.getAttribute("t-tagname"),
 			reactive = tlx.truthy(template.getAttribute("t-reactive")),
+			state = template.getAttribute("t-state"),
 			clone = document.createElement(tagname);
 		clone.innerHTML = template.innerHTML;
+		for(let i=0;i<template.attributes.length;i++) {
+			const attr = template.attributes[i];
+			if(attr.name!=="t-tagname") {
+				clone.setAttribute(attr.name,attr.value);
+			}
+		}
 		const	styles = clone.querySelectorAll("style")||[],
 			scripts = clone.querySelectorAll("script")||[];
 		for(let style of [].slice.call(styles)) {
@@ -36,21 +43,23 @@
 			style.innerText = text.trim();
 			document.head.appendChild(style);
 		}
-		// should this only look for t-state and add attributes to t-state?
+	// should this only look for t-state and add attributes to t-state?
 		//const model = [].slice.call(template.attributes).reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
-		const model = {}, // added
+		const model = state ? tlx.resolve({},state) : {}, // added
 			attributes = [].slice.call(template.attributes).reduce((accum,attribute) => { ["id","t-tagname"].includes(attribute.name) || (accum[attribute.name] = attribute.value); return accum; },{});
-		model.attributes = attributes;
+		Object.defineProperty(model,"attributes",{enumerable:false,configurable:true,writable:true,value:attributes});
 		for(let script of [].slice.call(scripts)) {
 			const newmodel = Function(`with(this) { ${script.innerText}; }`).call(model);
 			Object.assign(model,newmodel);
 			clone.removeChild(script);
 		}
-		const templatehtml = `<div>${(clone.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").trim()||"<span></span>")}</div>`;
+		//const templatehtml = `<div>${(clone.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/\n/g,"").trim()||"<span></span>")}</div>`;
+		const templatehtml = clone.outerHTML.replace(new RegExp(tagname,"g"),"div");
 		return function(attributes) {
 			const view = () => {
-				const vtnode = tlx.vtdom(templatehtml,model,tagname);
-				Object.assign(vtnode.attributes,attributes); // is this overriding state?
+				if(attributes["t-state"]) Object.assign(model,attributes["t-state"]);
+				const vtnode = tlx.vtdom(templatehtml,model,tagname); // templatehtml instead of clone
+				Object.assign(vtnode.attributes,attributes);
 				return vtnode;
 			}
 			return (target,parent) => {

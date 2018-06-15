@@ -94,6 +94,9 @@
 					if(!vnode.call) { //typeof(vnode)!=="function"
 						if(node.id) vnode.key = node.id;
 						if(!skipResolve) {
+							//if(!vnode.attributes["t-state"] && scope) vnode.attributes["t-state"] = scope; // added
+							//if(!vnode.attributes["t-state"]) vnode.attributes["t-state"] = {}; // added
+							vnode.attributes["t-state"] = Object.assign({},vnode.attributes["t-state"],scope); // added
 							for(const aname in vnode.attributes) {
 								if(aname==="t-state" || (tlx.directives && tlx.directives[aname])) {
 									let value = vnode.attributes[aname];
@@ -124,6 +127,6 @@
 				})();
 			return vnode;
 		};
-	if(typeof(module)!=="undefined") module.exports = (tlx) => { tlx.vtdom = vtdom; tlx.bind = bind; }
-	if(typeof(window)!=="undefined") tlx.vtdom = vtdom; tlx.bind = bind;
+	if(typeof(module)!=="undefined") module.exports = (tlx) => { tlx.vtdom = vtdom; tlx.bind = bind; tlx.resolve = resolve; }
+	if(typeof(window)!=="undefined") tlx.vtdom = vtdom; tlx.bind = bind; tlx.resolve = resolve;
 }).call(this)

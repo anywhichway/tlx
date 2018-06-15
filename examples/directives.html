@@ -7,11 +7,11 @@
 </head>
 <body>
 <div>
-<ul t-for="item of [1,2,3]"><li>${value}</li></ul>
+<ul t-for="item of [1,2,3]"><li>${item}</li></ul>
 
-<ul t-forEach="${[1,2,3]}"><li>${value}</li></ul>
+<ul t-forEach="${[1,2,3]}"><li>${index}:${value}</li></ul>
 
-<ul t-for="value in ${{name:'Joe',age:27}}"><li>${key}: ${value}</li></ul>
+<ul t-for="key in ${{name:'Joe',age:27}}"><li>${key}</li></ul>
 
 <ul t-forEach="${{name:'Joe',age:27}}"><li>${key}: ${value}</li></ul>
 

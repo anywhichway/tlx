@@ -1,4 +1,4 @@
-# TLX v0.2.20
+# TLX v0.2.21
 
 Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.
 
@@ -209,9 +209,9 @@ The following attribute directives are built-in:
 
 `t-state`, sets the state for the DOM node it is used in. Note, interpolations are frequently useful in order to simplify the expression of JSON, e.g. `state="{name: 'Bill}"` is not valid JSON, where as `state="${{name: 'Bill'}}"` is valid JavaScript and will return the correct object, i.e. `{"name":"Bill"}`. 
 
-`t-for="<vname> of <array>"`, operates like its JavaScript counterpart, in addition to `<vname>`, the scoped variables `value`, `index`, and `array` (similar to `Array.prototype.forEach`) are available in nested HTML string literal expressions.
+`t-for="<vname> of ${<array>}"`, operates like its JavaScript counterpart.
 
-`t-for="<vname> in <object>"`, operates like its JavaScript counterpart except that in addition to `<vname>`, locally scoped variables `value`, `key', and `object` are available in the nested HTML string literal expressions so that `${object[key]}` and `${value}` can be used to retrieve a value in addition to `${object[<vname>]}`.
+`t-for="<vname> in ${<object>}"`, operates like its JavaScript counterpart.
 
 `t-foreach="${<objectOrArray>}"`, is smart and operates on either an array or regular object. The variables `value`, `index` and `array` are available to nested HTML string literal expressions if an array is passed in, otherwise `key`, `value` and `object` are available.
 
@@ -423,6 +423,8 @@ The idea of `linkState` to simplify reactive binding is drawn from `preact`.
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)<a name="release"></a>
+
+2018-06-15 v0.2.21 - Improved attribute support for components. Made `render` non-enumerable. Adjusted scope for directives. Made `t-for` fully consistent with JavaScript semantics.
 
 2018-06-13 v0.2.20 - Improved attribute support for components.
 

@@ -1,71 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<script src="../src/tlx-core.js"></script>
-<script src="../src/tlx-vtdom.js"></script>
-<script src="../src/tlx-component.js"></script>
+<script src="https://unpkg.com/@webcomponents/custom-elements"></script>
 </head>
 <body>
-<button-counter1></button-counter1>
-<button-counter2></button-counter2>
-<button-counter3></button-counter3>
-<button-counter4></button-counter4>
-</body>
+<div id="message">
+Hello ${firstName}.
+</div>
+<div id="form">
+First Name: <input name="firstName" value="${firstName}" placeholder="Type name and enter">
+</div>
+<script src="../index.js"></script>
 <script>
-tlx.component('button-counter1', {
-  model: function () {
-    return {
-      count: 0
-    }
-  },
-  controller: function() {
-  	return {
-  		onclick: function(event) { this.count++; }
-  	}
-  },
-  template: '<button title="${attributes.title}" onclick="${controller.onclick}">You clicked me ${model.count} times.</button>',
-  options: {reactive: true}
-});
-tlx.component('button-counter2', {
-  model: function () {
-    return {
-      count: 0
-    }
-  },
-  controller: function() {
-  	return {
-  		onclick: function(event) { return {count: ++this.count}; }
-  	}
-  },
-  template: '<button title="${attributes.title}" onclick="${controller.onclick}">You clicked me ${model.count} times.</button>',
-  options: {reactive: true, partials: true}
-});
-tlx.component('button-counter3', {
-  model: function () {
-    return {
-      count: 0
-    }
-  },
-  controller: function() {
-  	return {
-  		onclick: function(event) { this.count++; this.update(); }
-  	}
-  },
-  template: '<button title="${attributes.title}" onclick="${controller.onclick}">You clicked me ${model.count} times.</button>'
-});
-tlx.component('button-counter4', {
-  model: function () {
-    return {
-      count: 0
-    }
-  },
-  controller: function() {
-  	return {
-  		onclick: function(event) { this.update({count: ++this.count}); }
-  	}
-  },
-  template: '<button title="${attributes.title}" onclick="${controller.onclick}">You clicked me ${model.count} times.</button>',
-  options: {partials: true}
-});
+// create an empty reactive model to share
+const model = reactor({});
+// bind message area to model
+view(document.getElementById("message"),{model});
+// bind form to model and link "name" attribute values to model
+view(document.getElementById("form"),{model,linkState:true})
 </script>
+</body>
 </html>

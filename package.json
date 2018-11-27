@@ -1,11 +1,11 @@
 {
   "name": "tlx",
-  "version": "v0.2.21",
-  "description": "Imagine a light weight combination of JSX, Vue, React, Riot, and HyperApp but using JavaScript template literals.",
+  "version": "v1.0.0b",
+  "description": "TLX is a tiny (2K minimized and gzipped) multi-paradigm, less opinionated, front-end toolkit.",
   "engines": {},
   "license": "MIT",
   "scripts": {
-    "prepare": "cp ./src/*.js ./dist/ && browserify index.js -o dist/tlx.js && uglifyjs dist/tlx.js -o dist/tlx.min.js"
+    "prepare": "cp index.js ./browser/tlx.js && uglifyjs browser/tlx.js -o browser/tlx.min.js"
   },
   "repository": {
     "type": "git",
@@ -34,7 +34,8 @@
     "codeclimate-test-reporter": "^0.2.0",
     "istanbul": "^0.4.2",
     "mocha": "^2.3.4",
-    "uglify-es": "^3.1.6"
+    "uglify-es": "^3.1.6",
+    "benchtest": "^2.0.2"
   },
   "dependencies": {
    

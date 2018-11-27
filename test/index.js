@@ -1,104 +1,69 @@
-var chai,
-	expect,
-	_,
-	tlx;
+var mocha,
+	chai,
+	expect;
 if(typeof(window)==="undefined") {
 	chai = require("chai");
 	expect = chai.expect;
-	_ = require("lodash");
-	tlx = require("../index.js");
+	const benchtest = require("../index.js");
+	beforeEach(benchtest.test);
+	after(benchtest.report);
 }
 
-var testobject = {name:"Joe",address:{city:"Seattle",state:"WA"},children:["Sara","Mike"],publicKey:{show:true,key:"a key"},privateKey:{show:false,key:"a key"}};
+const target = document.getElementById("target"),
+	source = document.getElementById("source");
+
+function generateSource() {
+	let count = 100,
+		root = document.createElement("div"),
+		parent = root;
+	while(count--) {
+		const random = Math.round(Math.random()*100),
+			id = random % 10 ? random : 1,
+			el = document.createElement("div");
+		el.setAttribute("name",id);
+		parent.appendChild(el);
+		parent = el;
+	}
+	source.innerHTML = root.innerHTML;
+}
+generateSource();
+
+const //t1 = view(document.getElementById("test1"),{actions:{change:function(e) { e.preventDefault(); t2.render({name:e.target.value})}}}),
+model = reactor({name:"bill"},{name:function() { console.log(arguments); }}),
+//t1 = view(document.getElementById("test1"),{model,actions:{change:function(e) { 
+	//e.target.view.linkState('name','#test2')(e)
+//}}}),
+t1 = view(document.getElementById("test1"),{
+					model,
+					linkState:true,
+					actions:{click:function(e) {  }},
+					controller:handlers({click:router({"Users/Simon/git/tlx/test/test/:id":args => console.log(args)})})});
+t2 = view(document.getElementById("test2"),{model}),
+c1 = component("my-div",{template:'Name: <input value="${name}">',model,attributes:{age:20},register:true}),
+t3 = c1({model:{name:"joe"},attributes:{gender:"male"}}),
+t4 = view(document.getElementById("complex"),{model:{items:[1,2,3]}}),
+t5 = view(document.getElementById("conditional"),{model:{show:false,items:[1,2,3]}});
+
+document.body.appendChild(t3);
+
+document.getElementById("test2").addEventListener("click",event => console.log(event),false);
+
+model.name = "jane"
+
 
 describe("Test",function() {
-	it("escape function",function() {
-		expect(tlx.escape("() => { true; }")).to.equal(undefined);
-	});
-	it("escape html",function() {
-		expect(tlx.escape("<div onclick='((event) => console.log(event))(event)'>Test</div>")).to.equal(undefined);
-	});
-	it("escape object",function() {
-		const object = {
-					nested: {
-						f: () => true,
-						s: "test"
-					}
-			},
-			escaped = tlx.escape(object);
-		expect(escaped.nested.f).to.equal(undefined);
-		expect(escaped.nested.s).to.equal("test");
-	});
-	it("primtive",function() {
-		const app = document.getElementById("app");
-		app.innerHTML = "${name}";
-		tlx.bind(testobject,app);
-		expect(document.getElementById("app").innerHTML).to.equal("Joe");
-	});
-	it("object",function() {
-		const app = document.getElementById("app");
-		app.innerHTML = "${address.city}";
-		tlx.bind(testobject,app);
-		expect(document.getElementById("app").innerHTML).to.equal("Seattle");
-	});
-	it("t-foreach",function() {
-		const app = document.getElementById("app");
-		app.innerHTML = `<span id="result" t-foreach="\${children}">\${value}</span>`;
-		tlx.bind(testobject,app.firstChild);
-		expect(document.getElementById("result").innerHTML).to.equal("SaraMike");
-	});
-	it("t-for of",function() {
-		const app = document.getElementById("app");
-		app.innerHTML = `<span id="result" t-for="child of \${children}">\${child}</span>`;
-		tlx.bind(testobject,app.firstChild);
-		expect(document.getElementById("result").innerHTML).to.equal("SaraMike");
-	});
-	it("t-for in",function() {
-		const app = document.getElementById("app");
-		app.innerHTML = `<span id="result" t-for="property in \${address}">\${property}</span>`;
-		tlx.bind(testobject,app.firstChild);
-		expect(document.getElementById("result").innerHTML).to.equal("citystate");
-	});
-	it("t-if",function() {
-		const app = document.getElementById("app");
-		app.innerHTML = "<span id='result' t-if='${publicKey.show}'>${publicKey.key}</span>";
-		tlx.bind(testobject,app.firstChild);
-		expect(document.getElementById("result").innerHTML).to.equal("a key");
-	});
-	it("t-if not",function() {
-		const app = document.getElementById("app");
-		app.innerHTML = "<span id='result' t-if='${privateKey.show}'>${privateKey.key}</span>";
-		tlx.bind(testobject,app.firstChild);
-		expect(document.getElementById("result").innerHTML).to.equal("");
-	});
-	it("reactive primitive",function(done) {
-		const app = document.getElementById("app");
-		app.innerHTML = "${name}";
-		const object = tlx.bind(testobject,app,{reactive:true});
-		object.name = "Mary";
-		setTimeout(() => {
-			expect(document.getElementById("app").innerHTML).to.equal("Mary");
-			done();
-		});
-	});
-	it("reactive object",function(done) {
-		const app = document.getElementById("app");
-		app.innerHTML = "${address.city}";
-		const object = tlx.bind(testobject,app,{reactive:true});
-		object.address.city = "Portland";
-		setTimeout(() => {
-			expect(document.getElementById("app").innerHTML).to.equal("Portland");
-			done();
-		});
-	});
-	it("reactive object parent",function(done) {
-		const app = document.getElementById("app");
-		app.innerHTML = "${address.city}";
-		const object = tlx.bind(testobject,app,{reactive:true});
-		object.address = {city: "Seattle"};
-		setTimeout(() => {
-			expect(document.getElementById("app").innerHTML).to.equal("Seattle");
-			done();
-		});
-	});
+//beforeEach(generateSource);
+it("Direct #",function(done) {
+	generateSource();
+	target.innerHTML = source.innerHTML;
+	expect(target.innerHTML).equal(source.innerHTML);
+	done();
 });
+it("updateDOM #",function(done) {
+	generateSource();
+	updateDOM(source.firstElementChild,target.firstElementChild);
+	expect(target.innerHTML).equal(source.innerHTML);
+	done();
+});
+});
+

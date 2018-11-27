@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+<div id="message">
+Hello ${firstName}.
+</div>
+First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter" onchange="this.view.linkState('firstName','#message')(event)">
+<script src="../index.js"></script>
+<script>
+// create an empty model to share
+const model = {};
+// bind message area to model
+tlx.view(document.getElementById("message"),{model});
+// bind field to model
+tlx.view(document.getElementById("name"),{model});
+</script>
+</body>

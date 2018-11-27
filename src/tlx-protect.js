@@ -19,6 +19,19 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 	SOFTWARE.
 	*/
+	/*
+	
+`escapedData tlx.escape(data)` - Used internally to provide a measure of HTML injection protection, but exposed to developers as a convenience. 
+`tlx.escape` takes any argument type and replaces angle brackets with entities in strings, removes functions from objects, and returns
+ `undefined` if the argument is a function or convertable into a function. It also converts input strings to numbers or booleans if possible. 
+ This reduces the possibility that a user will be able to enter executable code via a URL that fills in a form which is then presented to 
+ another user or enter code that gets stored and then re-rendered for another individual. 
+ See [Finding HTML Injection Vulns](https://blog.qualys.com/technology/2013/05/30/finding-html-injection-vulns-part-i) or search Google for 
+ more information about the risks of HTML injection. 
+
+ To activate protection, set `protect` to truthy as documents in the introduction section on `tlx.mvc`. 
+ Or, if you wish to use protection with `linkState`, then set the global option `tlx.defaults.protect` to true, `tlx.escape` or your own escape function.
+	*/
 		const cleaner = (data,extensions={},options=cleaner.options) => {
 			// include extensions, to exclude standard options pass {coerce:[],accept:[],reject:[],escape:[],eval:false} as third argument
 			options = Object.keys(options).reduce((accum,key) => 

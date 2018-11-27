@@ -1,0 +1,17 @@
+<html lang="en">
+<body>
+<div id="message">
+Hello ${firstName}.
+</div>
+First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter">
+<script src="../index.js"></script>
+<script>
+// create an empty reactive model to share
+const model = tlx.reactor();
+// bind message area to model
+tlx.view(document.getElementById("message"),{model});
+// bind field to model and link "name" attribute values to model
+tlx.view(document.getElementById("name"),{model,linkState:true})
+</script>
+</body>
+</html>

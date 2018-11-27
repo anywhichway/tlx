@@ -334,7 +334,7 @@
 			return el;
 		};
 		
-	const tlx = {component,reactor,view,router,handlers};
+	const tlx = {component,reactor,view};
 	
 	if(typeof(module)!=="undefined") module.exports = tlx;
 	if(typeof(window)!=="undefined") window.tlx = tlx;

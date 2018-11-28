@@ -140,21 +140,25 @@
 					return target[property];
 				},
 				set(target,property,value) {
-					const watcher = watchers[property],
+					const watcher = watchers[property]||watchers["*"],
 						oldvalue = target[property];
 					if(oldvalue===value) {
 						return true;
 					}
 					if(watcher) {
 						const callbacks = Array.isArray(watcher) ? watcher : [watcher];
-						callbacks.forEach(callback => setTimeout(() => watchers[property](oldvalue,value,property,proxy)));
+						callbacks.forEach(callback => watchers[property](oldvalue,value,property,proxy));
 					}
 					target[property] = value;
 					const dependencies = DEPENDENCIES.get(target);
 					if(dependencies && dependencies[property]) {
-						dependencies[property].forEach(view => {
-							view.render();
-						});
+						dependencies[property] = dependencies[property].reduce((accum,view) => {
+							if(view.parentElement) {
+								view.render();
+								accum.push(view);
+							}
+							return accum;
+						},[]);
 					}
 					return true;
 				}
@@ -170,7 +174,7 @@
 			}
 		},
 		component = (tagName,config={}) => { // config = {template,model,attributes,actions,controller,ctor,register}
-			let {template,model,attributes,actions,controller,linkState,reactive,customElement} = config;
+			let {template,customElement,model,attributes,actions,controller,linkState,reactive} = config;
 			if(template && customElement) {
 				throw new Error("Component can only take a template or customElement, not both")
 			}
@@ -214,6 +218,7 @@
 		},
 		router = routes => {
 			function handleEvent(event) {
+				Object.defineProperty(event,"stopRoute",{enumerable:false,configurable:true,writable:true,value:function(){ this.routeStopped = true; }})
 				const href = event.target.href;
 				if(href) {
 					const a = event.target,
@@ -250,8 +255,11 @@
 							};
 						}
 						if(type==="string" || (type==="function" && match(pathname)) || match.match(pathname)) {
-							f(args);
+							f.call(event,args);
 							event.preventDefault();
+							if(event.routeStopped) {
+								break;
+							}
 						}
 					}
 				}
@@ -265,7 +273,7 @@
 				template = parse(template||el.outerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<"))
 			}
 			const render = (data=model,partial) => {
-					if(tlx.off) return;
+					if(tlx.off || !el.parentElement) return;
 					const fragment = document.createElement("body");
 					if(partial) {
 						data = patch(model,data);
@@ -287,7 +295,6 @@
 						}
 					}
 					CURRENTVIEW = currentview;
-					//[].slice.call(el.attributes).forEach(attribute => source.setAttribute(attribute.name,el.getAttribute(attribute.name)));
 					updateDOM(fragment.firstChild,el);
 				},
 				linkstate = (path,...renders) => {

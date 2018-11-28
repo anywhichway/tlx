@@ -1,4 +1,4 @@
-# TLX v1.0.1b
+# TLX v1.0.2b
 
 TLX is a tiny (2.5K minimized and gzipped) multi-paradigm, less opinionated, front-end toolkit supporting:
 
@@ -19,6 +19,8 @@ TLX is a tiny (2.5K minimized and gzipped) multi-paradigm, less opinionated, fro
 7) standards compliant event handlers, a.k.a controllers
 
 8) a default router (implemented as a controller)
+
+9) extended lifecycle callbacks
 
 Custom attribute directives are not currently supported because they aren't strictly needed and we are attempting to minimize size and complexity.
 
@@ -59,7 +61,11 @@ Tlx can be used in a manner that respects the separation or intergration of deve
 
 ## NodeJS
 
-Server based rendering is not yet supported.
+```javascript
+const tlx = require("tlx");
+```
+
+Also see section Server Side Rendering.
 
 ## Browser
 
@@ -156,6 +162,10 @@ tlx.view(document.getElementById("name"),{model})
 
 From this point onward application development gets more complex, but no more so that development with React, HyperHTML, Vue, or other frameworks. In fact, it is often far simpler.
 
+## Server Side Rendering
+
+To be written.
+
 ## API
 
 Since there are only 6 API entry points, they are presented in order of likely use rather than alphabetically.
@@ -169,19 +179,25 @@ Returns a deep `Proxy` for `object` that automatically tracks usage in `views` a
 `watchers` - A potentially nested object, the keys of which are intended to match the keys on the target `object`. The values are functions with the signature `(oldvalue,value,property,proxy)`. These are invoked synchronously any time the target property value changes. If they throw an error, the value will not get set. If you desire to use asyncronous behavior, then implement your code
 to inject asynchronicity. Promises will not be awaited if returned.
 
-### `tlx.view(el,{template,model={},actions={},controller,linkState}={})`
+### `tlx.view(el,options)`
 
 Returns a `view` of the specified `template` bound to the DOM element `el`. If no `template` is specified, then the initial outerHTML of the `el` becomes the template. A `view` is an arbitrary collection of nested DOM nodes the leaves of which are selectively rendered if their contents have changed. The nested DOM nodes all have one additional property `view` that points back to the root element in the `view`.
 
 `el` - A DOM element which may be empty or contain HTML that looks and behaves like JavaScript string template literals. The initial content is overwritten when the node is rendered, but kept as a template if one was not provided.
 
+`options` - `{template,model={},attributes={},actions={},controller,linkState,lifecycle={}}={}`
+
 `template` - An optional DOM element containing what looks like a JavaScript template literal or a string or an escaped JavaScript template literal, e.g. `\${firstName}` vs `${firstName}`.
 
 `model` - The data used when resolving the string template literals. This is typically shared across multiple `views`.
 
-`actions` - A keyed object where each property value is a function. These can also be accessed from the templates; however, they are not available for updating in the same way as a `model`.
+`actions` - A keyed object where each property value is a function. These can also be accessed from the templates; however, they are not available for updating in the same way as a `model`. If you provide a function as an attribute value, you do not need to wrap it in an invocation, e.g. just use `onclick="${myclicker}"` not `onclick="(${myclick})(event)`. You can also call the functions anywhere in your templates, e.g. `Name: ${getName()}`.
 
 `controller` - A standard event handler function to which all events occuring in the view get passed. To limit the events handled, use the return value of `tlx.handlers(object)` as the controller.
+
+`linkState` - If set to truthy, then the `model` is automatically updated with values from form fields having a `name` attribute by using the `name` attribute value as the key on the model.
+
+`lifecycle` - Lifecycle callbacks that follow the Vue convention.
 
 ### `tlx.handlers(object)`
 
@@ -209,7 +225,7 @@ handlers({click:router({"test/:id":args => {
 	}})});
 ```
 
-### `tlx.component(tagName,template,customElement,model,attributes,actions,controller,linkState,reactive)`
+### `tlx.component(tagName,options)`
 
 Returns a function that will create a custom element with `tagName`. Any nested HTML will be inside a
 a shadow DOM. With the exception of `template` and `customElement` the options are default values for the function
@@ -217,6 +233,10 @@ returned, i.e. the returned fuction takes an options object with the same named 
 merged into the defaults. To eliminate properties, merge in a object with a target property value of `undefined`.
 
 The returned element can be added to the DOM using normal DOM operations and will behave like a `view`.
+
+`tagName` - The custom tag name to use for the component.
+
+`options` - `{template,customElement,model,attributes,actions,controller,linkState,lifeCycle,reactive}`
 
 `template` or `customElement` - A template specified as an element containing string literal notation as its content, or a string, or an escaped string literal. Or, an already defined custom element class.
 
@@ -250,7 +270,7 @@ The HTML5 standard data attribute type and the `dataset` property on HTMLElement
 
 2) The standard data attributes do not support storing the proxies that are required for making everything reactive. All values are converted to strings.
 
-3) Allowing direct manipulation of the `model` from outside tlx code typically results in hard to follow buggy code.
+3) Allowing direct manipulation of the `model` data members typically results in hard to follow buggy code. If you need to change the model data at runtime, then add methods to your model and call them from within your templates.
 
 
 # Acknowledgements
@@ -260,6 +280,8 @@ The idea of the `linkState` function to simplify reactive binding is drawn from 
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)<a name="release"></a>
+
+2018-11-28 v1.0.2b - Documentation updates. Added lifecycle callbacks and server side rendering.
 
 2018-11-27 v1.0.1b - Documentation updates.
 

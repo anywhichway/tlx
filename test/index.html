@@ -7,49 +7,12 @@
 <script src="../node_modules/benchtest/browser/benchtest.js" type="text/javascript"></script>
 <script src="../index.js" type="text/javascript"></script>
 </head>
-<body onload="benchtest(mocha.run(),{maxCycles:10})">
+<body onload="mocha.run()">
 <div id="mocha"></div>
 <script>
 mocha.setup('bdd');
 var expect = chai.expect;
 </script>
-
-<div id="test1">
-<a href="test/1#test">Test</a>
-<span>Name: <input value="${name}" name="name"></span>
-</div>
-
-<div id="test2">
-<span>Name: ${name}</span>
-</div>
-
-<div id="source"></div>
-
-<div id="target"></div>
-
-<div id="complex">
-<ul>
-${
-	items.map(item => `<li>${item}</li>`).join("")
-}
-</ul>
-</div>
-
-<div id="conditional">
-${
-	show ?
-	
-	`<ul>
-	${
-		items.map(item => `<li>${item}</li>`).join("")
-	}
-	</ul>`
-	
-	:
-	
-	``
-}
-</div>
 
 <script src="./index.js"></script>
 

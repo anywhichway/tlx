@@ -19,37 +19,66 @@
 	*/
 (function() {
 	"use strict"
+	
+	var document,
+		JSDOM,
+		requestAnimationFrame;
+	if(typeof(window)==="undefined") {
+		const jsdom = require("jsdom");
+		JSDOM = jsdom.JSDOM;
+		const dom = new JSDOM(`<!DOCTYPE html>`);
+		document = dom.window.document;
+		requestAnimationFrame = f => f();
+	} else {
+		document = window.document;
+		requestAnimationFrame = window.requestAnimationFrame;
+	}
+	
 	//update target DOM node from source DOM node
 	//make changes only where necessary
-	function updateDOM(source,target,view=target) {
+	function updateDOM(source,target,actions={},view=target) {
 		Object.defineProperty(target,"view",{enumerable:false,configurable:true,writable:true,value:view});
 		// if source and target are text
 		if(source.nodeName==="#text" && target.nodeName==="#text") {
 			// update is data not the same
 			if(target.data!==source.data) {
-				target.data = source.data;
+				requestAnimationFrame(() => target.data = source.data);
 			}
 			return;
 		}
 		// if the constructors aren't the same or they have different css content
 		if(source.constructor!==target.constructor || source.style.cssText!==target.style.cssText) {
 			// replace the target with the source
-			!target.parentNode || target.parentNode.replaceChild(source,target);
+			!target.parentNode || requestAnimationFrame(() => target.parentNode.replaceChild(source,target));
 			return;
+		}
+		// patch functions so closures work
+		for(const key in source) {
+			if(key[0]==="o" && key[1]==="n" && typeof(source[key])==="function") {
+				Object.keys(actions).some(fname => {
+					const action = actions[fname]+"",
+						handler = source[key]+"",
+						body = handler.substring(handler.indexOf("{")+1,handler.lastIndexOf("}")).trimStart().trimEnd();
+					if(body===action) {
+						target.addEventListener(key.substring(2),actions[fname]);
+						return true;
+					}
+				})
+			}
 		}
 		// loop through source attributes
 		[].slice.call(source.attributes).forEach(attribute => {
 			const sourcevalue = source.getAttribute(attribute.name);
 			// replace different
 			if(sourcevalue!==target.getAttribute(attribute.name)) {
-				target.setAttribute(attribute.name,sourcevalue)
+				requestAnimationFrame(() => target.setAttribute(attribute.name,sourcevalue))
 			}
 		});
 		// loop through target attributes
 		[].slice.call(target.attributes).forEach(attribute => {
 			// remove where does not exist in source
 			if(source.getAttribute(attribute.name)==null) {
-				target.removeAttribute(attribute.name)
+				requestAnimationFrame(() => target.removeAttribute(attribute.name))
 			}
 		});
 		// remove extra children
@@ -74,9 +103,9 @@
 		}
 		sources.forEach((snode,i) => {
 			if(i<targets.length) { // update if in range
-				updateDOM(snode,targets[i],view);
+				updateDOM(snode,targets[i],actions,view);
 			} else { // otherwise, append
-				target.appendChild(snode.cloneNode(true));
+				requestAnimationFrame(() => target.appendChild(snode.cloneNode(true)));
 			}
 		});
 	}
@@ -89,9 +118,6 @@
 	let CURRENTVIEW;
 	
 	const DEPENDENCIES = new Map(),
-		resolve = (chunks,...interpolations) => {
-			return chunks.reduce((accum,chunk,i) => accum += chunk + (i<chunks.length-1 && typeof(interpolations[i])!=="undefined"? interpolations[i]  : ""),"");
-		},
 		getUndefined = error => {
 			const i = error.message.indexOf("not defined");
 			if(i>=0) {
@@ -104,11 +130,10 @@
 			}
 		},
 		parse = (template, ...interpolations) => {
-			if(!Array.isArray(template)) {
-				return Function("model","actions","extras","with(model) { with(actions) { with(extras) { return this`" + template + "`}}}").bind(resolve);
+			if(Array.isArray(template)) { // was called as a string literal interpolator
+				template = template.reduce((accum,chunk,i) => accum += chunk + (i<template.length-1 ? interpolations[i]  : ""),"");
 			}
-			const str = template.reduce((accum,chunk,i) => accum += chunk + (i<template.length-1 ? interpolations[i]  : ""),"").replace(/\{\{/g,"${").replace(/\}\}/g,"}");
-			return Function("model","actions","extras","with(model) { with(actions) { with(extras) { return this`" + str + "`}}}").bind(resolve);
+			return Function("model","actions","extras","with(model) { with(actions) { with(extras) { return `" + template + "`}}}");
 		},
 		patch = (target,source) => {
 			source = Object.assign(target,source);
@@ -174,7 +199,7 @@
 			}
 		},
 		component = (tagName,config={}) => { // config = {template,model,attributes,actions,controller,ctor,register}
-			let {template,customElement,model,attributes,actions,controller,linkState,reactive} = config;
+			let {template,customElement,model,attributes,actions,controller,linkState,reactive,lifecycle={}} = config;
 			if(template && customElement) {
 				throw new Error("Component can only take a template or customElement, not both")
 			}
@@ -206,11 +231,18 @@
 			const prototype = new Component(),
 					f = function(overrides) {
 						const el = document.createElement(tagName),
-							config = Object.assign({controller,linkState},overrides);
+							config = Object.assign({controller,linkState,lifecycle},overrides);
 						config.model = patch(model,overrides.model);
 						config.attributes = patch(Object.assign({},attributes),overrides.attributes);
 						config.actions = patch(Object.assign({},actions),overrides.actions);
-						return view(el,config);
+						if(lifecycle.beforeCreate) {
+							lifecycle.beforeCreate.call(el);
+						}
+						view(el,config);
+						if(lifecycle.create) {
+							lifecycle.create.call(el);
+						}
+						return el;
 					};
 				f.constructor = Component;
 				Object.setPrototypeOf(f,prototype);
@@ -268,13 +300,18 @@
 			routes = Object.assign({},routes);
 			return handleEvent;
 		},
-		view = (el,{template,model={},actions={},controller,linkState}={}) => {
-			if(typeof(template)!=="function") {
-				template = parse(template||el.outerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<"))
+		view = (el,{template,model={},attributes={},actions={},controller,linkState,lifecycle={}}={}) => {
+			const ttype = typeof(template);
+			if(ttype!=="function") {
+				if(template && ttype==="object" && template instanceof HTMLElement) {
+					template = template.innerHTML;
+				}
+				template = parse(template||el.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<"))
 			}
+			let mounted;
 			const render = (data=model,partial) => {
 					if(tlx.off || !el.parentElement) return;
-					const fragment = document.createElement("body");
+					const fragment = document.createElement(el.tagName);
 					if(partial) {
 						data = patch(model,data);
 					} else if(data!==model) {
@@ -295,7 +332,16 @@
 						}
 					}
 					CURRENTVIEW = currentview;
-					updateDOM(fragment.firstChild,el);
+					if(lifecycle.beforeUpdate) {
+						lifecycle.beforeUpdate.call(el);
+					}
+					Object.keys(attributes).forEach(key => {
+						fragment.setAttribute(key,Function("model","actions","with(model) { with(actions) { return `" + attributes[key] + "`}}")(model,actions));
+					});
+					updateDOM(fragment,el,actions);
+					if(lifecycle.updated) {
+						lifecycle.updated.call(el);
+					}
 				},
 				linkstate = (path,...renders) => {
 					return event => {
@@ -315,7 +361,14 @@
 						});
 					}
 				};
+			if(lifecycle.beforeMount) {
+				lifecycle.beforeMount.call(el);
+			}
 			render(model);
+			mounted = true;
+			if(lifecycle.mounted) {
+				lifecycle.mounted.call(el);
+			}
 			if(controller) {
 				let {handleEvent,events,options=false} = controller;
 				if(typeof(controller)==="function") {
@@ -334,14 +387,22 @@
 				}
 			}
 			if(linkState) {
-				el.addEventListener("change",event => linkstate(event.target.name)(event),false);
+				const inputs = [].slice.call(el.querySelectorAll("input"));
+				if(el instanceof HTMLInputElement) {
+					inputs.push(el);
+				}
+				inputs.forEach(input => {
+					input.addEventListener("change",event => {
+						linkstate(event.target.name)(event); 
+					},false);
+				})
 			}
 			Object.defineProperty(el,"render",{enumerable:false,configurable:true,writable:true,value:render});
 			Object.defineProperty(el,"linkState",{enumerable:false,configurable:true,writable:true,value:linkstate});
 			return el;
 		};
 		
-	const tlx = {component,reactor,view,router,handlers};
+	const tlx = {component,reactor,view,router,handlers,JSDOM};
 	
 	if(typeof(module)!=="undefined") module.exports = tlx;
 	if(typeof(window)!=="undefined") window.tlx = tlx;

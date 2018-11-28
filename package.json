@@ -1,6 +1,6 @@
 {
   "name": "tlx",
-  "version": "v1.0.0b",
+  "version": "v1.0.1b",
   "description": "TLX is a tiny (2K minimized and gzipped) multi-paradigm, less opinionated, front-end toolkit.",
   "engines": {},
   "license": "MIT",

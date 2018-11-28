@@ -1,4 +1,4 @@
-# TLX v1.0.0b
+# TLX v1.0.1b
 
 TLX is a tiny (2.5K minimized and gzipped) multi-paradigm, less opinionated, front-end toolkit supporting:
 

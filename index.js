@@ -152,13 +152,13 @@
 					target[property] = value;
 					const dependencies = DEPENDENCIES.get(target);
 					if(dependencies && dependencies[property]) {
-						dependencies[property] = dependencies[property].reduce((accum,view) => {
-							if(view.parentElement) {
+						dependencies[property].forEach(view => {
+							if(view.parentElement && view.render) {
 								view.render();
-								accum.push(view);
+							} else {
+								dependencies[property].delete(view);
 							}
-							return accum;
-						},[]);
+						});
 					}
 					return true;
 				}
@@ -200,7 +200,7 @@
 								}
 							}
 						}
-					}`)(template,Object.assign({},model),actions,reactive);
+					}`)(template,JSON.parse(JSON.stringify(model)),actions,reactive);
 			}
 			customElements.define(tagName,customElement,config.extends ? {extends:config.extends} : undefined);
 			const prototype = new Component(),

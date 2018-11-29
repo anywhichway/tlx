@@ -1,6 +1,6 @@
-# TLX v1.0.2b
+# TLX v1.0.3b
 
-TLX is a tiny (2.5K minimized and gzipped) multi-paradigm, less opinionated, front-end toolkit supporting:
+TLX is a tiny (2.75K minimized and gzipped) multi-paradigm, less opinionated, front-end library supporting:
 
 1) template literals in place of JSX,
 
@@ -38,12 +38,14 @@ Tlx can be used in a manner that respects the separation or intergration of deve
   * [Simplest Apps](#simplest-apps)
   * [Manual State Updating](#manual-state-updating)
   * [Manual State Updating and Re-Rendering](#manual-state-updating-and-re-rendering)
+  * [Templating](#templating)
+  * [Server Side Rendering](#server-side-rendering)
   * [API](#api)
     + [`tlx.reactor(object={},watchers={})`](#-tlxreactor-object----watchers-----)
-    + [`tlx.view(el,{template,model={},actions={},controller,linkState}={})`](#-tlxview-el--template-model----actions----controller-linkstate------)
+    + [`tlx.view(el,options)`](#-tlxview-el-options--)
     + [`tlx.handlers(object)`](#-tlxhandlers-object--)
     + [`tlx.router(object)`](#-tlxrouter-object--)
-    + [`tlx.component(tagName,template,customElement,model,attributes,actions,controller,linkState,reactive)`](#-tlxcomponent-tagname-template-customelement-model-attributes-actions-controller-linkstate-reactive--)
+    + [`tlx.component(tagName,options)`](#-tlxcomponent-tagname-options--)
     + [`tlx.off`](#-tlxoff-)
 - [Design Notes](#design-notes)
   * [Differential Rendering](#differential-rendering)
@@ -95,14 +97,14 @@ The simplest apps to write are those that use HTML to define in-line templates a
 Hello ${firstName}.
 </div>
 First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter">
-<script src="../index.js"></script>
+<script src="tlx.js"></script>
 <script>
 // create an empty reactive model to share
 const model = tlx.reactor();
 // bind message area to model
 tlx.view(document.getElementById("message"),{model});
-// bind field to model and link "name" attribute values to model using linkState automatically
-tlx.view(document.getElementById("name"),{model,linkState:true})
+// bind field to model and link "name" attribute values to model using linkModel automatically
+tlx.view(document.getElementById("name"),{model,linkModel:true})
 </script>
 </body>
 </html>
@@ -121,8 +123,8 @@ Slightly more complex to write are apps that use manual state updating:
 <div id="message">
 Hello ${firstName}.
 </div>
-First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter" onchange="this.view.linkState('firstName')(event)">
-<script src="../index.js"></script>
+First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter" onchange="this.view.linkModel('firstName')(event)">
+<script src="tlx.js"></script>
 <script>
 // create an empty reactive model to share
 const model = tlx.reactor();
@@ -146,8 +148,8 @@ You can take complete control over rendering by not using a reactive model and t
 <div id="message">
 Hello ${firstName}.
 </div>
-First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter" onchange="this.view.linkState('firstName','#message')(event)">
-<script src="../index.js"></script>
+First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter" onchange="this.view.linkModel('firstName','#message')(event)">
+<script src="tlx.js"></script>
 <script>
 // create an empty model to share
 const model = {};
@@ -162,9 +164,81 @@ tlx.view(document.getElementById("name"),{model})
 
 From this point onward application development gets more complex, but no more so that development with React, HyperHTML, Vue, or other frameworks. In fact, it is often far simpler.
 
+## Templating
+
+Tlx uses JavaScript string template literal notation for templates. All templates should resolve to a valid HTML string. 
+
+Below is a div that conditionally contains repeating content and assumes the provided model:
+
+
+```html
+<div id="names">
+${
+	show
+	? "<ul>" + names.reduce((accum,name) => accum += `<li>${name}</li>`,"") + "</ul>"
+	: ""
+}
+</div>
+```
+
+```javascript
+const model = {
+	show: true,
+	names: ["joe","bill","mary"]
+	},
+	template = document.getElementById("names");
+tlx.view(el,{model,template}); // assume el is bound elsewhere
+```
+
+You can also provide templates as strings, but if you want to be able to express them clearly across multiple lines, you will have to escape the interpolation directives, `$`, and nested backquotes, e.g.
+
+```javascript
+const model = {
+	show: true,
+	names: ["joe","bill","mary"]
+	},
+	template = `<div>
+		\${
+			show
+			? "<ul>" + names.reduce((accum,name) => accum += \`<li>\${name}</li>\`,"") + "</ul>"
+			: ""
+		}
+	</div>`;
+tlx.view(el,{model,template});
+```
+
 ## Server Side Rendering
 
-To be written.
+When run in a NodeJS server context, tlx loads the `jsdom` package for DOM simulation. To the degree that `JSDOM` supports what you need, you can use tlx on the server just like on the client. Tlx also exposes `JSDOM` as a convenience so you don't have to add it as a dependency to your own code.
+
+The typical use case would be to load a file containing a template,p ass its string contents to `tlx.view`, and then write the HTML to a response object. The code below uses syncrhonous calls and does no error handling to keep the example simple, e.g.
+
+The contents of "mytemplate.html":
+
+```html
+<div>
+${
+	show
+	? "<ul>" + names.reduce((accum,name) => accum += `<li>${name}</li>`,"") + "</ul>"
+	: ""
+}
+</div>
+```
+
+A fragment of the server response handler:
+
+```javacript
+const model = {
+	show: true,
+	names: ["joe","bill","mary"]
+	},
+	template = fs.readFileSync("mytemplate.html"),
+	el = document.createElement("body");
+	tlx.view(el,{model,template});
+	response.end(el.innerHTML);
+```
+
+In a real world situation, the model would probably be pulled from a database and the filename would perhaps be part of a requested URL.
 
 ## API
 
@@ -185,7 +259,7 @@ Returns a `view` of the specified `template` bound to the DOM element `el`. If n
 
 `el` - A DOM element which may be empty or contain HTML that looks and behaves like JavaScript string template literals. The initial content is overwritten when the node is rendered, but kept as a template if one was not provided.
 
-`options` - `{template,model={},attributes={},actions={},controller,linkState,lifecycle={}}={}`
+`options` - `{template,model={},attributes={},actions={},controller,linkModel,lifecycle={}}={}`
 
 `template` - An optional DOM element containing what looks like a JavaScript template literal or a string or an escaped JavaScript template literal, e.g. `\${firstName}` vs `${firstName}`.
 
@@ -195,9 +269,9 @@ Returns a `view` of the specified `template` bound to the DOM element `el`. If n
 
 `controller` - A standard event handler function to which all events occuring in the view get passed. To limit the events handled, use the return value of `tlx.handlers(object)` as the controller.
 
-`linkState` - If set to truthy, then the `model` is automatically updated with values from form fields having a `name` attribute by using the `name` attribute value as the key on the model.
+`linkModel` - If set to truthy, then the `model` is automatically updated with values from form fields having a `name` attribute by using the `name` attribute value as the key on the model.
 
-`lifecycle` - Lifecycle callbacks that follow the Vue convention.
+`lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeMount`, `mounted`, `beforeUpdate`, `updated`. Because it is not a component a view does not support `beforeCreate` and `created`. Because there is no vdom and the DOM automatically manages disposal there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
 
 ### `tlx.handlers(object)`
 
@@ -236,7 +310,7 @@ The returned element can be added to the DOM using normal DOM operations and wil
 
 `tagName` - The custom tag name to use for the component.
 
-`options` - `{template,customElement,model,attributes,actions,controller,linkState,lifeCycle,reactive}`
+`options` - `{template,customElement,model,attributes,actions,controller,linkModel,lifeCycle,reactive}`
 
 `template` or `customElement` - A template specified as an element containing string literal notation as its content, or a string, or an escaped string literal. Or, an already defined custom element class.
 
@@ -248,13 +322,15 @@ The returned element can be added to the DOM using normal DOM operations and wil
 
 `controller` -  See `tlx.view`.
 
-`linkState` -  See `tlx.view`.
+`linkModel` -  See `tlx.view`.
+
+`lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeCreate`, `created`, `beforeMount`, `mounted`, `beforeUpdate`, `updated`.  Because there is no vdom and the DOM automatically manages disposal there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
 
 `reactive` - Set to true to make models reactive when they are created upon component creation.
 
 ### `tlx.off`
 
-Setting `tlx.off` to truthy will prevent any template resolution and display un-resolved string literal notation.
+Setting `tlx.off` to truthy will prevent any template resolution and display un-resolved string template literal notation.
 
 # Design Notes
 
@@ -270,16 +346,18 @@ The HTML5 standard data attribute type and the `dataset` property on HTMLElement
 
 2) The standard data attributes do not support storing the proxies that are required for making everything reactive. All values are converted to strings.
 
-3) Allowing direct manipulation of the `model` data members typically results in hard to follow buggy code. If you need to change the model data at runtime, then add methods to your model and call them from within your templates.
+3) Allowing direct manipulation of the `model` data members or model access from outside templates typically results in hard to follow buggy code. If you need to change the model data at runtime, then add methods to your model and call them from within your templates.
 
 
 # Acknowledgements
 
-The idea of the `linkState` function to simplify reactive binding is drawn from `preact`.
+The idea of the `linkModel` function to simplify reactive binding is drawn from `preact`.
 
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)<a name="release"></a>
+
+2018-11-29 v1.0.3b - Documentation updates. Renamed `linkState` to `linkModel` for consistency.
 
 2018-11-28 v1.0.2b - Documentation updates. Added lifecycle callbacks and server side rendering.
 

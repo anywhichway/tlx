@@ -11,46 +11,37 @@ if(typeof(window)==="undefined") {
 	tlx = require("../index.js");
 }
 
-/*const target = document.getElementById("target"),
-	source = document.getElementById("source");
+var document;
+if(typeof(document)==="undefined") {
+	const	dom = new tlx.JSDOM(`<!DOCTYPE html>
+				<html>
+				<head></head>
+				<body>
+				<div id="test1">
+				<a href="test/1#test">Test</a>
+				<span>Name: <input value="\${name}" name="name"></span>
+				</div>
+				
+				<div id="test2">
+				<span>Name: \${name}</span>
+				</div>
+				</body>
+				</html>
+			`);
+		document = dom.window.document;
+		
+		const model = tlx.reactor({name:"bill"},{name:function() { console.log(arguments); }}),
+		t1 = tlx.view(document.getElementById("test1"),{
+							model,
+							linkModel:true,
+							actions:{click:function(e) {  }},
+							controller:tlx.handlers({click:tlx.router({"Users/Simon/git/tlx/test/test/:id":args => console.log(args)})})});
+		t2 = tlx.view(document.getElementById("test2"),{model});
 
-function generateSource() {
-	let count = 100,
-		root = document.createElement("div"),
-		parent = root;
-	while(count--) {
-		const random = Math.round(Math.random()*100),
-			id = random % 10 ? random : 1,
-			el = document.createElement("div");
-		el.setAttribute("name",id);
-		parent.appendChild(el);
-		parent = el;
-	}
-	source.innerHTML = root.innerHTML;
+	model.name = "jane"
+
+	console.log(document.body.innerHTML);
 }
-generateSource();
-
-const //t1 = view(document.getElementById("test1"),{actions:{change:function(e) { e.preventDefault(); t2.render({name:e.target.value})}}}),
-model = tlx.reactor({name:"bill"},{name:function() { console.log(arguments); }}),
-//t1 = view(document.getElementById("test1"),{model,actions:{change:function(e) { 
-	//e.target.view.linkState('name','#test2')(e)
-//}}}),
-t1 = tlx.view(document.getElementById("test1"),{
-					model,
-					linkState:true,
-					actions:{click:function(e) {  }},
-					controller:tlx.handlers({click:tlx.router({"Users/Simon/git/tlx/test/test/:id":args => console.log(args)})})});
-t2 = tlx.view(document.getElementById("test2"),{model}),
-c1 = tlx.component("my-div",{template:'Name: <input value="${name}">',model,attributes:{age:20},register:true}),
-t3 = c1({model:{name:"joe"},attributes:{gender:"male"}}),
-t4 = tlx.view(document.getElementById("complex"),{model:{items:[1,2,3]}}),
-t5 = tlx.view(document.getElementById("conditional"),{model:{show:false,items:[1,2,3]}});
-
-document.body.appendChild(t3);
-
-document.getElementById("test2").addEventListener("click",event => console.log(event),false);
-
-model.name = "jane"*/
 
 const el = document.createElement("div");
 document.body.appendChild(el);
@@ -80,6 +71,40 @@ describe("views",function() {
 			expect(el.innerHTML).equal("test");
 			done();
 		});
+	});
+	it("conditional template (render content)",function(done) {
+		el.innerHTML = "${show ? 'hi' : ''}";
+		tlx.view(el,{model:{show:true}});
+		window.requestAnimationFrame(() => {
+			expect(el.innerHTML).equal("hi");
+			done();
+		});
+	});
+	it("conditional template (don't render content)",function(done) {
+		el.innerHTML = "${show ? 'hi' : ''}";
+		tlx.view(el,{model:{show:false}});
+		window.requestAnimationFrame(() => {
+			expect(el.innerHTML).equal("");
+			done();
+		});
+	});
+	it("complex template",function(done) {
+		const model = {
+				show: true,
+				names: ["joe","bill","mary"]
+				},
+				template = `<div>
+					\${
+						show
+						? "<ul>" + names.reduce((accum,name) => accum += \`<li>\${name}</li>\`,"") + "</ul>"
+						: ""
+					}
+				</div>`;
+			tlx.view(el,{model,template});
+			window.requestAnimationFrame(() => {
+				expect(el.innerHTML).not.equal("");
+				done();
+			});
 	});
 	it("attribute",function(done) {
 		el.innerHTML = "${data}";
@@ -121,7 +146,7 @@ describe("views",function() {
 			});
 		});
 	});
-	it("auto linkState",function(done) {
+	it("auto linkModel",function(done) {
 		el.innerHTML = "<input name='data' value='${data}'>";
 		const model = {data:"test"},
 			event = new MouseEvent('change', {
@@ -129,7 +154,7 @@ describe("views",function() {
 		    bubbles: true,
 		    cancelable: true
 		  });
-		tlx.view(el,{model,linkState:true});
+		tlx.view(el,{model,linkModel:true});
 		window.requestAnimationFrame(() => {
 			expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
 			el.firstElementChild.setAttribute("value","changed");
@@ -143,37 +168,6 @@ describe("views",function() {
 	});
 });
 
-var document;
-if(typeof(document)==="undefined") {
-	const	dom = new tlx.JSDOM(`<!DOCTYPE html>
-				<html>
-				<head></head>
-				<body>
-				<div id="test1">
-				<a href="test/1#test">Test</a>
-				<span>Name: <input value="\${name}" name="name"></span>
-				</div>
-				
-				<div id="test2">
-				<span>Name: \${name}</span>
-				</div>
-				</body>
-				</html>
-			`);
-		document = dom.window.document;
-		
-		const model = tlx.reactor({name:"bill"},{name:function() { console.log(arguments); }}),
-		t1 = tlx.view(document.getElementById("test1"),{
-							model,
-							linkState:true,
-							actions:{click:function(e) {  }},
-							controller:tlx.handlers({click:tlx.router({"Users/Simon/git/tlx/test/test/:id":args => console.log(args)})})});
-		t2 = tlx.view(document.getElementById("test2"),{model});
-
-	model.name = "jane"
-
-	console.log(document.body.innerHTML);
-}
 
 
 

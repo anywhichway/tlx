@@ -357,7 +357,7 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, 
 
 # Release History (reverse chronological order)<a name="release"></a>
 
-2018-11-29 v1.0.3b - Documentation updates. Renamed `linkState` to `linkModel` for consistency.
+2018-11-28 v1.0.3b - Documentation updates. Renamed `linkState` to `linkModel` for consistency.
 
 2018-11-28 v1.0.2b - Documentation updates. Added lifecycle callbacks and server side rendering.
 

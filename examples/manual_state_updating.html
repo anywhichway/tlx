@@ -4,7 +4,7 @@
 <div id="message">
 Hello ${firstName}.
 </div>
-First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter" onchange="this.view.linkState('firstName')(event)">
+First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter" onchange="this.view.linkModel('firstName')(event)">
 <script src="../index.js"></script>
 <script>
 // create an empty reactive model to share

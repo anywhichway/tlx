@@ -1,4 +1,4 @@
-# TLX v1.0.4b
+# TLX v1.0.5b
 
 TLX is a very small (3.3K minimized and gzipped) multi-paradigm, less opinionated, front-end library supporting:
 
@@ -403,6 +403,8 @@ The idea of the `linkModel` function to simplify reactive binding is drawn from 
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)<a name="release"></a>
+
+2018-11-29 v1.0.5b - Updated examples.
 
 2018-11-29 v1.0.4b - Documentation updates. Added HTML injection protection.
 

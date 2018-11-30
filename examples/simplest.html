@@ -11,7 +11,7 @@ const model = tlx.reactor();
 // bind message area to model
 tlx.view(document.getElementById("message"),{model});
 // bind field to model and link "name" attribute values to model
-tlx.view(document.getElementById("name"),{model,linkState:true})
+tlx.view(document.getElementById("name"),{model,linkModel:true})
 </script>
 </body>
 </html>

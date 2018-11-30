@@ -193,7 +193,7 @@ while(true) {
 		const variable = getUndefined(e);
 		if(!variable) throw e;
 		model[variable]; // force get
-		extras[variable] = undefined;
+		extras[variable] = "";
 	}}}}`)(template,JSON.parse(JSON.stringify(model)),actions,reactive);
 			}
 			customElements.define(tagName,customElement,config.extends ? {extends:config.extends} : undefined);
@@ -261,6 +261,13 @@ while(true) {
 		},
 		view = (el,{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect=PROTECTED}={}) => {
 			const ttype = typeof(template);
+			if(!template) {
+				const attrs = [].slice.call(el.attributes);
+				attributes = Object.assign({},attributes);
+				attrs.forEach(attribute => {
+					attributes[attribute.name] = attribute.value;
+				});
+			}
 			if(ttype!=="function") {
 				if(template && ttype==="object" && template instanceof _window.HTMLElement) template = template.innerHTML;
 				template = parse(template||el.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<"))
@@ -282,13 +289,25 @@ while(true) {
 							const variable = getUndefined(e);
 							if(!variable) throw e;
 							model[variable]; // force get
-							extras[variable] = undefined;
+							extras[variable] = "";
 						}
 					}
 					CURRENTVIEW = currentview;
 					if(mounted && lifecycle.beforeUpdate) lifecycle.beforeUpdate.call(el);
 					Object.keys(attributes).forEach(key => {
-						fragment.setAttribute(key,Function("model","actions","with(model) { with(actions) { return `" + attributes[key] + "`}}")(model,actions));
+						let value;
+						while(true) {
+							try {
+								value = Function("model","actions","extras","with(model) { with(actions) { with(extras) { return `" + attributes[key] + "`}}}")(model,actions,extras)
+								break;
+							} catch(e) {
+								const variable = getUndefined(e);
+								if(!variable) throw e;
+								model[variable]; // force get
+								extras[variable] = "";
+							}
+						}
+						fragment.setAttribute(key,value);
 					});
 					updateDOM(fragment,el,actions);
 					if(mounted && lifecycle.updated) lifecycle.updated.call(el);

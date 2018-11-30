@@ -149,6 +149,9 @@
 						dependencies[property] || (dependencies[property] = new Set());
 						dependencies[property].add(CURRENTVIEW);
 					}
+					//if(typeof(target[property])==="function") {
+					//	return target[property].bind(target);
+					//}
 					return target[property];
 				},
 				set(target,property,value) {
@@ -285,7 +288,7 @@ while(true) {
 						try {
 							fragment.innerHTML = template(model,actions,extras);
 							break;
-						} catch(e) {
+						} catch(e) { // create dummy values for ones that are undefined
 							const variable = getUndefined(e);
 							if(!variable) throw e;
 							model[variable]; // force get
@@ -300,7 +303,7 @@ while(true) {
 							try {
 								value = Function("model","actions","extras","with(model) { with(actions) { with(extras) { return `" + attributes[key] + "`}}}")(model,actions,extras)
 								break;
-							} catch(e) {
+							} catch(e) { // create dummy values for ones that are undefined
 								const variable = getUndefined(e);
 								if(!variable) throw e;
 								model[variable]; // force get
@@ -315,16 +318,17 @@ while(true) {
 				linkmodel = (path,...renders) => {
 					return event => {
 						const parts = path.split(".");
+						// walk down the parts of the path on the model
 						let final = parts.pop(),
 							key,
 							node = model;
 						while((key = parts.shift())) {
 							node = node[key];
-							if(node===undefined) {
-								node[key] = {};
+							if(!node) {
+								node[key] = {}; // created undefined properties
 							}
 						}
-						node[final] = event.target.value;
+						node[final] = event.target.value; // set the value
 						renders.forEach(selector => document.querySelectorAll(selector).forEach(el => !el.render || el.render()));
 					}
 				};
@@ -349,37 +353,35 @@ while(true) {
 				if(protect || input.hasAttribute("protect")) {
 					const _setAttribute = input.setAttribute;
 					let oldvalue = input.getAttribute("value");
+					if(oldvalue[0]==="$" && oldvalue[1]==="{" && oldvalue[oldvalue.length-1]==="}") {
+						oldvalue = "";
+					}
 					input.setAttribute = function(name,value) {
 						if((protect || this.hasAttribute("protect")) && name==="value" && value) {
-							value =  clean(value);
-							 if(value===undefined) {
-								 value = typeof(violated)==="function" ? violated(value) : oldvalue;
+							 if(value && clean(value)===undefined) {
+								 value = oldvalue;
+								 input.setCustomValidity("Invalid input");
+							 } else {
+								 input.setCustomValidity("");
+								 oldvalue = value;
 							 }
 						}
-						oldvalue = value;
 						_setAttribute.call(this,name,value);
 					}
-					input.addEventListener("change",(event) => {
-						 const desc = {enumerable:true,configurable:true,writable:false};
-						 desc.value = new Proxy(event.target,{
-							 get(target,property) {
-								 let value = target[property];
-								 if(property==="value" && value) {
-									 value =  clean(value);
-									 if(value===undefined) {
-										 value = typeof(violated)==="function" ? violated(value) : oldvalue;
-									 }
-								 }
-								 oldvalue = value;
-								 return value;
-							 }
-						 });
-						 Object.defineProperty(event,"target",desc);
+					input.addEventListener("input",(event) => {
+						if(event.target.value && clean(event.target.value)===undefined) {
+							input.setCustomValidity("Invalid input");
+							input.value = oldvalue;
+							event.preventDefault();
+							return false;
+						}
+						input.setCustomValidity("");
+						oldvalue = event.target.value;
 					 })
 				}
 			});
 			if(linkModel) {
-				inputs.forEach(input => input.addEventListener("change",event => linkmodel(event.target.name)(event),false))
+				inputs.forEach(input => input.addEventListener("change",event => !input.validity.valid || linkmodel(input.name)(event),false))
 			}
 			Object.defineProperty(el,"render",{enumerable:false,configurable:true,writable:true,value:render});
 			Object.defineProperty(el,"linkModel",{enumerable:false,configurable:true,writable:true,value:linkmodel});

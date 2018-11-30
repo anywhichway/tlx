@@ -1,6 +1,6 @@
-# TLX v1.0.5b
+# TLX v1.0.6b
 
-TLX is a very small (3.3K minimized and gzipped) multi-paradigm, less opinionated, front-end library supporting:
+TLX is a very small (3.5K minimized and gzipped) multi-paradigm, less opinionated, front-end library supporting:
 
 1) template literals in place of JSX,
 
@@ -12,7 +12,7 @@ TLX is a very small (3.3K minimized and gzipped) multi-paradigm, less opinionate
 
 4) optional automatic binding of form fields to state,
 
-5) optional 2-way state data binding with automatic re-rendering,
+5) optional 2-way state binding with automatic re-rendering,
 
 6) direct DOM diffing (no virtual DOM)
 
@@ -24,7 +24,7 @@ TLX is a very small (3.3K minimized and gzipped) multi-paradigm, less opinionate
 
 10) automatic HTML injection protection
 
-Custom attribute directives are not currently supported because they aren't strictly needed and we are attempting to minimize size and complexity.
+Custom attribute directives are not currently supported because they aren't strictly needed, conditional logic inside the attributes and element can hide content, and we are attempting to minimize size and complexity.
 
 Tlx can be used in a manner that respects the separation or intergration of development responsibilites between those with a focus on style and layout (HTML and CSS) vs. those with a focus of logic (JavaScript).
 
@@ -108,7 +108,7 @@ The simplest apps to write are those that use HTML to define in-line templates a
 <div id="message">
 Hello ${firstName}.
 </div>
-First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter">
+First Name: <input id="name" name="firstName" value="${firstName}">
 <script src="tlx.js"></script>
 <script>
 // create an empty reactive model to share
@@ -135,7 +135,7 @@ Slightly more complex to write are apps that use manual state updating:
 <div id="message">
 Hello ${firstName}.
 </div>
-First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter" onchange="this.view.linkModel('firstName')(event)">
+First Name: <input id="name" value="${firstName}" onchange="this.view.linkModel('firstName')(event)">
 <script src="tlx.js"></script>
 <script>
 // create an empty reactive model to share
@@ -160,7 +160,7 @@ You can take complete control over rendering by not using a reactive model and t
 <div id="message">
 Hello ${firstName}.
 </div>
-First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter" onchange="this.view.linkModel('firstName','#message')(event)">
+First Name: <input id="name" value="${firstName}" onchange="this.view.linkModel('firstName','#message')(event)">
 <script src="tlx.js"></script>
 <script>
 // create an empty model to share
@@ -290,7 +290,13 @@ Returns a `view` of the specified `template` bound to the DOM element `el`. If n
 
 `object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeMount`, `mounted`, `beforeUpdate`, `updated`. Because it is not a component a view does not support `beforeCreate` and `created`. Because there is no vdom and the DOM automatically manages disposal there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
 
-`boolean protect` - Protect all input elements in the view. To protect just a single element, add the attribute "protect" to the element.
+`boolean protect` - Protect all input elements in the view. To protect just a single element, add the attribute "protect" to the element. If you have set a style for invalid input it will be used for invalid elements, e.g.
+
+```
+input:invalid { 
+	box-shadow: 0 0 5px 1px red;
+}
+```
 
 ### `function tlx.handlers(object handlers)`
 
@@ -351,7 +357,7 @@ The returned element can be added to the DOM using normal DOM operations and wil
 
 ### `any tlx.escape(any data)`
 
-Takes any data and escapes it so it can't possibly be an HTML injection. Returns `undefined` if it can't be escaped. The psuedo code is as follows:
+Takes any data and escapes it so it can't be an HTML injection. Returns `undefined` if it can't be escaped. The psuedo code is as follows:
 
 ```
 type = typeof(data);
@@ -368,7 +374,7 @@ data = escapeHTMLEntities(data); // e.g. >= becomes &gte;
 return data
 ```
 
-`any data` - Any JavaScript data or function.
+`any data` - Any JavaScript data or function. Although, functions will always result in a return of `undefined`.
 
 ### `tlx.off`
 
@@ -403,6 +409,8 @@ The idea of the `linkModel` function to simplify reactive binding is drawn from 
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)<a name="release"></a>
+
+2018-11-30 v1.0.6b - Fixed issue with protect and initially unresolved attributes.
 
 2018-11-29 v1.0.5b - Updated examples.
 

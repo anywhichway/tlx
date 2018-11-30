@@ -259,7 +259,7 @@ while(true) {
 			routes = Object.assign({},routes);
 			return handleEvent;
 		},
-		view = (el,{template,model={},attributes={},actions={},controller,linkModel,lifecycle={}}={}) => {
+		view = (el,{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect=PROTECTED}={}) => {
 			const ttype = typeof(template);
 			if(ttype!=="function") {
 				if(template && ttype==="object" && template instanceof _window.HTMLElement) template = template.innerHTML;
@@ -324,17 +324,164 @@ while(true) {
 					}
 				}
 			}
+			const inputs = [].slice.call(el.querySelectorAll("input"));
+			if(el instanceof _window.HTMLInputElement) inputs.push(el);
+			inputs.forEach(input => {
+				if(protect || input.hasAttribute("protect")) {
+					const _setAttribute = input.setAttribute;
+					let oldvalue = input.getAttribute("value");
+					input.setAttribute = function(name,value) {
+						if((protect || this.hasAttribute("protect")) && name==="value" && value) {
+							value =  clean(value);
+							 if(value===undefined) {
+								 value = typeof(violated)==="function" ? violated(value) : oldvalue;
+							 }
+						}
+						oldvalue = value;
+						_setAttribute.call(this,name,value);
+					}
+					input.addEventListener("change",(event) => {
+						 const desc = {enumerable:true,configurable:true,writable:false};
+						 desc.value = new Proxy(event.target,{
+							 get(target,property) {
+								 let value = target[property];
+								 if(property==="value" && value) {
+									 value =  clean(value);
+									 if(value===undefined) {
+										 value = typeof(violated)==="function" ? violated(value) : oldvalue;
+									 }
+								 }
+								 oldvalue = value;
+								 return value;
+							 }
+						 });
+						 Object.defineProperty(event,"target",desc);
+					 })
+				}
+			});
 			if(linkModel) {
-				const inputs = [].slice.call(el.querySelectorAll("input"));
-				if(el instanceof _window.HTMLInputElement) inputs.push(el);
 				inputs.forEach(input => input.addEventListener("change",event => linkmodel(event.target.name)(event),false))
 			}
 			Object.defineProperty(el,"render",{enumerable:false,configurable:true,writable:true,value:render});
 			Object.defineProperty(el,"linkModel",{enumerable:false,configurable:true,writable:true,value:linkmodel});
 			return el;
-		};
+		},
+		clean = (data,options=clean.options) => {
+			// to change standard options pass {coerce:[],accept:[],reject:[],escape:[],eval:false} as third argument
+			// data may be safe if coerced into a proper format
+			data = options.coerce.reduce((accum,coercer) => coercer(accum),data);
+			//these are always safe
+			if(options.accept.some(test => test(data))) return data;
+		    //these are always unsafe
+			if(options.reject.some(test => test(data))) return;
+		    //remove unsafe data from arrays
+			if(Array.isArray(data)) {
+				data.forEach((item,i) => data[i] = clean(data)); 
+				return data;
+			}
+	    //recursively clean data on objects
+			if(data && typeof(data)==="object") { 
+				for(let key in data) {
+					const cleaned = clean(data[key]);
+					if(typeof(cleaned)==="undefined") {
+						delete data[key];
+					} else {
+						data[key] = cleaned;
+					}
+				}
+				return data;
+			}
+			if(typeof(data)==="string") {
+				data = options.escape.reduce((accum,escaper) => escaper(accum),data); // escape the data
+				if(options.eval) {
+					try {
+						// if data can be converted into something that is legal JavaScript, clean it
+						// make sure that options.reject has already removed undesireable self evaluating or blocking functions
+						// call with null to block global access
+						return clean(Function("return " + data).call(null));
+					} catch(error) {
+						// otherwise, just return it
+						return data;
+					}
+				}
+			}
+		return data;
+	}
+	// default options/support for coerce, accept, reject, escape, eval
+	clean.options = {
+		coerce: [],
+		accept: [data => !data || ["number","boolean"].includes(typeof(data))],
+		reject: [
+			// executable data
+			data => typeof(data)==="function",
+			// possible server execution like <?php
+			data => typeof(data)==="string" && data.match(/<\s*\?\s*.*\s*/),
+			// direct eval, might block or negatively impact clean itself,
+			data => typeof(data)==="string" && data.match(/eval|alert|prompt|dialog|void|clean\s*\(/),
+			// very suspicious,
+			data => typeof(data)==="string" && data.match(/url\s*\(/),
+			// might inject nastiness into logs,
+			data => typeof(data)==="string" && data.match(/console\.\s*.*\s*\(/),
+			// contains javascript,
+			data => typeof(data)==="string" && data.match(/javascript:/),
+			// arrow function
+			data => typeof(data)==="string" && data.match(/\(\s*.*\s*\)\s*.*\s*=>/),
+			// self eval, might negatively impact clean itself
+			data => typeof(data)==="string" && data.match(/[Ff]unction\s*.*\s*\(\s*.*\s*\)\s*.*\s*\{\s*.*\s*\}\s*.*\s*\)\s*.*\s*\(\s*.*\s*\)/),	
+		],
+		escape: [ 
+			data => { // handle possible query strings
+				if(typeof(data)==="string" && data[0]==="?") { 
+					const parts = data.split("&");
+					let max = parts.length;
+					return parts.reduce((accum,part,i) => { 
+							const [key,value] = decodeURIComponent(part).split("="),
+								type = typeof(value), // if type undefined, then may not even be URL query string, so clean "key"
+								cleaned = (type!=="undefined" ? clean(value) : clean(key)); 
+							if(typeof(cleaned)!=="undefined") {
+								// keep only those parts of query string that are clean
+								accum += (type!=="undefined" ? `${key}=${cleaned}` : cleaned) + (i<max-1 ? "&" : "");
+							} else {
+								max--;
+							}
+							return accum;
+						},"?");
+				}
+				return data;
+			},
+			data => { // handle escaping html entities
+				if(typeof(data)==="string" && data[0]!=="?" && typeof(document)!=="undefined") {
+						// on client or a server DOM is operable
+			  	 const div = document.createElement('div');
+			  	 div.appendChild(document.createTextNode(data));
+			  	 return div.innerHTML;
+			  	}
+				return data;
+			}
+		],
+		eval: true
+	}
+	let PROTECTED;
+	const protect = (el=window,violated=() => "") => {
+		// on client or a server pseudo window is available
+		if(typeof(window)!=="undefined" && window.prompt && el===window) {
+			const _prompt = window.prompt.bind(window);
+			window.prompt = function(title) {
+				const input = _prompt(title),
+					cleaned = clean(input);
+				if(typeof(cleaned)=="undefined") {
+					window.alert("Invalid input: " + input);
+				} else {
+					return cleaned;
+				} 
+			}
+			PROTECTED = true;
+			return;
+		}
+	  return el;
+	}
 		
-	const tlx = {component,reactor,view,router,handlers,JSDOM};
+	const tlx = {component,reactor,view,router,handlers,escape:clean,protect,JSDOM};
 	
 	if(typeof(module)!=="undefined") module.exports = tlx;
 	if(typeof(window)!=="undefined") window.tlx = tlx;

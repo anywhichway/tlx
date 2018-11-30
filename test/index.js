@@ -46,6 +46,11 @@ if(typeof(document)==="undefined") {
 const el = document.createElement("div");
 document.body.appendChild(el);
 
+tlx.protect();
+
+//window.prompt("test");
+delete tlx.protected
+
 describe("views",function() {
 	it("direct element",function(done) {
 		el.innerHTML = "${data}";
@@ -162,6 +167,66 @@ describe("views",function() {
 			window.requestAnimationFrame(() => {
 				expect(el.innerHTML).equal("<input name=\"data\" value=\"changed\">");
 				expect(model.data).equal("changed");
+				done();
+			});
+		});
+	});
+	it("auto protect",function(done) {
+		el.innerHTML = "<input name='data' value='${data}'>";
+		const model = {data:"test"},
+			event = new MouseEvent('change', {
+		    view: window,
+		    bubbles: true,
+		    cancelable: true
+		  });
+		tlx.view(el,{model});
+		window.requestAnimationFrame(() => {
+			expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
+			el.firstElementChild.setAttribute("value","function() { return 'a'}");
+			el.firstElementChild.dispatchEvent(event);
+			window.requestAnimationFrame(() => {
+				expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
+				expect(model.data).equal("test");
+				done();
+			});
+		});
+	});
+	it("un-protect",function(done) {
+		el.innerHTML = "<input name='data' value='${data}'>";
+		const model = {data:"test"},
+			event = new MouseEvent('change', {
+		    view: window,
+		    bubbles: true,
+		    cancelable: true
+		  });
+		tlx.view(el,{model,linkModel:true,protect:false});
+		window.requestAnimationFrame(() => {
+			expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
+			el.firstElementChild.setAttribute("value","function() { }");
+			el.firstElementChild.dispatchEvent(event);
+			window.requestAnimationFrame(() => {
+				expect(el.innerHTML).equal("<input name=\"data\" value=\"function() { }\">");
+				expect(model.data).equal("function() { }");
+				done();
+			});
+		});
+	});
+	it("direct protect",function(done) {
+		el.innerHTML = "<input name='data' value='${data}' protect>";
+		const model = {data:"test"},
+			event = new MouseEvent('change', {
+		    view: window,
+		    bubbles: true,
+		    cancelable: true
+		  });
+		tlx.view(el,{model,linkModel:true,protect:false});
+		window.requestAnimationFrame(() => {
+			expect(el.innerHTML).equal("<input name=\"data\" value=\"test\" protect=\"\">");
+			el.firstElementChild.setAttribute("value","function() { }");
+			el.firstElementChild.dispatchEvent(event);
+			window.requestAnimationFrame(() => {
+				expect(el.innerHTML).equal("<input name=\"data\" value=\"test\" protect=\"\">");
+				expect(model.data).equal("test");
 				done();
 			});
 		});

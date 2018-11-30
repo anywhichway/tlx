@@ -1,6 +1,6 @@
-# TLX v1.0.3b
+# TLX v1.0.4b
 
-TLX is a tiny (2.75K minimized and gzipped) multi-paradigm, less opinionated, front-end library supporting:
+TLX is a very small (3.3K minimized and gzipped) multi-paradigm, less opinionated, front-end library supporting:
 
 1) template literals in place of JSX,
 
@@ -22,6 +22,8 @@ TLX is a tiny (2.75K minimized and gzipped) multi-paradigm, less opinionated, fr
 
 9) extended lifecycle callbacks
 
+10) automatic HTML injection protection
+
 Custom attribute directives are not currently supported because they aren't strictly needed and we are attempting to minimize size and complexity.
 
 Tlx can be used in a manner that respects the separation or intergration of development responsibilites between those with a focus on style and layout (HTML and CSS) vs. those with a focus of logic (JavaScript).
@@ -29,6 +31,7 @@ Tlx can be used in a manner that respects the separation or intergration of deve
 
 ***Don't forget***, give us a star if you like what you see!
 
+- [TLX v1.0.4b](#tlx-v104b)
 - [Installation](#installation)
 - [Usage](#usage)
   * [NodeJS](#nodejs)
@@ -41,15 +44,18 @@ Tlx can be used in a manner that respects the separation or intergration of deve
   * [Templating](#templating)
   * [Server Side Rendering](#server-side-rendering)
   * [API](#api)
-    + [`tlx.reactor(object={},watchers={})`](#-tlxreactor-object----watchers-----)
-    + [`tlx.view(el,options)`](#-tlxview-el-options--)
-    + [`tlx.handlers(object)`](#-tlxhandlers-object--)
-    + [`tlx.router(object)`](#-tlxrouter-object--)
-    + [`tlx.component(tagName,options)`](#-tlxcomponent-tagname-options--)
+    + [`undefined tlx.protect()``](#-undefined-tlxprotect----)
+    + [`Proxy tlx.reactor(object target={},object watchers={})`](#-proxy-tlxreactor-object-target----object-watchers-----)
+    + [`HTMLElement tlx.view(HTMLElement el[,object options])`](#-htmlelement-tlxview-htmlelement-el--object-options---)
+    + [`function tlx.handlers(object handlers)`](#-function-tlxhandlers-object-handlers--)
+    + [`function tlx.router(object routes)`](#-function-tlxrouter-object-routes--)
+    + [`HTMLElement tlx.component(string tagName,object options)`](#-htmlelement-tlxcomponent-string-tagname-object-options--)
+    + [`any tlx.escape(any data)`](#-any-tlxescape-any-data--)
     + [`tlx.off`](#-tlxoff-)
 - [Design Notes](#design-notes)
   * [Differential Rendering](#differential-rendering)
   * [Model Storage](#model-storage)
+  * [HTML Injection Protection](#html-injection-protection)
 - [Acknowledgements](#acknowledgements)
 - [Release History (reverse chronological order)<a name="release"></a>](#release-history--reverse-chronological-order--a-name--release----a-)
 - [License](#license)
@@ -58,6 +64,12 @@ Tlx can be used in a manner that respects the separation or intergration of deve
 # Installation
 
 `npm install tlx`
+
+or use from a CDN
+
+`https://unpkg.com/tlx/browser/tlx.js`
+
+`https://unpkg.com/tlx/browser/tlx.min.js`
 
 # Usage
 
@@ -242,52 +254,59 @@ In a real world situation, the model would probably be pulled from a database an
 
 ## API
 
-Since there are only 6 API entry points, they are presented in order of likely use rather than alphabetically.
+Since there are only 8 API entry points, they are presented in order of likely use rather than alphabetically.
 
-### `tlx.reactor(object={},watchers={})`
+### `undefined tlx.protect()``
+
+Turn on automatic HTML injection protection. Can be overridden on a `view` or HTMLInputElement level. The call also modifies the JavaScript `prompt` function such that any values entered by users are escaped to eliminate code injection. If
+an attempt to inject code is made, then the user is informed there is an error and asked to enter somethng again. See `tlx.escape(data)` at the end of this section for info on the escape process.
+
+### `Proxy tlx.reactor(object target={},object watchers={})`
 
 Returns a deep `Proxy` for `object` that automatically tracks usage in `views` and re-renders them when data they use changes.
 
-`object` - The `object` around which to wrap the `Proxy`.
+`target` - The `object` around which to wrap the `Proxy`.
 
 `watchers` - A potentially nested object, the keys of which are intended to match the keys on the target `object`. The values are functions with the signature `(oldvalue,value,property,proxy)`. These are invoked synchronously any time the target property value changes. If they throw an error, the value will not get set. If you desire to use asyncronous behavior, then implement your code
 to inject asynchronicity. Promises will not be awaited if returned.
 
-### `tlx.view(el,options)`
+### `HTMLElement tlx.view(HTMLElement el[,object options])`
 
 Returns a `view` of the specified `template` bound to the DOM element `el`. If no `template` is specified, then the initial outerHTML of the `el` becomes the template. A `view` is an arbitrary collection of nested DOM nodes the leaves of which are selectively rendered if their contents have changed. The nested DOM nodes all have one additional property `view` that points back to the root element in the `view`.
 
-`el` - A DOM element which may be empty or contain HTML that looks and behaves like JavaScript string template literals. The initial content is overwritten when the node is rendered, but kept as a template if one was not provided.
+`HTMLElement el` - A DOM element which may be empty or contain HTML that looks and behaves like JavaScript string template literals. The initial content is overwritten when the node is rendered, but kept as a template if one was not provided.
 
-`options` - `{template,model={},attributes={},actions={},controller,linkModel,lifecycle={}}={}`
+`object options` - `{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect}={}`
 
-`template` - An optional DOM element containing what looks like a JavaScript template literal or a string or an escaped JavaScript template literal, e.g. `\${firstName}` vs `${firstName}`.
+`HTMLElement|string template` - An optional DOM element containing what looks like a JavaScript template literal or a string or an escaped JavaScript template literal, e.g. `\${firstName}` vs `${firstName}`.
 
-`model` - The data used when resolving the string template literals. This is typically shared across multiple `views`.
+`object model` - The data used when resolving the string template literals. This is typically shared across multiple `views`.
 
-`actions` - A keyed object where each property value is a function. These can also be accessed from the templates; however, they are not available for updating in the same way as a `model`. If you provide a function as an attribute value, you do not need to wrap it in an invocation, e.g. just use `onclick="${myclicker}"` not `onclick="(${myclick})(event)`. You can also call the functions anywhere in your templates, e.g. `Name: ${getName()}`.
+`object actions` - A keyed object where each property value is a function. These can also be accessed from the templates; however, they are not available for updating in the same way as a `model`. If you provide a function as an attribute value, you do not need to wrap it in an invocation, e.g. just use `onclick="${myclicker}"` not `onclick="(${myclick})(event)`. You can also call the functions anywhere in your templates, e.g. `Name: ${getName()}`.
 
-`controller` - A standard event handler function to which all events occuring in the view get passed. To limit the events handled, use the return value of `tlx.handlers(object)` as the controller.
+`function controller` - A standard event handler function to which all events occuring in the view get passed. To limit the events handled, use the return value of `tlx.handlers(object)` as the controller.
 
-`linkModel` - If set to truthy, then the `model` is automatically updated with values from form fields having a `name` attribute by using the `name` attribute value as the key on the model.
+`boolean linkModel` - If set to truthy, then the `model` is automatically updated with values from form fields having a `name` attribute by using the `name` attribute value as the key on the model.
 
-`lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeMount`, `mounted`, `beforeUpdate`, `updated`. Because it is not a component a view does not support `beforeCreate` and `created`. Because there is no vdom and the DOM automatically manages disposal there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
+`object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeMount`, `mounted`, `beforeUpdate`, `updated`. Because it is not a component a view does not support `beforeCreate` and `created`. Because there is no vdom and the DOM automatically manages disposal there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
 
-### `tlx.handlers(object)`
+`boolean protect` - Protect all input elements in the view. To protect just a single element, add the attribute "protect" to the element.
+
+### `function tlx.handlers(object handlers)`
 
 Returns an event handler customized to deal with only the events specified on the `object`.
 
-`object` - An object on which the keys are event names, e.g. "click", and the values are standard JavaScript event handlers, e.g.
+`object handlers` - An object on which the keys are event names, e.g. "click", and the values are standard JavaScript event handlers, e.g.
 
 ```javascript
 tlx.handlers({click: (event) => { event.preventDefault(); console.log(event); });
 ```
 
-### `tlx.router(object)`
+### `function tlx.router(object routes)`
 
 Returns a handler designed to work with click events on anchor hrefs.
 
-`object` - An object on which the keys are paths to match, functions that return a boolean when passed the target URL path, or regular expressions that can be used to match a URL path. The values are the functions to execute if the path is matched. The functions take
+`object routes` - An object on which the keys are paths to match, functions that return a boolean when passed the target URL path, or regular expressions that can be used to match a URL path. The values are the functions to execute if the path is matched. The functions take
 a single keyed object as an argument holding any `:values` parsed from the URL. The event will be bound to `this`. The functions will typically instantiate a component and render it to the `this.target.view`; however, they can actually do anything. Calling `this.stopRoute()` will stop more routes from being processed for the `event`.
 
 ```javascript
@@ -299,7 +318,7 @@ handlers({click:router({"test/:id":args => {
 	}})});
 ```
 
-### `tlx.component(tagName,options)`
+### `HTMLElement tlx.component(string tagName,object options)`
 
 Returns a function that will create a custom element with `tagName`. Any nested HTML will be inside a
 a shadow DOM. With the exception of `template` and `customElement` the options are default values for the function
@@ -308,25 +327,48 @@ merged into the defaults. To eliminate properties, merge in a object with a targ
 
 The returned element can be added to the DOM using normal DOM operations and will behave like a `view`.
 
-`tagName` - The custom tag name to use for the component.
+`string tagName` - The custom tag name to use for the component.
 
-`options` - `{template,customElement,model,attributes,actions,controller,linkModel,lifeCycle,reactive}`
+`object options` - `{template,customElement,model,attributes,actions,controller,linkModel,lifeCycle,reactive,protect}`
 
-`template` or `customElement` - A template specified as an element containing string literal notation as its content, or a string, or an escaped string literal. Or, an already defined custom element class.
+`HTMLElement|string template` or `HTMLCustomElement customElement` - A template specified as an element containing string literal notation as its content, or a string, or an escaped string literal. Or, an already defined custom element class.
 
-`model` - See `tlx.view`.
+`object model` - See `tlx.view`.
 
-`attributes` -  See `tlx.view`.
+`object attributes` -  See `tlx.view`.
 
-`actions` -  See `tlx.view`.
+`object actions` -  See `tlx.view`.
 
-`controller` -  See `tlx.view`.
+`function controller` -  See `tlx.view`.
 
-`linkModel` -  See `tlx.view`.
+`boolean linkModel` -  See `tlx.view`.
 
-`lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeCreate`, `created`, `beforeMount`, `mounted`, `beforeUpdate`, `updated`.  Because there is no vdom and the DOM automatically manages disposal there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
+`object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeCreate`, `created`, `beforeMount`, `mounted`, `beforeUpdate`, `updated`.  Because there is no vdom and the DOM automatically manages disposal there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
 
-`reactive` - Set to true to make models reactive when they are created upon component creation.
+`boolean reactive` - Set to truthy to make models reactive when they are created upon component creation.
+
+`boolean protect` - See `tlx.view`.
+
+### `any tlx.escape(any data)`
+
+Takes any data and escapes it so it can't possibly be an HTML injection. Returns `undefined` if it can't be escaped. The psuedo code is as follows:
+
+```
+type = typeof(data);
+switch(data) {
+	case type=="number"||type=="boolean": return data;
+	case isServerExec(data): return; // e.g. <?php
+	case isEval(data): return;
+	case consoleWrite(data): return; // might write nastiness to logs
+	case containsJavaScript(data): return; // e.g. javascript:
+	case containsFunction(data): return;
+}
+data = escapeQueryString(data);
+data = escapeHTMLEntities(data); // e.g. >= becomes &gte;
+return data
+```
+
+`any data` - Any JavaScript data or function.
 
 ### `tlx.off`
 
@@ -348,6 +390,11 @@ The HTML5 standard data attribute type and the `dataset` property on HTMLElement
 
 3) Allowing direct manipulation of the `model` data members or model access from outside templates typically results in hard to follow buggy code. If you need to change the model data at runtime, then add methods to your model and call them from within your templates.
 
+## HTML Injection Protection
+
+`tlx.protect()` and `tlx.escape(data)` provide a means to limit the risk of HTML injection, i.e. user's entering code in forms or URL query strings that changes the behavior of a web application for another user. See [Finding HTML Injection Vulns](https://blog.qualys.com/technology/2013/05/30/finding-html-injection-vulns-part-i) or search Google for 
+more information about the risks of HTML injection.
+
 
 # Acknowledgements
 
@@ -356,6 +403,8 @@ The idea of the `linkModel` function to simplify reactive binding is drawn from 
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)<a name="release"></a>
+
+2018-11-29 v1.0.4b - Documentation updates. Added HTML injection protection.
 
 2018-11-28 v1.0.3b - Documentation updates. Renamed `linkState` to `linkModel` for consistency.
 

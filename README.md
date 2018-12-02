@@ -1,4 +1,4 @@
-# TLX v1.0.7b
+# TLX v1.0.8b
 
 TLX is a very small (3.7K minimized and gzipped) multi-paradigm, less opinionated, front-end library supporting:
 
@@ -39,28 +39,27 @@ Tlx can be used in a manner that respects the separation or intergration of deve
   * [Manual State Updating](#manual-state-updating)
   * [Manual State Updating and Re-Rendering](#manual-state-updating-and-re-rendering)
   * [Templating](#templating)
-  * [Attribute Directives](#attribute-directives)
+- [Attribute Directives](#attribute-directives)
     + [`t-if`](#-t-if-)
-    + [`t-foreach`](#-t-foreach-)
-    + [Custom Directives](#custom-directives)
-  * [Server Side Rendering](#server-side-rendering)
-  * [API](#api)
-    + [`undefined tlx.protect()``](#-undefined-tlxprotect----)
-    + [`Proxy tlx.reactor(object target={},object watchers={})`](#-proxy-tlxreactor-object-target----object-watchers-----)
-    + [`HTMLElement tlx.view(HTMLElement el[,object options])`](#-htmlelement-tlxview-htmlelement-el--object-options---)
-    + [`function tlx.handlers(object handlers)`](#-function-tlxhandlers-object-handlers--)
-    + [`function tlx.router(object routes)`](#-function-tlxrouter-object-routes--)
-    + [`HTMLElement tlx.component(string tagName,object options)`](#-htmlelement-tlxcomponent-string-tagname-object-options--)
-    + [`any tlx.escape(any data)`](#-any-tlxescape-any-data--)
-    + [`tlx.off`](#-tlxoff-)
+  * [`t-foreach`](#-t-foreach-)
+  * [Custom Directives](#custom-directives)
+- [Server Side Rendering](#server-side-rendering)
+- [API](#api)
+  * [`undefined tlx.protect()``](#-undefined-tlxprotect----)
+  * [`Proxy tlx.reactor(object target={},object watchers={})`](#-proxy-tlxreactor-object-target----object-watchers-----)
+  * [`HTMLElement tlx.view(HTMLElement el[,object options])`](#-htmlelement-tlxview-htmlelement-el--object-options---)
+  * [`function tlx.handlers(object handlers)`](#-function-tlxhandlers-object-handlers--)
+  * [`function tlx.router(object routes)`](#-function-tlxrouter-object-routes--)
+  * [`HTMLElement tlx.component(string tagName,object options)`](#-htmlelement-tlxcomponent-string-tagname-object-options--)
+  * [`any tlx.escape(any data)`](#-any-tlxescape-any-data--)
+  * [`tlx.off`](#-tlxoff-)
 - [Design Notes](#design-notes)
   * [Differential Rendering](#differential-rendering)
   * [Model Storage](#model-storage)
   * [HTML Injection Protection](#html-injection-protection)
 - [Acknowledgements](#acknowledgements)
-- [Release History (reverse chronological order)<a name="release"></a>](#release-history--reverse-chronological-order--a-name--release----a-)
+- [Release History (reverse chronological order)](#release-history--reverse-chronological-order-)
 - [License](#license)
-
 
 # Installation
 
@@ -220,7 +219,7 @@ const model = {
 tlx.view(el,{model,template});
 ```
 
-## Attribute Directives
+# Attribute Directives
 
 TLX comes with two built-in attribute directives, `t-if` and `t-foreach`.
 
@@ -236,7 +235,7 @@ If the value of `t-if` is truthy, then the element and its nested elements will 
 <div t-if="false">Will not be shown</div>
 ```
 
-### `t-foreach`
+## `t-foreach`
 
 A single argument is provided to `t-foreach`, the array to process. It will provide the model properties `value` and `index` automatically to any nested string literal templates, e.g.
 
@@ -248,7 +247,7 @@ A single argument is provided to `t-foreach`, the array to process. It will prov
 </table>
 ```
 
-### Custom Directives
+## Custom Directives
 
 Custom directives can be added to the keyed object `tlx.directives`. They should be functions with the signature `(any attributeValue, object model,object actions,function render)`. The `render` function is generated internally by tlx. It returns the DOM element currently being processed. It has the call signature `(object model,object actions)`.
 
@@ -289,7 +288,7 @@ tlx.directives["my-case"] = function(toCase,model,actions,render) {
 }
 ```
 
-## Server Side Rendering
+# Server Side Rendering
 
 When run in a NodeJS server context, tlx loads the `jsdom` package for DOM simulation. To the degree that `JSDOM` supports what you need, you can use tlx on the server just like on the client. Tlx also exposes `JSDOM` as a convenience so you don't have to add it as a dependency to your own code.
 
@@ -322,16 +321,16 @@ const model = {
 
 In a real world situation, the model would probably be pulled from a database and the filename would perhaps be part of a requested URL.
 
-## API
+# API
 
 Since there are only 8 API entry points, they are presented in order of likely use rather than alphabetically.
 
-### `undefined tlx.protect()``
+## `undefined tlx.protect()``
 
 Turn on automatic HTML injection protection. Can be overridden on a `view` or HTMLInputElement level. The call also modifies the JavaScript `prompt` function such that any values entered by users are escaped to eliminate code injection. If
 an attempt to inject code is made, then the user is informed there is an error and asked to enter somethng again. See `tlx.escape(data)` at the end of this section for info on the escape process.
 
-### `Proxy tlx.reactor(object target={},object watchers={})`
+## `Proxy tlx.reactor(object target={},object watchers={})`
 
 Returns a deep `Proxy` for `object` that automatically tracks usage in `views` and re-renders them when data they use changes.
 
@@ -340,7 +339,7 @@ Returns a deep `Proxy` for `object` that automatically tracks usage in `views` a
 `watchers` - A potentially nested object, the keys of which are intended to match the keys on the target `object`. The values are functions with the signature `(oldvalue,value,property,proxy)`. These are invoked synchronously any time the target property value changes. If they throw an error, the value will not get set. If you desire to use asyncronous behavior, then implement your code
 to inject asynchronicity. Promises will not be awaited if returned.
 
-### `HTMLElement tlx.view(HTMLElement el[,object options])`
+## `HTMLElement tlx.view(HTMLElement el[,object options])`
 
 Returns a `view` of the specified `template` bound to the DOM element `el`. If no `template` is specified, then the initial outerHTML of the `el` becomes the template. A `view` is an arbitrary collection of nested DOM nodes the leaves of which are selectively rendered if their contents have changed. The nested DOM nodes all have one additional property `view` that points back to the root element in the `view`.
 
@@ -368,7 +367,7 @@ input:invalid {
 }
 ```
 
-### `function tlx.handlers(object handlers)`
+## `function tlx.handlers(object handlers)`
 
 Returns an event handler customized to deal with only the events specified on the `object`.
 
@@ -378,7 +377,7 @@ Returns an event handler customized to deal with only the events specified on th
 tlx.handlers({click: (event) => { event.preventDefault(); console.log(event); });
 ```
 
-### `function tlx.router(object routes)`
+## `function tlx.router(object routes)`
 
 Returns a handler designed to work with click events on anchor hrefs.
 
@@ -394,7 +393,7 @@ handlers({click:router({"test/:id":args => {
 	}})});
 ```
 
-### `HTMLElement tlx.component(string tagName,object options)`
+## `HTMLElement tlx.component(string tagName,object options)`
 
 Returns a function that will create a custom element with `tagName`. Any nested HTML will be inside a
 a shadow DOM. With the exception of `template` and `customElement` the options are default values for the function
@@ -425,7 +424,7 @@ The returned element can be added to the DOM using normal DOM operations and wil
 
 `boolean protect` - See `tlx.view`.
 
-### `any tlx.escape(any data)`
+## `any tlx.escape(any data)`
 
 Takes any data and escapes it so it can't be an HTML injection. Returns `undefined` if it can't be escaped. The psuedo code is as follows:
 
@@ -446,7 +445,7 @@ return data
 
 `any data` - Any JavaScript data or function. Although, functions will always result in a return of `undefined`.
 
-### `tlx.off`
+## `tlx.off`
 
 Setting `tlx.off` to truthy will prevent any template resolution and display un-resolved string template literal notation.
 
@@ -479,6 +478,8 @@ The idea of the `linkModel` function to simplify reactive binding is drawn from 
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-2 v1.0.8b - Documentation updates.
 
 2018-12-1 v1.0.7b - Added attribute directives and very small transient vdom.
 

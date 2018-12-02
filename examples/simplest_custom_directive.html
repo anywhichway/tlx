@@ -1,0 +1,25 @@
+<html lang="en">
+<body>
+<div id="message" my-case="upper">
+Hello ${firstName}.
+</div>
+First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter">
+<script src="../index.js"></script>
+<script>
+// add custom directive
+tlx.directives["my-case"] = function(toCase,model,actions,render) {
+	switch(toCase) {
+		case "upper": return render(model,actions).innerHTML.toUpperCase();
+		case "lower": return render(model,actions).innerHTML.toLowerCase();
+		default: return render(model,actions);
+	}
+}
+// create an empty reactive model to share
+const model = tlx.reactor();
+// bind message area to model
+tlx.view(document.getElementById("message"),{model});
+// bind field to model and link "name" attribute values to model
+tlx.view(document.getElementById("name"),{model,linkModel:true})
+</script>
+</body>
+</html>

@@ -127,7 +127,7 @@ describe("views",function() {
 		    bubbles: true,
 		    cancelable: true
 		  });
-		tlx.view(el,{model:{data:"test"},attributes:{onclick:"${click}"},actions:{click: (event) => { 
+		tlx.view(el,{model:{data:"test"},attributes:{onclick:"(${click})(event)"},actions:{click: (event) => { 
 			event.target.wasclicked=true
 			}}});
 		window.requestAnimationFrame(() => {

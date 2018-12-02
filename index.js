@@ -32,71 +32,126 @@
 		requestAnimationFrame = _window.requestAnimationFrame;
 	}
 	var document = _window.document;
-		
-
+	
 	//update target DOM node from source DOM node
 	//make changes only where necessary
-	function updateDOM(source,target,actions={},view=target) {
+	function updateDOM(source,target,model,actions,view=target) {
 		Object.defineProperty(target,"view",{enumerable:false,configurable:true,writable:true,value:view});
+		const extras = {};
 		// if source and target are text
-		if(source.nodeName==="#text" && target.nodeName==="#text") {
-			// update is data not the same
-			if(target.data!==source.data) requestAnimationFrame(() => target.data = source.data);
-			return;
-		}
-		// if the constructors aren't the same or they have different css content
-		if(source.constructor!==target.constructor || source.style.cssText!==target.style.cssText) {
-			// replace the target with the source
-			!target.parentNode || requestAnimationFrame(() => target.parentNode.replaceChild(source,target));
-			return;
-		}
-		// patch functions so closures work
-		for(const key in source) {
-			if(key[0]==="o" && key[1]==="n" && typeof(source[key])==="function") {
-				Object.keys(actions).some(fname => {
-					const action = actions[fname]+"",
-						handler = source[key]+"",
-						body = handler.substring(handler.indexOf("{")+1,handler.lastIndexOf("}")).trimStart().trimEnd();
-					if(body===action) {
-						target.addEventListener(key.substring(2),actions[fname]);
-						return true;
-					}
-				})
+		if(typeof(source)==="string" && target.nodeName==="#text") {
+			let value;
+			while(true) {
+				try {
+					value = Function("model={}","actions={}","extras={}","with(model) { with(actions) { with(extras) { return `" + source + "`}}}")(model,actions,extras);
+					break;
+				} catch(e) {
+					const variable = getUndefined(e);
+					if(!variable) throw e;
+					model[variable]; // force get for dependency tracking
+					extras[variable] = "";
+				}
 			}
+			// update is data not the same
+			if(target.data!==value) target.data = value;
+			return;
 		}
-		// loop through source attributes
-		[].slice.call(source.attributes).forEach(attribute => {
-			const sourcevalue = source.getAttribute(attribute.name);
-			// replace different
-			if(sourcevalue!==target.getAttribute(attribute.name)) requestAnimationFrame(() => target.setAttribute(attribute.name,sourcevalue))
-		});
+		// if tags aren't the same
+		if(source.tagName!==target.tagName) {
+			// replace the target with the source
+			!target.parentNode || target.parentNode.replaceChild(fromVDOM(source),target);
+			return;
+		}
 		// loop through target attributes
 		[].slice.call(target.attributes).forEach(attribute => {
 			// remove where does not exist in source
-			if(source.getAttribute(attribute.name)==null) requestAnimationFrame(() => target.removeAttribute(attribute.name))
+			if(source.attributes[attribute.name]==null) target.removeAttribute(attribute.name)
 		});
-		// remove extra children
-		let remove = target.childNodes.length-source.childNodes.length;
-		while(remove-->0) {
-			!target.lastChild || target.removeChild(target.lastChild);
-		}
-		// handle the child nodes
-		let targets = [].slice.call(target.childNodes,0,source.childNodes.length);
-		if(targets.length===0) {
-			const shadow = target.shadowRoot;
-			if(shadow) targets = [].slice.call(shadow.childNodes,0,source.childNodes.length);
-		}
-		let sources = [].slice.call(source.childNodes);
-		if(sources.length===0) {
-			const shadow = source.shadowRoot;
-			if(shadow) sources = [].slice.call(shadow.childNodes);
-		}
-		sources.forEach((snode,i) => {
-			// update if in range
-			if(i<targets.length) updateDOM(snode,targets[i],actions,view);
-			// otherwise, append
-			else requestAnimationFrame(() => target.appendChild(snode.cloneNode(true)));
+		// loop through source attributes
+		let directed;
+		Object.keys(source.attributes).forEach(aname => {
+			let value = source.attributes[aname],
+			 type = typeof(value);
+			const	unary = value[0]==="$" && value[1]==="{" && value[value.length-1]==="}",
+				directive = directives[aname]||tlx.directives[aname];
+			if(directive) directed = true;
+			if(type==="string") {
+				while(true) {
+					try {
+						if(unary) {
+							value = Function("model={}","actions={}","extras={}","__interpolate","with(model) { with(actions) { with(extras) { return __interpolate`" + value + "`[0]}}}")(model,actions,extras,interpolate);
+						} else {
+							value = Function("model={}","actions={}","extras={}","with(model) { with(actions) { with(extras) { return `" + value + "`}}}")(model,actions,extras);
+						}
+						type = typeof(value);
+						break;
+					} catch(e) {
+						const variable = getUndefined(e);
+						if(!variable) throw e;
+						model[variable]; // force get for dependency tracking
+						extras[variable] = "";
+					}
+				}
+			}
+			// replace different
+			if(value==null) {
+				target.removeAttribute(aname);
+				delete target[aname];
+			} else if(["boolean","number","string"].includes(type)) {
+				if(value!==target.getAttribute(aname)) target.setAttribute(aname,value);
+			} else if(value!==target[aname]) {
+				target[aname] = value;
+			}
+			if(directive) { 
+				while(target.lastChild) target.removeChild(target.lastChild); 
+				const render = (model,actions) => {
+					source.children.forEach(child => {
+						if(typeof(child)==="string") {
+							 target.appendChild(new Text(child));
+						} else {
+							 target.appendChild(document.createElement(child.tagName));
+						}
+						updateDOM(child,target.lastChild,model,actions,view);
+					});
+					return target;
+				};
+				const result = directive(value,model,actions,render),
+					rtype = typeof(result);
+				if(!result) {
+					target.parentElement.removeChild(target);
+				} else if(rtype==="string") {
+					 target.innerHTML = result;
+				} else if(rtype==="object" && result!==target) {
+					target.parentElement.replaceNode(result,target);
+				}
+			}
 		});
+		if(!directed) {
+			// remove extra children
+			let remove = target.childNodes.length-source.children.length;
+			while(remove-->0) {
+				!target.lastChild || target.removeChild(target.lastChild);
+			}
+			// handle the child nodes
+			let targets = [].slice.call(target.childNodes,0,source.children.length);
+			if(targets.length===0) {
+				const shadow = target.shadowRoot;
+				if(shadow) targets = [].slice.call(shadow.childNodes,0,source.children.length);
+			}
+			source.children.forEach((child,i) => {
+				// update if in range
+				if(i<targets.length) {
+					updateDOM(child,targets[i],model,actions,view);
+					return;
+				}
+				if(typeof(child)==="string") {
+					target.appendChild(new Text(child));
+				} else {
+					target.appendChild(document.createElement(child.tagName));
+				}
+				updateDOM(child,target.lastChild,model,actions,view);
+			});
+		}
 	}
 	
 	function Component() {
@@ -104,7 +159,8 @@
 	}
 	Component.prototype = new Function();
 	
-	let CURRENTVIEW;
+	let CURRENTVIEW,
+		PROTECTED;
 	
 	const DEPENDENCIES = new Map(),
 		getUndefined = error => {
@@ -118,11 +174,12 @@
 				}
 			}
 		},
+		interpolate = (template,...interpolations) => interpolations,
 		parse = (template, ...interpolations) => {
 			if(Array.isArray(template)) { // was called as a string literal interpolator
 				template = template.reduce((accum,chunk,i) => accum += chunk + (i<template.length-1 ? interpolations[i]  : ""),"");
 			}
-			return Function("model","actions","extras","with(model) { with(actions) { with(extras) { return `" + template + "`}}}");
+			return Function("model={}","actions={}","extras={}","with(model) { with(actions) { with(extras) { return `" + template + "`}}}");
 		},
 		patch = (target,source) => {
 			source = Object.assign(target,source);
@@ -149,9 +206,6 @@
 						dependencies[property] || (dependencies[property] = new Set());
 						dependencies[property].add(CURRENTVIEW);
 					}
-					//if(typeof(target[property])==="function") {
-					//	return target[property].bind(target);
-					//}
 					return target[property];
 				},
 				set(target,property,value) {
@@ -262,60 +316,59 @@ while(true) {
 			routes = Object.assign({},routes);
 			return handleEvent;
 		},
+		toVDOM = (node,attributes) => {
+			if(node.nodeName==="#text") return node.textContent;
+			const vdom = {tagName:node.tagName,attributes:Object.assign({},attributes),children:[]};
+			[].slice.call(node.attributes).forEach(attribute => {
+					vdom.attributes[attribute.name] = attribute.value;
+			});
+			for(const key in node) {
+				if(key[0]==="o" && key[1]==="n" && typeof(node[key])==="function") {
+					vdom.attributes[key] = node[key];
+				}
+			}
+			[].slice.call(node.childNodes).forEach(child => {
+					vdom.children.push(toVDOM(child));
+			});
+			return vdom;
+		},
+		fromVDOM = vdom => {
+			if(typeof(vdom)==="string") {
+				return new Text(vdom);
+			}
+			const el = document.createElement(vdom.tagName);
+			Object.keys(vdom.attributes).forEach(aname => {
+				const value = vdom.attributes[aname];
+				if(value!=null && typeof(value)!=="string") {
+					el[aname] = value;
+				} else {
+					el.setAttribute(aname,value);
+				}
+			});
+			vdom.children.forEach(child => {
+				el.appendChild(fromVDOM(child));
+			});
+			return el;
+		},
 		view = (el,{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect=PROTECTED}={}) => {
-			const ttype = typeof(template);
-			if(!template) {
-				const attrs = [].slice.call(el.attributes);
-				attributes = Object.assign({},attributes);
-				attrs.forEach(attribute => {
-					attributes[attribute.name] = attribute.value;
-				});
+			if(template) {
+				if(typeof(template)==="string") {
+					const fragment = document.createElement(el.tagName);
+					fragment.innerHTML = template;
+					template = fragment;
+				} else if(template.tagName!==el.tagName){
+					const fragment = document.createElement(el.tagName);
+					fragment.innerHTML = template.innerHTML;
+					Object.assign([].slice.call(template.attributes).reduce((accum,attribute) => {
+						accum[attribute.name] = attribute.value;
+						return accum;
+					},{}),attributes);
+					template = fragment;
+				}
 			}
-			if(ttype!=="function") {
-				if(template && ttype==="object" && template instanceof _window.HTMLElement) template = template.innerHTML;
-				template = parse(template||el.innerHTML.replace(/&gt;/g,">").replace(/&lt;/g,"<"))
-			}
+			const vdom = toVDOM(template||el,attributes);
 			let mounted;
-			const render = (data=model,partial) => {
-					if(tlx.off || !el.parentElement) return;
-					const fragment = document.createElement(el.tagName),
-						extras = {},
-						currentview = CURRENTVIEW;
-					if(partial) data = patch(model,data);
-					else if(data!==model) Object.assign(model,data);
-					CURRENTVIEW = el;
-					while(true) {
-						try {
-							fragment.innerHTML = template(model,actions,extras);
-							break;
-						} catch(e) { // create dummy values for ones that are undefined
-							const variable = getUndefined(e);
-							if(!variable) throw e;
-							model[variable]; // force get
-							extras[variable] = "";
-						}
-					}
-					CURRENTVIEW = currentview;
-					if(mounted && lifecycle.beforeUpdate) lifecycle.beforeUpdate.call(el);
-					Object.keys(attributes).forEach(key => {
-						let value;
-						while(true) {
-							try {
-								value = Function("model","actions","extras","with(model) { with(actions) { with(extras) { return `" + attributes[key] + "`}}}")(model,actions,extras)
-								break;
-							} catch(e) { // create dummy values for ones that are undefined
-								const variable = getUndefined(e);
-								if(!variable) throw e;
-								model[variable]; // force get
-								extras[variable] = "";
-							}
-						}
-						fragment.setAttribute(key,value);
-					});
-					updateDOM(fragment,el,actions);
-					if(mounted && lifecycle.updated) lifecycle.updated.call(el);
-				},
-				linkmodel = (path,...renders) => {
+			const linkmodel = (path,...renders) => {
 					return event => {
 						const parts = path.split(".");
 						// walk down the parts of the path on the model
@@ -331,6 +384,18 @@ while(true) {
 						node[final] = event.target.value; // set the value
 						renders.forEach(selector => document.querySelectorAll(selector).forEach(el => !el.render || el.render()));
 					}
+				},
+				render = (data=model,partial) => {
+					if(tlx.off || !el.parentElement) return;
+					const currentview = CURRENTVIEW;
+					if(partial) data = patch(model,data);
+					else if(data!==model) Object.assign(model,data);
+					CURRENTVIEW = el;
+					if(mounted && lifecycle.beforeUpdate) lifecycle.beforeUpdate.call(el);
+					updateDOM(vdom,el,model,actions);
+					CURRENTVIEW = currentview;
+					if(mounted && lifecycle.updated) lifecycle.updated.call(el);
+					return el;
 				};
 			if(lifecycle.beforeMount) lifecycle.beforeMount.call(el);
 			render(model);
@@ -427,7 +492,38 @@ while(true) {
 				}
 			}
 		return data;
-	}
+	},
+	protect = (el=window,violated=() => "") => {
+		// on client or a server pseudo window is available
+		if(typeof(window)!=="undefined" && window.prompt && el===window) {
+			const _prompt = window.prompt.bind(window);
+			window.prompt = function(title) {
+				const input = _prompt(title),
+					cleaned = clean(input);
+				if(typeof(cleaned)=="undefined") {
+					window.alert("Invalid input: " + input);
+				} else {
+					return cleaned;
+				} 
+			}
+			PROTECTED = true;
+			return;
+		}
+	  return el;
+	},
+	directives = {
+			"t-foreach": (array,model,actions,render) => {
+				array.forEach((value,index) => {
+					render(Object.assign({value,index,array},model),actions);
+				});
+				return true;
+			},
+			"t-if": (bool,model,actions,render) => {
+				if(bool) {
+					return render(model,actions);
+				}
+			}
+	};
 	// default options/support for coerce, accept, reject, escape, eval
 	clean.options = {
 		coerce: [],
@@ -481,28 +577,9 @@ while(true) {
 			}
 		],
 		eval: true
-	}
-	let PROTECTED;
-	const protect = (el=window,violated=() => "") => {
-		// on client or a server pseudo window is available
-		if(typeof(window)!=="undefined" && window.prompt && el===window) {
-			const _prompt = window.prompt.bind(window);
-			window.prompt = function(title) {
-				const input = _prompt(title),
-					cleaned = clean(input);
-				if(typeof(cleaned)=="undefined") {
-					window.alert("Invalid input: " + input);
-				} else {
-					return cleaned;
-				} 
-			}
-			PROTECTED = true;
-			return;
-		}
-	  return el;
-	}
-		
-	const tlx = {component,reactor,view,router,handlers,escape:clean,protect,JSDOM};
+	};
+	
+	const tlx = {component,reactor,view,router,handlers,escape:clean,protect,JSDOM,directives:{}};
 	
 	if(typeof(module)!=="undefined") module.exports = tlx;
 	if(typeof(window)!=="undefined") window.tlx = tlx;

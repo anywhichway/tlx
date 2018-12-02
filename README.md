@@ -1,37 +1,34 @@
-# TLX v1.0.6b
+# TLX v1.0.7b
 
-TLX is a very small (3.5K minimized and gzipped) multi-paradigm, less opinionated, front-end library supporting:
+TLX is a very small (3.7K minimized and gzipped) multi-paradigm, less opinionated, front-end library supporting:
 
 1) template literals in place of JSX,
 
-2) template definition directly in HTML or JavaScript,
-
-3) direct binding to DOM nodes,
+2) template definition directly in HTML or using `<template>` or `<script type="template">` or JavaScript,
 
 3) automatic or manual creation of standards compliant custom elements and components,
 
-4) optional automatic binding of form fields to state,
+4) `t-foreach` and `t-if` attribute directives,
 
-5) optional 2-way state binding with automatic re-rendering,
+5) custom attribute directives in as little as one line of code,
 
-6) direct DOM diffing (no virtual DOM)
+6) optional automatic binding of form fields to state,
 
-7) standards compliant event handlers, a.k.a controllers
+7) optional automatic re-rendering,
 
-8) a default router (implemented as a controller)
+8) standards compliant event handlers, a.k.a controllers
 
-9) extended lifecycle callbacks
+9) a default router (implemented as a controller)
 
-10) automatic HTML injection protection
+10) extended lifecycle callbacks
 
-Custom attribute directives are not currently supported because they aren't strictly needed, conditional logic inside the attributes and element can hide content, and we are attempting to minimize size and complexity.
+11) automatic HTML injection protection
 
 Tlx can be used in a manner that respects the separation or intergration of development responsibilites between those with a focus on style and layout (HTML and CSS) vs. those with a focus of logic (JavaScript).
 
 
 ***Don't forget***, give us a star if you like what you see!
 
-- [TLX v1.0.4b](#tlx-v104b)
 - [Installation](#installation)
 - [Usage](#usage)
   * [NodeJS](#nodejs)
@@ -42,6 +39,10 @@ Tlx can be used in a manner that respects the separation or intergration of deve
   * [Manual State Updating](#manual-state-updating)
   * [Manual State Updating and Re-Rendering](#manual-state-updating-and-re-rendering)
   * [Templating](#templating)
+  * [Attribute Directives](#attribute-directives)
+    + [`t-if`](#-t-if-)
+    + [`t-foreach`](#-t-foreach-)
+    + [Custom Directives](#custom-directives)
   * [Server Side Rendering](#server-side-rendering)
   * [API](#api)
     + [`undefined tlx.protect()``](#-undefined-tlxprotect----)
@@ -219,6 +220,75 @@ const model = {
 tlx.view(el,{model,template});
 ```
 
+## Attribute Directives
+
+TLX comes with two built-in attribute directives, `t-if` and `t-foreach`.
+
+### `t-if`
+
+If the value of `t-if` is truthy, then the element and its nested elements will be displayed,e.g.
+
+```
+<div t-if="true">Will be shown</div>
+```
+
+```
+<div t-if="false">Will not be shown</div>
+```
+
+### `t-foreach`
+
+A single argument is provided to `t-foreach`, the array to process. It will provide the model properties `value` and `index` automatically to any nested string literal templates, e.g.
+
+```
+<table t-foreach="[1,2,3]">
+<tr>
+<td>${index}</td><td>${value}</td>
+</tr>
+</table>
+```
+
+### Custom Directives
+
+Custom directives can be added to the keyed object `tlx.directives`. They should be functions with the signature `(any attributeValue, object model,object actions,function render)`. The `render` function is generated internally by tlx. It returns the DOM element currently being processed. It has the call signature `(object model,object actions)`.
+
+The directives can inspect the `model` and `actions` and use them or modified versions of them to call `render`. They can return any of the following:
+
+1) `false`, `null`, `undefined` - The element is removed from the DOM
+
+2) A string, which is used to replace the `innerHTML` of the element
+
+3) A DOM node, which is used to replace the element
+
+4) The return value of `render`, normal behavior is maintained
+
+5) `true` after calling `render`, normal behavior is maintained
+
+6) `true` without calling `render`, any string literal templates will not be resolved.
+
+Below is the definition of `t-foreach`.
+
+```
+"t-foreach": (array,model,actions,render) => {
+	array.forEach((value,index) => {
+		render(Object.assign({value,index,array},model),actions);
+	});
+	return true;
+},
+```
+
+Here is an example that changes the case all nested content:
+
+```
+tlx.directives["my-case"] = function(toCase,model,actions,render) {
+	switch(toCase) {
+		case "upper": return render(model,actions).innerHTML.toUpperCase();
+		case "lower": return render(model,actions).innerHTML.toLowerCase();
+		default: return render(model,actions);
+	}
+}
+```
+
 ## Server Side Rendering
 
 When run in a NodeJS server context, tlx loads the `jsdom` package for DOM simulation. To the degree that `JSDOM` supports what you need, you can use tlx on the server just like on the client. Tlx also exposes `JSDOM` as a convenience so you don't have to add it as a dependency to your own code.
@@ -282,7 +352,7 @@ Returns a `view` of the specified `template` bound to the DOM element `el`. If n
 
 `object model` - The data used when resolving the string template literals. This is typically shared across multiple `views`.
 
-`object actions` - A keyed object where each property value is a function. These can also be accessed from the templates; however, they are not available for updating in the same way as a `model`. If you provide a function as an attribute value, you do not need to wrap it in an invocation, e.g. just use `onclick="${myclicker}"` not `onclick="(${myclick})(event)`. You can also call the functions anywhere in your templates, e.g. `Name: ${getName()}`.
+`object actions` - A keyed object where each property value is a function. These can also be accessed from the templates; however, they are not available for updating in the same way as a `model`. If you provide a function as an attribute value, you need to wrap it in an invocation, e.g. `onclick="(${myclick})(event)`. You can also call the functions anywhere in your templates, e.g. `Name: ${getName()}`.
 
 `function controller` - A standard event handler function to which all events occuring in the view get passed. To limit the events handled, use the return value of `tlx.handlers(object)` as the controller.
 
@@ -364,7 +434,7 @@ type = typeof(data);
 switch(data) {
 	case type=="number"||type=="boolean": return data;
 	case isServerExec(data): return; // e.g. <?php
-	case isEval(data): return;
+	case isEvalOrBlocking(data): return;
 	case consoleWrite(data): return; // might write nastiness to logs
 	case containsJavaScript(data): return; // e.g. javascript:
 	case containsFunction(data): return;
@@ -384,7 +454,7 @@ Setting `tlx.off` to truthy will prevent any template resolution and display un-
 
 ## Differential Rendering
 
-When rendering is required, tlx generates a parrallel DOM unbound to the current document tree using the `model` and template literals associated with the current `view`. This DOM is recursively navigated to its leaf nodes, including attributes, which are compared with the current DOM. If the current DOM has extra nodes, they are deleted. If the unbound DOM has more nodes than the current DOM, they are appended. If a current DOM leaf has different content than a parrallel DOM leaf, the current leaf is updated with the content of the parrallel leaf. Since the parrallel DOM is never rendered it runs fast and tlx core code is kept small and simple. At runtime, parrallel nodes are transient, also keeping the memory footprint down.
+When rendering is required, tlx generates a very light weight transient virtual DOM using the `model` and template literals associated with the current `view`. This virtual DOM is recursively navigated to its leaf nodes, including attributes, which are compared with the current DOM. If the current DOM has extra nodes, they are deleted. If the virtual DOM has more nodes than the current DOM, they are appended. If a current DOM leaf has different content than a virtual DOM leaf, the current leaf is updated with the content of the virtual leaf.
 
 ## Model Storage
 
@@ -408,9 +478,11 @@ The idea of the `linkModel` function to simplify reactive binding is drawn from 
 
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
 
-# Release History (reverse chronological order)<a name="release"></a>
+# Release History (reverse chronological order)
 
-2018-11-30 v1.0.6b - Fixed issue with protect and initially unresolved attributes.
+2018-12-1 v1.0.7b - Added attribute directives and very small transient vdom.
+
+2018-11-30 v1.0.6b - Fixed issue with protect and initially unresolved attributes. 
 
 2018-11-29 v1.0.5b - Updated examples.
 

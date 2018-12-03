@@ -53,19 +53,19 @@
 				}
 			}
 			// update is data not the same
-			if(target.data!==value) target.data = value;
+			if(target.data!==value) requestAnimationFrame(() => target.data = value);
 			return;
 		}
 		// if tags aren't the same
 		if(source.tagName!==target.tagName) {
 			// replace the target with the source
-			!target.parentNode || target.parentNode.replaceChild(fromVDOM(source),target);
+			!target.parentNode || requestAnimationFrame(() => target.parentNode.replaceChild(fromVDOM(source),target));
 			return;
 		}
 		// loop through target attributes
 		[].slice.call(target.attributes).forEach(attribute => {
 			// remove where does not exist in source
-			if(source.attributes[attribute.name]==null) target.removeAttribute(attribute.name)
+			if(source.attributes[attribute.name]==null) requestAnimationFrame(()=>target.removeAttribute(attribute.name));
 		});
 		// loop through source attributes
 		let directed;
@@ -98,7 +98,7 @@
 				target.removeAttribute(aname);
 				delete target[aname];
 			} else if(["boolean","number","string"].includes(type)) {
-				if(value!==target.getAttribute(aname)) target.setAttribute(aname,value);
+				if(value!==target.getAttribute(aname)) requestAnimationFrame(() => target.setAttribute(aname,value));
 			} else if(value!==target[aname]) {
 				target[aname] = value;
 			}
@@ -367,7 +367,8 @@
 					template = fragment;
 				}
 			}
-			const vdom = toVDOM(template||el,attributes,template && template.tagName==="TEMPLATE" ? el.tagName : undefined);
+			const eltag = template && (template.tagName==="TEMPLATE" || (template.tagName==="SCRIPT" && template.type==="template")) ? el.tagName : undefined,
+					vdom = toVDOM(template||el,attributes,eltag);
 			let mounted;
 			const linkmodel = (path,...renders) => {
 					return event => {

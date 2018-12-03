@@ -1,6 +1,6 @@
-# TLX v1.0.8b
+# TLX v1.0.9b
 
-TLX is a very small (3.7K minimized and gzipped) multi-paradigm, less opinionated, front-end library supporting:
+TLX is a small (3.6K minimized and gzipped) multi-paradigm front-end library supporting:
 
 1) template literals in place of JSX,
 
@@ -50,7 +50,7 @@ Tlx can be used in a manner that respects the separation or intergration of deve
   * [`HTMLElement tlx.view(HTMLElement el[,object options])`](#-htmlelement-tlxview-htmlelement-el--object-options---)
   * [`function tlx.handlers(object handlers)`](#-function-tlxhandlers-object-handlers--)
   * [`function tlx.router(object routes)`](#-function-tlxrouter-object-routes--)
-  * [`HTMLElement tlx.component(string tagName,object options)`](#-htmlelement-tlxcomponent-string-tagname-object-options--)
+  * [`function tlx.component(string tagName,object options)`](#-htmlelement-tlxcomponent-string-tagname-object-options--)
   * [`any tlx.escape(any data)`](#-any-tlxescape-any-data--)
   * [`tlx.off`](#-tlxoff-)
 - [Design Notes](#design-notes)
@@ -381,8 +381,7 @@ tlx.handlers({click: (event) => { event.preventDefault(); console.log(event); })
 
 Returns a handler designed to work with click events on anchor hrefs.
 
-`object routes` - An object on which the keys are paths to match, functions that return a boolean when passed the target URL path, or regular expressions that can be used to match a URL path. The values are the functions to execute if the path is matched. The functions take
-a single keyed object as an argument holding any `:values` parsed from the URL. The event will be bound to `this`. The functions will typically instantiate a component and render it to the `this.target.view`; however, they can actually do anything. Calling `this.stopRoute()` will stop more routes from being processed for the `event`.
+`object routes` - An object on which the keys are paths to match, functions that return a boolean when passed the target URL path, or regular expressions that can be used to match a URL path. The values are the functions to execute if the path is matched. The functions take a single keyed object as an argument holding any `:values` parsed from the URL. The event will be bound to `this`. The functions will typically instantiate a component and render it to the `this.target.view`; however, they can actually do anything. Calling `this.stopRoute()` will stop more routes from being processed for the `event`.
 
 ```javascript
 // when test/1 is clicked, logs {id:1}
@@ -393,7 +392,7 @@ handlers({click:router({"test/:id":args => {
 	}})});
 ```
 
-## `HTMLElement tlx.component(string tagName,object options)`
+## `function tlx.component(string tagName,object options)`
 
 Returns a function that will create a custom element with `tagName`. Any nested HTML will be inside a
 a shadow DOM. With the exception of `template` and `customElement` the options are default values for the function
@@ -453,7 +452,7 @@ Setting `tlx.off` to truthy will prevent any template resolution and display un-
 
 ## Differential Rendering
 
-When rendering is required, tlx generates a very light weight transient virtual DOM using the `model` and template literals associated with the current `view`. This virtual DOM is recursively navigated to its leaf nodes, including attributes, which are compared with the current DOM. If the current DOM has extra nodes, they are deleted. If the virtual DOM has more nodes than the current DOM, they are appended. If a current DOM leaf has different content than a virtual DOM leaf, the current leaf is updated with the content of the virtual leaf.
+When rendering is required, tlx generates a very light weight transient virtual DOM using the `model` and template literals associated with the current `view`. This virtual DOM is recursively navigated to its leaf nodes, including attributes, which are compared with the current DOM. If the current DOM has extra nodes, they are deleted. If the virtual DOM has more nodes than the current DOM, they are appended. If a current DOM leaf has different content than a virtual DOM leaf, the current DOM leaf is updated with the content of the virtual leaf.
 
 ## Model Storage
 
@@ -475,9 +474,11 @@ more information about the risks of HTML injection.
 
 The idea of the `linkModel` function to simplify reactive binding is drawn from `preact`.
 
-Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot` and `Hyperapp`. We also got inspiration from `Ractive` and `moon`. 
+Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-3 v1.0.9b - Optimized component code.
 
 2018-12-2 v1.0.8b - Documentation updates.
 

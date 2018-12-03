@@ -236,33 +236,28 @@
 			}
 		},
 		component = (tagName,config={}) => { // config = {template,model,attributes,actions,controller,ctor,register}
-			let {template,customElement,model,attributes,actions,controller,linkModel,reactive,lifecycle={}} = config;
-			if(template && customElement) throw new Error("Component can only take a template or customElement, not both")
+			let {template,customElement,model,attributes,actions,controller,linkModel,reactive,lifecycle={},protect} = config;
+			if(template && customElement) throw new Error("Component can only take a template or customElement, not both");
+			if(!template && !customElement) throw new Error("Component must have either a template or customElement");
 			if(!customElement) {
 				const cname = tagName.split("-").map(part => `${part[0].toUpperCase()+part.substring(1)}`).join("");
-				if(typeof(template)!=="function") template = parse(template||"")
-customElement = Function("template","model","actions","reactive",`return class ${cname} extends HTMLElement {
-constructor() { super(); const shadow = this.attachShadow({mode: 'open'}),extras = {};
-while(true) {
-	try {
-		shadow.innerHTML = template(reactive ? reactor(model) : model,actions,extras); break;
-	} catch(e) {
-		const variable = getUndefined(e);
-		if(!variable) throw e;
-		model[variable]; // force get
-		extras[variable] = "";
-	}}}}`)(template,JSON.parse(JSON.stringify(model)),actions,reactive);
+				customElement = Function("template",`return class ${cname} extends HTMLElement {
+					constructor() {
+					super();
+					const shadow = this.attachShadow({mode: 'open'});
+					shadow.innerHTML = template.innerHTML||template;
+				}}`)(template);
 			}
 			customElements.define(tagName,customElement,config.extends ? {extends:config.extends} : undefined);
 			const prototype = new Component(),
-					f = function(overrides) {
+					f = function(overrides={}) {
 						const el = document.createElement(tagName),
-							config = Object.assign({controller,linkModel,lifecycle},overrides);
-						config.model = patch(model,overrides.model);
+							config = Object.assign({controller,linkModel,lifecycle,protect},overrides);
+						config.model = patch(JSON.parse(JSON.stringify(model||{})),overrides.model);
 						config.attributes = patch(Object.assign({},attributes),overrides.attributes);
 						config.actions = patch(Object.assign({},actions),overrides.actions);
 						if(lifecycle.beforeCreate) lifecycle.beforeCreate.call(el);
-						view(el,config);
+						tlx.view(el,config);
 						if(lifecycle.created) lifecycle.created.call(el);
 						return el;
 					};
@@ -316,9 +311,9 @@ while(true) {
 			routes = Object.assign({},routes);
 			return handleEvent;
 		},
-		toVDOM = (node,attributes) => {
+		toVDOM = (node,attributes,tagName=node.tagName) => {
 			if(node.nodeName==="#text") return node.textContent;
-			const vdom = {tagName:node.tagName,attributes:Object.assign({},attributes),children:[]};
+			const vdom = {tagName,attributes:Object.assign({},attributes),children:[]};
 			[].slice.call(node.attributes).forEach(attribute => {
 					vdom.attributes[attribute.name] = attribute.value;
 			});
@@ -352,21 +347,27 @@ while(true) {
 		},
 		view = (el,{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect=PROTECTED}={}) => {
 			if(template) {
-				if(typeof(template)==="string") {
-					const fragment = document.createElement(el.tagName);
-					fragment.innerHTML = template;
-					template = fragment;
-				} else if(template.tagName!==el.tagName){
-					const fragment = document.createElement(el.tagName);
-					fragment.innerHTML = template.innerHTML;
+				const type = typeof(template);
+				if(type==="object") {
+					if(template.tagName==="TEMPLATE") template.innerText = template.innerHTML;
 					Object.assign([].slice.call(template.attributes).reduce((accum,attribute) => {
 						accum[attribute.name] = attribute.value;
 						return accum;
 					},{}),attributes);
+					template = template.shadowRoot ? template.shadowRoot : template;
+				} else {
+					const fragment = document.createElement(el.tagName),
+						text = new Text(template);
+					if(fragment.shadowRoot) {
+						while(fragment.shadowRoot.lastChild) fragment.shadowRoot.removeChild(fragment.shadowRoot.lastChild);
+						fragment.shadowRoot.appendChild(text);
+					} else {
+						fragment.appendChild(text)
+					}
 					template = fragment;
 				}
 			}
-			const vdom = toVDOM(template||el,attributes);
+			const vdom = toVDOM(template||el,attributes,template && template.tagName==="TEMPLATE" ? el.tagName : undefined);
 			let mounted;
 			const linkmodel = (path,...renders) => {
 					return event => {
@@ -543,8 +544,10 @@ while(true) {
 			data => typeof(data)==="string" && data.match(/javascript:/),
 			// arrow function
 			data => typeof(data)==="string" && data.match(/\(\s*.*\s*\)\s*.*\s*=>/),
-			// self eval, might negatively impact clean itself
-			data => typeof(data)==="string" && data.match(/[Ff]unction\s*.*\s*\(\s*.*\s*\)\s*.*\s*\{\s*.*\s*\}\s*.*\s*\)\s*.*\s*\(\s*.*\s*\)/),	
+			// function
+			data => typeof(data)==="string" && data.match(/[Ff]unction\s*.*\s*\(\s*.*\s*\)\s*.*\s*\{\s*.*\s*\}\s*.*\s*\)\s*.*\s*\(\s*.*\s*\)/),
+			// Function
+			data => typeof(data)==="string" && data.match(/Function\s*.*\s*\(\s*.*\s*\)\s*/),	
 		],
 		escape: [ 
 			data => { // handle possible query strings

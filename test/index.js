@@ -77,6 +77,16 @@ describe("views",function() {
 			done();
 		});
 	});
+	it("script template",function(done) {
+		const template = document.createElement("script");
+		template.setAttribute("type","template");
+		template.innerHTML = "${data}";
+		tlx.view(el,{model:{data:"test"},template});
+		window.requestAnimationFrame(() => {
+			expect(el.innerHTML).equal("test");
+			done();
+		});
+	});
 	it("conditional template (render content)",function(done) {
 		el.innerHTML = "${show ? 'hi' : ''}";
 		tlx.view(el,{model:{show:true}});
@@ -93,23 +103,46 @@ describe("views",function() {
 			done();
 		});
 	});
+	it("conditional directive template (render content)",function(done) {
+		el.innerHTML = '<div t-if="${show}">hi</div>';
+		tlx.view(el,{model:{show:true}});
+		window.requestAnimationFrame(() => {
+			expect(el.innerHTML).equal(`<div t-if="true">hi</div>`);
+			done();
+		});
+	});
+	it("conditional directive template (don't render content)",function(done) {
+		el.innerHTML = '<div t-if="${show}">hi</div>';
+		tlx.view(el,{model:{show:false}});
+		window.requestAnimationFrame(() => {
+			expect(el.innerHTML).equal("");
+			done();
+		});
+	});
 	it("complex template",function(done) {
 		const model = {
 				show: true,
 				names: ["joe","bill","mary"]
 				},
-				template = `<div>
+				template = `<script type="template">
 					\${
 						show
 						? "<ul>" + names.reduce((accum,name) => accum += \`<li>\${name}</li>\`,"") + "</ul>"
 						: ""
 					}
-				</div>`;
+				</script>`;
 			tlx.view(el,{model,template});
 			window.requestAnimationFrame(() => {
 				expect(el.innerHTML).not.equal("");
 				done();
 			});
+	});
+	it("component",function(done) {
+		const component = tlx.component("my-component",{template:"<div>My Component</div>"}),
+		el = new component();
+		expect(el.tagName).equal("MY-COMPONENT");
+		expect(el.shadowRoot.innerHTML).equal("<div>My Component</div>");
+		done();
 	});
 	it("attribute",function(done) {
 		el.innerHTML = "${data}";
@@ -231,6 +264,47 @@ describe("views",function() {
 			});
 		});
 	});
+	it("escape function",function(done) {
+		expect(tlx.escape(function() {})).equal(undefined);
+		done();
+	});
+	it("escape function string",function(done) {
+		expect(tlx.escape("function() {}")).equal(undefined);
+		done();
+	});
+	it("escape Function string",function(done) {
+		expect(tlx.escape("Function('return true`)")).equal(undefined);
+		done();
+	});
+	it("escape arrow function",function(done) {
+		expect(tlx.escape("()=>{}")).equal(undefined);
+		done();
+	});
+	it("escape server exec",function(done) {
+		expect(tlx.escape("<?php")).equal(undefined);
+		done();
+	});
+	it("escape log",function(done) {
+		expect(tlx.escape("console.log('a')")).equal(undefined);
+		done();
+	});
+	it("escape eval",function(done) {
+		expect(tlx.escape("eval()")).equal(undefined);
+		done();
+	});
+	it("custom directive",function(done) {
+		tlx.directives["my-case"] = function(toCase,model,actions,render) {
+			switch(toCase) {
+				case "upper": return render(model,actions).innerHTML.toUpperCase();
+				case "lower": return render(model,actions).innerHTML.toLowerCase();
+				default: return render(model,actions);
+			}
+		};
+		el.innerHTML = `<div my-case="upper">upper</div>`;
+		tlx.view(el);
+		expect(el.innerHTML).equal(`<div my-case="upper">UPPER</div>`);
+		done();
+	})
 });
 
 

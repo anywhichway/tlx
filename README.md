@@ -1,4 +1,4 @@
-# TLX v1.0.9b
+# TLX v1.0.10b
 
 TLX is a small (3.6K minimized and gzipped) multi-paradigm front-end library supporting:
 
@@ -42,7 +42,7 @@ Tlx can be used in a manner that respects the separation or intergration of deve
 - [Attribute Directives](#attribute-directives)
     + [`t-if`](#-t-if-)
   * [`t-foreach`](#-t-foreach-)
-  * [Custom Directives](#custom-directives)
+  * [Custom Attribute Directives](#custom-attribute-directives)
 - [Server Side Rendering](#server-side-rendering)
 - [API](#api)
   * [`undefined tlx.protect()``](#-undefined-tlxprotect----)
@@ -50,9 +50,10 @@ Tlx can be used in a manner that respects the separation or intergration of deve
   * [`HTMLElement tlx.view(HTMLElement el[,object options])`](#-htmlelement-tlxview-htmlelement-el--object-options---)
   * [`function tlx.handlers(object handlers)`](#-function-tlxhandlers-object-handlers--)
   * [`function tlx.router(object routes)`](#-function-tlxrouter-object-routes--)
-  * [`function tlx.component(string tagName,object options)`](#-htmlelement-tlxcomponent-string-tagname-object-options--)
+  * [`function tlx.component(string tagName,object options)`](#-function-tlxcomponent-string-tagname-object-options--)
   * [`any tlx.escape(any data)`](#-any-tlxescape-any-data--)
   * [`tlx.off`](#-tlxoff-)
+- [Other Reading](#other-reading)
 - [Design Notes](#design-notes)
   * [Differential Rendering](#differential-rendering)
   * [Model Storage](#model-storage)
@@ -247,7 +248,7 @@ A single argument is provided to `t-foreach`, the array to process. It will prov
 </table>
 ```
 
-## Custom Directives
+## Custom Attribute Directives
 
 Custom directives can be added to the keyed object `tlx.directives`. They should be functions with the signature `(any attributeValue, object model,object actions,function render)`. The `render` function is generated internally by tlx. It returns the DOM element currently being processed. It has the call signature `(object model,object actions)`.
 
@@ -276,7 +277,7 @@ Below is the definition of `t-foreach`.
 },
 ```
 
-Here is an example that changes the case all nested content:
+Here is an example that changes the case of all nested content:
 
 ```
 tlx.directives["my-case"] = function(toCase,model,actions,render) {
@@ -292,7 +293,7 @@ tlx.directives["my-case"] = function(toCase,model,actions,render) {
 
 When run in a NodeJS server context, tlx loads the `jsdom` package for DOM simulation. To the degree that `JSDOM` supports what you need, you can use tlx on the server just like on the client. Tlx also exposes `JSDOM` as a convenience so you don't have to add it as a dependency to your own code.
 
-The typical use case would be to load a file containing a template,p ass its string contents to `tlx.view`, and then write the HTML to a response object. The code below uses syncrhonous calls and does no error handling to keep the example simple, e.g.
+The typical use case would be to load a file containing a template, pass it's string contents to `tlx.view`, and then write the HTML to a response object. The code below uses syncrhonous calls and does no error handling to keep the example simple, e.g.
 
 The contents of "mytemplate.html":
 
@@ -357,9 +358,9 @@ Returns a `view` of the specified `template` bound to the DOM element `el`. If n
 
 `boolean linkModel` - If set to truthy, then the `model` is automatically updated with values from form fields having a `name` attribute by using the `name` attribute value as the key on the model.
 
-`object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeMount`, `mounted`, `beforeUpdate`, `updated`. Because it is not a component a view does not support `beforeCreate` and `created`. Because there is no vdom and the DOM automatically manages disposal there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
+`object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeMount`, `mounted`, `beforeUpdate`, `updated`. Because it is not a component, a view does not support `beforeCreate` and `created`. Because the VDOM is tiny and highly ephemeral and the DOM automatically manages disposal of un-used nodes, there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
 
-`boolean protect` - Protect all input elements in the view. To protect just a single element, add the attribute "protect" to the element. If you have set a style for invalid input it will be used for invalid elements, e.g.
+`boolean protect` - Protect all input elements in the view. To protect just a single element, add the attribute `protect` to the element. If you have set a style for invalid input, it will be used for invalid elements, e.g.
 
 ```
 input:invalid { 
@@ -448,6 +449,14 @@ return data
 
 Setting `tlx.off` to truthy will prevent any template resolution and display un-resolved string template literal notation.
 
+# Other Reading
+
+[Direct HTML Templating with TLX](https://medium.com/@anywhichway/direct-html-templating-with-tlx-57b1ad636b4a)
+
+[HTML Injection Protection With TLX](https://medium.com/@anywhichway/html-injection-protection-with-tlx-35bda6a4c573)
+
+[Custom Attribute Directives With TLX](https://medium.com/@anywhichway/custom-attribute-directives-with-tlx-13fd53bf2b9a)
+
 # Design Notes
 
 ## Differential Rendering
@@ -477,6 +486,8 @@ The idea of the `linkModel` function to simplify reactive binding is drawn from 
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-4 v1.0.10b - Documentation updates. Removed a requestAnimationFrame that was causing issues with delays on custom attribute directives.
 
 2018-12-3 v1.0.9b - Optimized component code.
 

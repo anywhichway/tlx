@@ -40,20 +40,9 @@
 		const extras = {};
 		// if source and target are text
 		if(typeof(source)==="string" && target.nodeName==="#text") {
-			let value;
-			while(true) {
-				try {
-					value = Function("model={}","actions={}","extras={}","with(model) { with(actions) { with(extras) { return `" + source + "`}}}")(model,actions,extras);
-					break;
-				} catch(e) {
-					const variable = getUndefined(e);
-					if(!variable) throw e;
-					model[variable]; // force get for dependency tracking
-					extras[variable] = "";
-				}
-			}
+			const value = resolve(source,model,actions,extras);
 			// update is data not the same
-			if(target.data!==value) requestAnimationFrame(() => target.data = value);
+			if(target.data!==value) target.data = value;
 			return;
 		}
 		// if tags aren't the same
@@ -72,27 +61,10 @@
 		Object.keys(source.attributes).forEach(aname => {
 			let value = source.attributes[aname],
 			 type = typeof(value);
-			const	unary = value[0]==="$" && value[1]==="{" && value[value.length-1]==="}",
-				directive = directives[aname]||tlx.directives[aname];
+			const	directive = directives[aname]||tlx.directives[aname];
 			if(directive) directed = true;
-			if(type==="string") {
-				while(true) {
-					try {
-						if(unary) {
-							value = Function("model={}","actions={}","extras={}","__interpolate","with(model) { with(actions) { with(extras) { return __interpolate`" + value + "`[0]}}}")(model,actions,extras,interpolate);
-						} else {
-							value = Function("model={}","actions={}","extras={}","with(model) { with(actions) { with(extras) { return `" + value + "`}}}")(model,actions,extras);
-						}
-						type = typeof(value);
-						break;
-					} catch(e) {
-						const variable = getUndefined(e);
-						if(!variable) throw e;
-						model[variable]; // force get for dependency tracking
-						extras[variable] = "";
-					}
-				}
-			}
+			value = resolve(value,model,actions,extras);
+			type = typeof(value);
 			// replace different
 			if(value==null) {
 				target.removeAttribute(aname);
@@ -175,11 +147,26 @@
 			}
 		},
 		interpolate = (template,...interpolations) => interpolations,
-		parse = (template, ...interpolations) => {
-			if(Array.isArray(template)) { // was called as a string literal interpolator
-				template = template.reduce((accum,chunk,i) => accum += chunk + (i<template.length-1 ? interpolations[i]  : ""),"");
+		resolve = (value,model,actions,extras) => {
+			if(typeof(value)==="string") {
+				const	unary = value[0]==="$" && value[1]==="{" && value[value.length-1]==="}";
+				while(true) {
+					try {
+						if(unary) {
+							value = Function("model={}","actions={}","extras={}","__interpolate","with(model) { with(actions) { with(extras) { return __interpolate`" + value + "`[0]}}}")(model,actions,extras,interpolate);
+						} else {
+							value = Function("model={}","actions={}","extras={}","with(model) { with(actions) { with(extras) { return `" + value + "`}}}")(model,actions,extras);
+						}
+						break;
+					} catch(e) {
+						const variable = getUndefined(e);
+						if(!variable) throw e;
+						model[variable]; // force get for dependency tracking
+						extras[variable] = "";
+					}
+				}
 			}
-			return Function("model={}","actions={}","extras={}","with(model) { with(actions) { with(extras) { return `" + template + "`}}}");
+			return value;
 		},
 		patch = (target,source) => {
 			source = Object.assign(target,source);

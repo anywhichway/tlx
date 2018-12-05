@@ -48,13 +48,13 @@
 		// if tags aren't the same
 		if(source.tagName!==target.tagName) {
 			// replace the target with the source
-			!target.parentNode || requestAnimationFrame(() => target.parentNode.replaceChild(fromVDOM(source),target));
+			!target.parentNode || target.parentNode.replaceChild(fromVDOM(source),target);
 			return;
 		}
 		// loop through target attributes
 		[].slice.call(target.attributes).forEach(attribute => {
 			// remove where does not exist in source
-			if(source.attributes[attribute.name]==null) requestAnimationFrame(()=>target.removeAttribute(attribute.name));
+			if(source.attributes[attribute.name]==null) target.removeAttribute(attribute.name);
 		});
 		// loop through source attributes
 		let directed;
@@ -70,7 +70,7 @@
 				target.removeAttribute(aname);
 				delete target[aname];
 			} else if(["boolean","number","string"].includes(type)) {
-				if(value!==target.getAttribute(aname)) requestAnimationFrame(() => target.setAttribute(aname,value));
+				if(value!==target.getAttribute(aname)) target.setAttribute(aname,value);
 			} else if(value!==target[aname]) {
 				target[aname] = value;
 			}
@@ -502,9 +502,11 @@
 	},
 	directives = {
 			"t-foreach": (array,model,actions,render) => {
-				array.forEach((value,index) => {
-					render(Object.assign({value,index,array},model),actions);
-				});
+				if(Array.isArray(array)) { 
+					array.forEach((value,index) => {
+						render({value,index,array},actions);
+					});
+				}
 				return true;
 			},
 			"t-if": (bool,model,actions,render) => {

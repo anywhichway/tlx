@@ -1,4 +1,4 @@
-# TLX v1.0.10b
+# TLX v1.0.11b
 
 TLX is a small (3.6K minimized and gzipped) multi-paradigm front-end library supporting:
 
@@ -53,6 +53,7 @@ Tlx can be used in a manner that respects the separation or intergration of deve
   * [`function tlx.component(string tagName,object options)`](#-function-tlxcomponent-string-tagname-object-options--)
   * [`any tlx.escape(any data)`](#-any-tlxescape-any-data--)
   * [`tlx.off`](#-tlxoff-)
+- [Performance](#performance)
 - [Other Reading](#other-reading)
 - [Design Notes](#design-notes)
   * [Differential Rendering](#differential-rendering)
@@ -449,6 +450,10 @@ return data
 
 Setting `tlx.off` to truthy will prevent any template resolution and display un-resolved string template literal notation.
 
+# Performance
+
+Tlx generally updates at about 60 FPS regardless of % of nodes changing. For a document with hundreds of nodes at between a 50% and 100% change rate this is comparable to most other front end toolkits. At lower rates of change, Tlx is not as fast as many other toolkits such as Aurelia, React, Vue. For most applications Tlx performance will be more than adequate.
+
 # Other Reading
 
 [Direct HTML Templating with TLX](https://medium.com/@anywhichway/direct-html-templating-with-tlx-57b1ad636b4a)
@@ -486,6 +491,8 @@ The idea of the `linkModel` function to simplify reactive binding is drawn from 
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-4 v1.0.11b - Updated `dbmon` benchmark. Running at 58 FPS under heavy load.
 
 2018-12-4 v1.0.10b - Documentation updates. Removed a requestAnimationFrame that was causing issues with delays on custom attribute directives.
 

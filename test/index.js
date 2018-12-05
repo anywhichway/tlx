@@ -87,7 +87,7 @@ describe("views",function() {
 			done();
 		});
 	});
-	it("conditional template (render content)",function(done) {
+	it("conditional (render content)",function(done) {
 		el.innerHTML = "${show ? 'hi' : ''}";
 		tlx.view(el,{model:{show:true}});
 		window.requestAnimationFrame(() => {
@@ -95,7 +95,7 @@ describe("views",function() {
 			done();
 		});
 	});
-	it("conditional template (don't render content)",function(done) {
+	it("conditional (don't render content)",function(done) {
 		el.innerHTML = "${show ? 'hi' : ''}";
 		tlx.view(el,{model:{show:false}});
 		window.requestAnimationFrame(() => {
@@ -103,7 +103,7 @@ describe("views",function() {
 			done();
 		});
 	});
-	it("conditional directive template (render content)",function(done) {
+	it("conditional directive (render content)",function(done) {
 		el.innerHTML = '<div t-if="${show}">hi</div>';
 		tlx.view(el,{model:{show:true}});
 		window.requestAnimationFrame(() => {
@@ -111,11 +111,27 @@ describe("views",function() {
 			done();
 		});
 	});
-	it("conditional directive template (don't render content)",function(done) {
+	it("conditional directive (don't render content)",function(done) {
 		el.innerHTML = '<div t-if="${show}">hi</div>';
 		tlx.view(el,{model:{show:false}});
 		window.requestAnimationFrame(() => {
 			expect(el.innerHTML).equal("");
+			done();
+		});
+	});
+	it("for directive",function(done) {
+		el.innerHTML = '<div t-for:i:of="${[1,2,3]}">${i}</div>';
+		tlx.view(el);
+		window.requestAnimationFrame(() => {
+			expect(el.innerHTML).equal('<div t-for:i:of="${[1,2,3]}">123</div>');
+			done();
+		});
+	});
+	it("foreach directive",function(done) {
+		el.innerHTML = '<div t-foreach="${[1,2,3]}">${value}</div>';
+		tlx.view(el);
+		window.requestAnimationFrame(() => {
+			expect(el.innerHTML).equal('<div t-foreach="${[1,2,3]}">123</div>');
 			done();
 		});
 	});

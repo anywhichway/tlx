@@ -1,4 +1,4 @@
-# TLX v1.0.11b
+# TLX v1.0.12b
 
 TLX is a small (3.6K minimized and gzipped) multi-paradigm front-end library supporting:
 
@@ -8,7 +8,7 @@ TLX is a small (3.6K minimized and gzipped) multi-paradigm front-end library sup
 
 3) automatic or manual creation of standards compliant custom elements and components,
 
-4) `t-foreach` and `t-if` attribute directives,
+4) `t-for`, `t-foreach` and `t-if` attribute directives,
 
 5) custom attribute directives in as little as one line of code,
 
@@ -40,7 +40,8 @@ Tlx can be used in a manner that respects the separation or intergration of deve
   * [Manual State Updating and Re-Rendering](#manual-state-updating-and-re-rendering)
   * [Templating](#templating)
 - [Attribute Directives](#attribute-directives)
-    + [`t-if`](#-t-if-)
+  * [`t-if`](#-t-if-)
+  * [`t-for:varname:in|of`](#-t-for:varname:in|of-)
   * [`t-foreach`](#-t-foreach-)
   * [Custom Attribute Directives](#custom-attribute-directives)
 - [Server Side Rendering](#server-side-rendering)
@@ -225,7 +226,7 @@ tlx.view(el,{model,template});
 
 TLX comes with two built-in attribute directives, `t-if` and `t-foreach`.
 
-### `t-if`
+## `t-if`
 
 If the value of `t-if` is truthy, then the element and its nested elements will be displayed,e.g.
 
@@ -237,9 +238,17 @@ If the value of `t-if` is truthy, then the element and its nested elements will 
 <div t-if="false">Will not be shown</div>
 ```
 
+## `t-for:varname:in|of`
+
+A single argument is provided to `t-for`, the object to process. It will provide the key or item bound to `varname` any nested string literal templates, e.g.
+
+```
+<div t-for:i:of="${[1,2,3]}">${i}</div>
+```
+
 ## `t-foreach`
 
-A single argument is provided to `t-foreach`, the array to process. It will provide the model properties `value` and `index` automatically to any nested string literal templates, e.g.
+A single argument is provided to `t-foreach`, the array to process. It will provide the properties `value` and `index` automatically to any nested string literal templates, e.g.
 
 ```
 <table t-foreach="[1,2,3]">
@@ -288,6 +297,35 @@ tlx.directives["my-case"] = function(toCase,model,actions,render) {
 		default: return render(model,actions);
 	}
 }
+```
+
+More advanced use of custom directives can be made using `:` delimited attribute names. Below is the internal definition of `t-for` supported by adding a `parse` method to the directive handler itself. The `parse` function takes the attribute `directive` as a string, its resolved `value`, and the current `scope` for `render`. It is called automatically by the internals of tlx. Its job is to parse the directive and use the parsed values and the resolved `value` to add data to the `scope`.
+
+```
+const tfor(items,scope,actions,render) => {
+	// render each item in the list provided to tfor, variables are bound by the parse auxilliary function
+	items.forEach(item => render(item,actions));
+	return true;
+};
+tfor.parse = (directive,value,scope) => {
+	// directive is of the form "t-for:varname:looptype"
+	const [_,vname,looptype] = directive.split(":"),
+		items = [];
+	// assemble all the possible values into an array of scopes to be used by tfor itself
+	// to keep memory low we could use a generator, but that would require transpiling
+	if(looptype==="in") {
+		for(let key in value) {
+			items.push(Object.assign({},scope,{[vname]:key}))
+		}
+	} else if(looptype==="of") {
+		for(let item of value) {
+			items.push(Object.assign({},scope,{[vname]:item}))
+		}
+	} else {
+		throw new TypeError(`loop type must be 'in' or 'of' for ${directive}`);
+	}
+	return items;
+};
 ```
 
 # Server Side Rendering
@@ -491,6 +529,8 @@ The idea of the `linkModel` function to simplify reactive binding is drawn from 
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-5 v1.0.12b - Added advanced custom directives and `t-for:varName:loopType`.
 
 2018-12-4 v1.0.11b - Updated `dbmon` benchmark. Running at 58 FPS under heavy load.
 

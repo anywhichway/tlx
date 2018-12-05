@@ -35,12 +35,12 @@
 	
 	//update target DOM node from source DOM node
 	//make changes only where necessary
-	function updateDOM(source,target,model,actions,view=target) {
+	function updateDOM(source,target,scope,actions,view=target) {
 		Object.defineProperty(target,"view",{enumerable:false,configurable:true,writable:true,value:view});
 		const extras = {};
 		// if source and target are text
 		if(typeof(source)==="string" && target.nodeName==="#text") {
-			const value = resolve(source,model,actions,extras);
+			const value = resolve(source,scope,actions,extras);
 			// update is data not the same
 			if(target.data!==value) target.data = value;
 			return;
@@ -61,9 +61,10 @@
 		Object.keys(source.attributes).forEach(aname => {
 			let value = source.attributes[aname],
 			 type = typeof(value);
-			const	directive = directives[aname]||tlx.directives[aname];
+			const [dname] = aname.split(":"),
+				directive = directives[dname]||tlx.directives[dname];
 			if(directive) directed = true;
-			value = resolve(value,model,actions,extras);
+			value = resolve(value,scope,actions,extras);
 			type = typeof(value);
 			// replace different
 			if(value==null) {
@@ -76,18 +77,19 @@
 			}
 			if(directive) { 
 				while(target.lastChild) target.removeChild(target.lastChild); 
-				const render = (model,actions) => {
+				const render = (scope,actions) => {
 					source.children.forEach(child => {
 						if(typeof(child)==="string") {
 							 target.appendChild(new Text(child));
 						} else {
 							 target.appendChild(document.createElement(child.tagName));
 						}
-						updateDOM(child,target.lastChild,model,actions,view);
+						updateDOM(child,target.lastChild,scope,actions,view);
 					});
 					return target;
 				};
-				const result = directive(value,model,actions,render),
+				if(directive.parse) value = directive.parse(aname,value,scope);
+				const result = directive(value,scope,actions,render),
 					rtype = typeof(result);
 				if(!result) {
 					target.parentElement.removeChild(target);
@@ -113,7 +115,7 @@
 			source.children.forEach((child,i) => {
 				// update if in range
 				if(i<targets.length) {
-					updateDOM(child,targets[i],model,actions,view);
+					updateDOM(child,targets[i],scope,actions,view);
 					return;
 				}
 				if(typeof(child)==="string") {
@@ -121,7 +123,7 @@
 				} else {
 					target.appendChild(document.createElement(child.tagName));
 				}
-				updateDOM(child,target.lastChild,model,actions,view);
+				updateDOM(child,target.lastChild,scope,actions,view);
 			});
 		}
 	}
@@ -147,21 +149,22 @@
 			}
 		},
 		interpolate = (template,...interpolations) => interpolations,
-		resolve = (value,model,actions,extras) => {
+		resolve = (value,scope,actions) => {
 			if(typeof(value)==="string") {
-				const	unary = value[0]==="$" && value[1]==="{" && value[value.length-1]==="}";
+				const	extras = {},
+					unary = value[0]==="$" && value[1]==="{" && value[value.length-1]==="}";
 				while(true) {
 					try {
 						if(unary) {
-							value = Function("model={}","actions={}","extras={}","__interpolate","with(model) { with(actions) { with(extras) { return __interpolate`" + value + "`[0]}}}")(model,actions,extras,interpolate);
+							value = Function("scope={}","actions={}","extras={}","__interpolate","with(scope.__t_model) { with(scope) { with(actions) { with(extras) { return __interpolate`" + value + "`[0]}}}}")(scope,actions,extras,interpolate);
 						} else {
-							value = Function("model={}","actions={}","extras={}","with(model) { with(actions) { with(extras) { return `" + value + "`}}}")(model,actions,extras);
+							value = Function("scope={}","actions={}","extras={}","with(scope.__t_model) { with(scope) { with(actions) { with(extras) { return `" + value + "`}}}}")(scope,actions,extras);
 						}
 						break;
 					} catch(e) {
 						const variable = getUndefined(e);
 						if(!variable) throw e;
-						model[variable]; // force get for dependency tracking
+						scope.__t_model[variable]; // force get for dependency tracking
 						extras[variable] = "";
 					}
 				}
@@ -354,40 +357,41 @@
 					template = fragment;
 				}
 			}
-			const eltag = template && (template.tagName==="TEMPLATE" || (template.tagName==="SCRIPT" && template.type==="template")) ? el.tagName : undefined,
-					vdom = toVDOM(template||el,attributes,eltag);
 			let mounted;
-			const linkmodel = (path,...renders) => {
-					return event => {
-						const parts = path.split(".");
-						// walk down the parts of the path on the model
-						let final = parts.pop(),
-							key,
-							node = model;
-						while((key = parts.shift())) {
-							node = node[key];
-							if(!node) {
-								node[key] = {}; // created undefined properties
+			const scope = {__t_model:model},
+					eltag = template && (template.tagName==="TEMPLATE" || (template.tagName==="SCRIPT" && template.type==="template")) ? el.tagName : undefined,
+					vdom = toVDOM(template||el,attributes,eltag),
+					linkmodel = (path,...renders) => {
+						return event => {
+							const parts = path.split(".");
+							// walk down the parts of the path on the model
+							let final = parts.pop(),
+								key,
+								node = scope.__t_model;
+							while((key = parts.shift())) {
+								node = node[key];
+								if(!node) {
+									node[key] = {}; // created undefined properties
+								}
 							}
+							node[final] = event.target.value; // set the value
+							renders.forEach(selector => document.querySelectorAll(selector).forEach(el => !el.render || el.render()));
 						}
-						node[final] = event.target.value; // set the value
-						renders.forEach(selector => document.querySelectorAll(selector).forEach(el => !el.render || el.render()));
-					}
-				},
-				render = (data=model,partial) => {
-					if(tlx.off || !el.parentElement) return;
-					const currentview = CURRENTVIEW;
-					if(partial) data = patch(model,data);
-					else if(data!==model) Object.assign(model,data);
-					CURRENTVIEW = el;
-					if(mounted && lifecycle.beforeUpdate) lifecycle.beforeUpdate.call(el);
-					updateDOM(vdom,el,model,actions);
-					CURRENTVIEW = currentview;
-					if(mounted && lifecycle.updated) lifecycle.updated.call(el);
-					return el;
-				};
+					},
+					render = (data=scope,partial) => {
+						if(tlx.off || !el.parentElement) return;
+						const currentview = CURRENTVIEW,
+							local = data===scope ? scope : {__t_model:data};
+						if(partial) patch(model,data);
+						CURRENTVIEW = el;
+						if(mounted && lifecycle.beforeUpdate) lifecycle.beforeUpdate.call(el);
+						updateDOM(vdom,el,local,actions);
+						CURRENTVIEW = currentview;
+						if(mounted && lifecycle.updated) lifecycle.updated.call(el);
+						return el;
+					};
 			if(lifecycle.beforeMount) lifecycle.beforeMount.call(el);
-			render(model);
+			render(scope);
 			mounted = true;
 			if(lifecycle.mounted) lifecycle.mounted.call(el);
 			if(controller) {
@@ -501,20 +505,43 @@
 	  return el;
 	},
 	directives = {
-			"t-foreach": (array,model,actions,render) => {
+			"t-for": (items,scope,actions,render) => {
+				items.forEach(item => render(item,actions));
+				return true;
+			},
+			"t-foreach": (array,scope,actions,render) => {
 				if(Array.isArray(array)) { 
 					array.forEach((value,index) => {
-						render({value,index,array},actions);
+						render(Object.assign(scope,{value,index,array}),actions);
 					});
 				}
 				return true;
 			},
-			"t-if": (bool,model,actions,render) => {
+			"t-if": (bool,scope,actions,render) => {
 				if(bool) {
-					return render(model,actions);
+					return render(scope,actions);
 				}
 			}
 	};
+	directives["t-for"].parse = (directive,value,scope) => {
+		// directive is of the form "t-for:varname:looptype"
+		const [_,vname,looptype] = directive.split(":"),
+			items = [];
+		// assemble all the possible values into an array of scopes to be used by tfor itself
+		// to keep memory low we could use a generator, but that would require transpiling
+		if(looptype==="in") {
+			for(let key in value) {
+				items.push(Object.assign({},scope,{[vname]:key}))
+			}
+		} else if(looptype==="of") {
+			for(let item of value) {
+				items.push(Object.assign({},scope,{[vname]:item}))
+			}
+		} else {
+			throw new TypeError(`loop type must be 'in' or 'of' for ${directive}`);
+		}
+		return items;
+	},
 	// default options/support for coerce, accept, reject, escape, eval
 	clean.options = {
 		coerce: [],

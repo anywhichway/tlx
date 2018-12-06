@@ -1,4 +1,4 @@
-# TLX v1.0.12b
+# TLX v1.0.13b
 
 TLX is a small (3.6K minimized and gzipped) multi-paradigm front-end library supporting:
 
@@ -41,7 +41,7 @@ Tlx can be used in a manner that respects the separation or intergration of deve
   * [Templating](#templating)
 - [Attribute Directives](#attribute-directives)
   * [`t-if`](#-t-if-)
-  * [`t-for:varname:in|of`](#-t-for:varname:in|of-)
+  * [`t-for:varname:in|of`](#-t-for-varname-in-of-)
   * [`t-foreach`](#-t-foreach-)
   * [Custom Attribute Directives](#custom-attribute-directives)
 - [Server Side Rendering](#server-side-rendering)
@@ -299,33 +299,25 @@ tlx.directives["my-case"] = function(toCase,model,actions,render) {
 }
 ```
 
-More advanced use of custom directives can be made using `:` delimited attribute names. Below is the internal definition of `t-for` supported by adding a `parse` method to the directive handler itself. The `parse` function takes the attribute `directive` as a string, its resolved `value`, and the current `scope` for `render`. It is called automatically by the internals of tlx. Its job is to parse the directive and use the parsed values and the resolved `value` to add data to the `scope`.
+More advanced use of custom directives can be made using `:` delimited attribute names. Below is the internal definition of `t-for` supported by a fourth argument which is an object that describes the directive, `{raw,resolved,element}`. `raw` is the directive name as it exists in HTML, e.g. `t-for:i:of`. `resolved` is ussually the same as `raw`; however, tlx supports dynamic resolution of directive arguments, so you might get something like this, `{raw:"t-for:${varName}:of",resolved:"t-for:i:of"}`. `element` is just the DOM element being processed.
 
 ```
-const tfor(items,scope,actions,render) => {
-	// render each item in the list provided to tfor, variables are bound by the parse auxilliary function
-	items.forEach(item => render(item,actions));
-	return true;
-};
-tfor.parse = (directive,value,scope) => {
+"t-for": (value,scope,actions,render,{raw,resolved}={}) => {
 	// directive is of the form "t-for:varname:looptype"
-	const [_,vname,looptype] = directive.split(":"),
-		items = [];
-	// assemble all the possible values into an array of scopes to be used by tfor itself
-	// to keep memory low we could use a generator, but that would require transpiling
+	const [_,vname,looptype] = resolved.split(":");
 	if(looptype==="in") {
 		for(let key in value) {
-			items.push(Object.assign({},scope,{[vname]:key}))
+			render(Object.assign({},scope,{[vname]:key}))
 		}
 	} else if(looptype==="of") {
 		for(let item of value) {
-			items.push(Object.assign({},scope,{[vname]:item}))
+			render(Object.assign({},scope,{[vname]:item}))
 		}
 	} else {
-		throw new TypeError(`loop type must be 'in' or 'of' for ${directive}`);
+		throw new TypeError(`loop type must be 'in' or 'of' for ${raw}`);
 	}
-	return items;
-};
+	return true;
+}
 ```
 
 # Server Side Rendering
@@ -500,11 +492,12 @@ Tlx generally updates at about 60 FPS regardless of % of nodes changing. For a d
 
 [Custom Attribute Directives With TLX](https://medium.com/@anywhichway/custom-attribute-directives-with-tlx-13fd53bf2b9a)
 
+
 # Design Notes
 
 ## Differential Rendering
 
-When rendering is required, tlx generates a very light weight transient virtual DOM using the `model` and template literals associated with the current `view`. This virtual DOM is recursively navigated to its leaf nodes, including attributes, which are compared with the current DOM. If the current DOM has extra nodes, they are deleted. If the virtual DOM has more nodes than the current DOM, they are appended. If a current DOM leaf has different content than a virtual DOM leaf, the current DOM leaf is updated with the content of the virtual leaf.
+Tlx generates a very light weight static virtual DOM using the `model` and template literals associated with the current `view`. This virtual DOM is recursively navigated to its leaf nodes, including attributes, which are resolved and then compared with the current DOM. If the current DOM has extra nodes, they are deleted. If the virtual DOM has more nodes than the current DOM, they are appended. If a current DOM leaf has different content than a virtual DOM leaf, the current DOM leaf is updated with the content of the virtual leaf.
 
 ## Model Storage
 
@@ -526,9 +519,13 @@ more information about the risks of HTML injection.
 
 The idea of the `linkModel` function to simplify reactive binding is drawn from `preact`.
 
+The idea of using `:` to delimit arguments for custom directives is drawn from `Vue`.
+
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-6 v1.0.13b - Added support for dynamic arguments in custom directives. Simplified custom directive definition.
 
 2018-12-5 v1.0.12b - Added advanced custom directives and `t-for:varName:loopType`.
 

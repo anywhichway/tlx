@@ -71,7 +71,13 @@
 				target.removeAttribute(aname);
 				delete target[aname];
 			} else if(["boolean","number","string"].includes(type)) {
-				if(value!==target.getAttribute(aname)) target.setAttribute(aname,value);
+				if(value!==target.getAttribute(aname)) {
+					try {
+						target.setAttribute(aname,value);
+					} catch(e) {
+						; // just ignore, may be an attribute with an unresolved argument, e.g. t-bind:${aname}
+					}
+				}
 			} else if(value!==target[aname]) {
 				target[aname] = value;
 			}
@@ -88,8 +94,7 @@
 					});
 					return target;
 				};
-				if(directive.parse) value = directive.parse(aname,value,scope);
-				const result = directive(value,scope,actions,render),
+				const result = directive(value,scope,actions,render,{element:target,raw:aname,resolved:aname.indexOf("${")>=0 ? resolve(aname,scope,actions,extras) : aname}),
 					rtype = typeof(result);
 				if(!result) {
 					target.parentElement.removeChild(target);
@@ -505,8 +510,20 @@
 	  return el;
 	},
 	directives = {
-			"t-for": (items,scope,actions,render) => {
-				items.forEach(item => render(item,actions));
+			"t-for": (value,scope,actions,render,{raw,resolved}={}) => {
+				// directive is of the form "t-for:varname:looptype"
+				const [_,vname,looptype] = resolved.split(":");
+				if(looptype==="in") {
+					for(let key in value) {
+						render(Object.assign({},scope,{[vname]:key}))
+					}
+				} else if(looptype==="of") {
+					for(let item of value) {
+						render(Object.assign({},scope,{[vname]:item}))
+					}
+				} else {
+					throw new TypeError(`loop type must be 'in' or 'of' for ${raw}`);
+				}
 				return true;
 			},
 			"t-foreach": (array,scope,actions,render) => {
@@ -523,25 +540,6 @@
 				}
 			}
 	};
-	directives["t-for"].parse = (directive,value,scope) => {
-		// directive is of the form "t-for:varname:looptype"
-		const [_,vname,looptype] = directive.split(":"),
-			items = [];
-		// assemble all the possible values into an array of scopes to be used by tfor itself
-		// to keep memory low we could use a generator, but that would require transpiling
-		if(looptype==="in") {
-			for(let key in value) {
-				items.push(Object.assign({},scope,{[vname]:key}))
-			}
-		} else if(looptype==="of") {
-			for(let item of value) {
-				items.push(Object.assign({},scope,{[vname]:item}))
-			}
-		} else {
-			throw new TypeError(`loop type must be 'in' or 'of' for ${directive}`);
-		}
-		return items;
-	},
 	// default options/support for coerce, accept, reject, escape, eval
 	clean.options = {
 		coerce: [],

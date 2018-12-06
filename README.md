@@ -224,7 +224,7 @@ tlx.view(el,{model,template});
 
 # Attribute Directives
 
-TLX comes with three built-in attribute directives, `t-if` and `t-foreach`.
+TLX comes with three built-in attribute directives, `t-if`, `t-for` and `t-foreach`.
 
 ## `t-if`
 
@@ -240,7 +240,7 @@ If the value of `t-if` is truthy, then the element and its nested elements will 
 
 ## `t-for:varname:in|of`
 
-A single argument is provided to `t-for`, the object to process. It will provide the key or item bound to `varname` any nested string literal templates, e.g.
+The value provided to `t-for`, is the object to process. `t-for` will provide the key or item bound to `varname` for any nested string literal templates, e.g.
 
 ```
 <div t-for:i:of="${[1,2,3]}">${i}</div>
@@ -248,7 +248,7 @@ A single argument is provided to `t-for`, the object to process. It will provide
 
 ## `t-foreach`
 
-A single argument is provided to `t-foreach`, the array to process. It will provide the properties `value` and `index` automatically to any nested string literal templates, e.g.
+The value provided to `t-foreach`, is the array to process. `t-foreach` will provide the properties `value` and `index` automatically to any nested string literal templates, e.g.
 
 ```
 <table t-foreach="[1,2,3]">

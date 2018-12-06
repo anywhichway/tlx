@@ -224,7 +224,7 @@ tlx.view(el,{model,template});
 
 # Attribute Directives
 
-TLX comes with two built-in attribute directives, `t-if` and `t-foreach`.
+TLX comes with three built-in attribute directives, `t-if` and `t-foreach`.
 
 ## `t-if`
 

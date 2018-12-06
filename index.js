@@ -63,7 +63,6 @@
 			 type = typeof(value);
 			const [dname] = aname.split(":"),
 				directive = directives[dname]||tlx.directives[dname];
-			if(directive) directed = true;
 			value = resolve(value,scope,actions,extras);
 			type = typeof(value);
 			// replace different
@@ -99,9 +98,11 @@
 				if(!result) {
 					target.parentElement.removeChild(target);
 				} else if(rtype==="string") {
-					 target.innerHTML = result;
-				} else if(rtype==="object" && result!==target) {
-					target.parentElement.replaceNode(result,target);
+						directed = true;
+						target.innerHTML = result;
+				} else if(rtype==="object" && result instanceof HTMLElement) {
+					directed = true;
+					if(result!==target) target.parentElement.replaceNode(result,target);
 				}
 			}
 		});
@@ -510,7 +511,7 @@
 	  return el;
 	},
 	directives = {
-			"t-for": (value,scope,actions,render,{raw,resolved}={}) => {
+			"t-for": (value,scope,actions,render,{raw,resolved,element}={}) => {
 				// directive is of the form "t-for:varname:looptype"
 				const [_,vname,looptype] = resolved.split(":");
 				if(looptype==="in") {
@@ -524,15 +525,15 @@
 				} else {
 					throw new TypeError(`loop type must be 'in' or 'of' for ${raw}`);
 				}
-				return true;
+				return element;
 			},
-			"t-foreach": (array,scope,actions,render) => {
+			"t-foreach": (array,scope,actions,render,{element}={}) => {
 				if(Array.isArray(array)) { 
 					array.forEach((value,index) => {
 						render(Object.assign(scope,{value,index,array}),actions);
 					});
 				}
-				return true;
+				return element;
 			},
 			"t-if": (bool,scope,actions,render) => {
 				if(bool) {

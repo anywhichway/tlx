@@ -1,0 +1,16 @@
+<html lang="en">
+<body>
+<a id="1" t-bind:href="${url}">My Server</a>
+<script src="../index.js"></script>
+<script>
+// add custom directive
+tlx.directives["t-bind"] = function(value,model,actions,render,{resolved,element}={}) {
+	const [_,aname] = resolved.split(":");
+	element.setAttribute(aname,value);
+	return true;
+}
+// bind field to model
+tlx.view(document.getElementById("1"),{model:{url:"http://localhost"}})
+</script>
+</body>
+</html>

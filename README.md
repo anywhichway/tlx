@@ -1,4 +1,4 @@
-# TLX v1.0.13b
+# TLX v1.0.14b
 
 TLX is a small (3.6K minimized and gzipped) multi-paradigm front-end library supporting:
 
@@ -260,7 +260,7 @@ A single argument is provided to `t-foreach`, the array to process. It will prov
 
 ## Custom Attribute Directives
 
-Custom directives can be added to the keyed object `tlx.directives`. They should be functions with the signature `(any attributeValue, object model,object actions,function render)`. The `render` function is generated internally by tlx. It returns the DOM element currently being processed. It has the call signature `(object model,object actions)`.
+Custom directives can be added to the keyed object `tlx.directives`. They should be functions with the signature `(any attributeValue, object model,object actions,function render,object directive)`. The `render` function is generated internally by tlx. It returns the DOM element currently being processed. It has the call signature `(object model,object actions)`.
 
 The directives can inspect the `model` and `actions` and use them or modified versions of them to call `render`. They can return any of the following:
 
@@ -270,27 +270,27 @@ The directives can inspect the `model` and `actions` and use them or modified ve
 
 3) A DOM node, which is used to replace the element
 
-4) The return value of `render`, normal behavior is maintained
+4) The return value of `render`, child elements have been handled by the directive
 
-5) `true` after calling `render`, normal behavior is maintained
+5) `directive.element` after calling `render`, child elements have been handled by the directive
 
-6) `true` without calling `render`, any string literal templates will not be resolved.
+6) `true` without calling `render`, normal behavior is maintained, child elment processing will continue
 
 Below is the definition of `t-foreach`.
 
 ```
-"t-foreach": (array,model,actions,render) => {
+"t-foreach": (array,model,actions,render,{element}={}) => {
 	array.forEach((value,index) => {
 		render(Object.assign({value,index,array},model),actions);
 	});
-	return true;
+	return element;
 },
 ```
 
 Here is an example that changes the case of all nested content:
 
 ```
-tlx.directives["my-case"] = function(toCase,model,actions,render) {
+tlx.directives["my-case"] = function(toCase,model,actions,render,{element}={}) {
 	switch(toCase) {
 		case "upper": return render(model,actions).innerHTML.toUpperCase();
 		case "lower": return render(model,actions).innerHTML.toLowerCase();
@@ -524,6 +524,8 @@ The idea of using `:` to delimit arguments for custom directives is drawn from `
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-6 v1.0.14b - Fixed edge case with custom directives not rendering children.
 
 2018-12-6 v1.0.13b - Added support for dynamic arguments in custom directives. Simplified custom directive definition.
 

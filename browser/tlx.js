@@ -21,15 +21,12 @@
 	"use strict"
 	
 	var JSDOM,
-		_window,
-		requestAnimationFrame;
+		_window;
 	if(typeof(window)==="undefined") {
 		JSDOM = require("jsdom").JSDOM;
 		_window = new JSDOM(``).window;
-		requestAnimationFrame = f => f();
 	} else {
 		_window = window;
-		requestAnimationFrame = _window.requestAnimationFrame;
 	}
 	var document = _window.document;
 	
@@ -61,7 +58,7 @@
 		Object.keys(source.attributes).forEach(aname => {
 			let value = source.attributes[aname],
 			 type = typeof(value);
-			const [dname] = aname.split(":"),
+			const dname = resolve(aname.split(":")[0],scope,actions,extras),
 				directive = directives[dname]||tlx.directives[dname];
 			value = resolve(value,scope,actions,extras);
 			type = typeof(value);
@@ -124,11 +121,8 @@
 					updateDOM(child,targets[i],scope,actions,view);
 					return;
 				}
-				if(typeof(child)==="string") {
-					target.appendChild(new Text(child));
-				} else {
-					target.appendChild(document.createElement(child.tagName));
-				}
+				if(typeof(child)==="string") target.appendChild(new Text(child));
+				else target.appendChild(document.createElement(child.tagName));
 				updateDOM(child,target.lastChild,scope,actions,view);
 			});
 		}
@@ -158,7 +152,7 @@
 		resolve = (value,scope,actions) => {
 			if(typeof(value)==="string") {
 				const	extras = {},
-					unary = value[0]==="$" && value[1]==="{" && value[value.length-1]==="}";
+					unary = value.lastIndexOf("${")===0 && value[value.length-1]==="}";
 				while(true) {
 					try {
 						if(unary) {
@@ -513,7 +507,8 @@
 	directives = {
 			"t-for": (value,scope,actions,render,{raw,resolved,element}={}) => {
 				// directive is of the form "t-for:varname:looptype"
-				const [_,vname,looptype] = resolved.split(":");
+				let [_,vname,looptype] = resolved.split(":");
+				if(!looptype) looptype = Array.isArray(value) ? "of" : "in";
 				if(looptype==="in") {
 					for(let key in value) {
 						render(Object.assign({},scope,{[vname]:key}))
@@ -531,6 +526,14 @@
 				if(Array.isArray(array)) { 
 					array.forEach((value,index) => {
 						render(Object.assign(scope,{value,index,array}),actions);
+					});
+				}
+				return element;
+			},
+			"t-forvalues": (object,scope,actions,render,{element}={}) => {
+				if(object && typeof(object)==="object") { 
+					Object.entries(object).forEach(([key,value],index) => {
+						render(Object.assign(scope,{value,key,object}),actions);
 					});
 				}
 				return element;

@@ -1,6 +1,6 @@
-# TLX v1.0.14b
+# TLX v1.0.15b
 
-TLX is a small (3.6K minimized and gzipped) multi-paradigm front-end library supporting:
+TLX is a small (3.9K minimized and gzipped) multi-paradigm front-end library supporting:
 
 1) template literals in place of JSX,
 
@@ -43,6 +43,7 @@ Tlx can be used in a manner that respects the separation or intergration of deve
   * [`t-if`](#-t-if-)
   * [`t-for:varname:in|of`](#-t-for-varname-in-of-)
   * [`t-foreach`](#-t-foreach-)
+  * [`t-values`](#-t-values-)
   * [Custom Attribute Directives](#custom-attribute-directives)
 - [Server Side Rendering](#server-side-rendering)
 - [API](#api)
@@ -224,7 +225,7 @@ tlx.view(el,{model,template});
 
 # Attribute Directives
 
-TLX comes with three built-in attribute directives, `t-if`, `t-for` and `t-foreach`.
+TLX comes with four built-in attribute directives, `t-if`, `t-for`, `t-foreach` and `t-forvalues`.
 
 ## `t-if`
 
@@ -238,7 +239,7 @@ If the value of `t-if` is truthy, then the element and its nested elements will 
 <div t-if="false">Will not be shown</div>
 ```
 
-## `t-for:varname:in|of`
+## `t-for:varname[:in|of]`
 
 The value provided to `t-for`, is the object to process. `t-for` will provide the key or item bound to `varname` for any nested string literal templates, e.g.
 
@@ -246,9 +247,17 @@ The value provided to `t-for`, is the object to process. `t-for` will provide th
 <div t-for:i:of="${[1,2,3]}">${i}</div>
 ```
 
+will render as
+
+```
+<div t-for:i:of="${[1,2,3]}">1,2,3</div>
+```
+
+The qualifiers `in` and `off` behave the same way they do for JavaScript loops. If the argument is not provided, then arrays will automatically use `of` and other objects will use `in`.
+
 ## `t-foreach`
 
-The value provided to `t-foreach`, is the array to process. `t-foreach` will provide the properties `value` and `index` automatically to any nested string literal templates, e.g.
+The value provided to `t-foreach`, is the array to process. `t-foreach` will provide the scope properties `value`, `index`, and `array` are automatically to any nested string literal templates, e.g.
 
 ```
 <table t-foreach="[1,2,3]">
@@ -257,6 +266,12 @@ The value provided to `t-foreach`, is the array to process. `t-foreach` will pro
 </tr>
 </table>
 ```
+
+If an array is not provided, the directive is effectively ignored. Consider using `t-forvalues` for more resilient code.
+
+## `t-forvalues`
+
+The directive `t-forvalues` is similar to `t-foreach`, but it can take either an array or a regular object. The scope properties provided are `value`, `key`, and `object` (which might be an array).
 
 ## Custom Attribute Directives
 
@@ -299,7 +314,9 @@ tlx.directives["my-case"] = function(toCase,model,actions,render,{element}={}) {
 }
 ```
 
-More advanced use of custom directives can be made using `:` delimited attribute names. Below is the internal definition of `t-for` supported by a fourth argument which is an object that describes the directive, `{raw,resolved,element}`. `raw` is the directive name as it exists in HTML, e.g. `t-for:i:of`. `resolved` is ussually the same as `raw`; however, tlx supports dynamic resolution of directive arguments, so you might get something like this, `{raw:"t-for:${varName}:of",resolved:"t-for:i:of"}`. `element` is just the DOM element being processed.
+More advanced use of custom directives can be made using `:` delimited attribute names. Below is the internal definition of `t-for` supported by a fourth argument which is an object that describes the directive, `{raw,resolved,element}`. `raw` is the directive name as it exists in HTML, e.g. `t-for:i:of`. `resolved` is usually the same as `raw`; however, tlx supports dynamic resolution of directive arguments, so you might get something like this, `{raw:"t-for:${varname}:of",resolved:"t-for:i:of"}`. `element` is just the DOM element being processed.
+
+Note: If using dynamic resolution of directive arguments, make sure the substitution vairables are all lower case. Most browsers lower case attribute names when parsing, which effectively changes your code from this `varName` to this `varname` and model binding will fail to occur.
 
 ```
 "t-for": (value,scope,actions,render,{raw,resolved}={}) => {
@@ -524,6 +541,8 @@ The idea of using `:` to delimit arguments for custom directives is drawn from `
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-7 v1.0.15b - Removed `requestAnimationFrame` from unit tests. Made directives fully dynamic. Added loop type inference to `t-for`. Added `t-forvalues` directive.
 
 2018-12-6 v1.0.14b - Fixed edge case with custom directives not rendering children.
 

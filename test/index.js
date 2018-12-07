@@ -72,36 +72,28 @@ describe("views",function() {
 		const template = document.createElement("template");
 		template.innerHTML = "${data}";
 		tlx.view(el,{model:{data:"test"},template});
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("test");
-			done();
-		});
+		expect(el.innerHTML).equal("test");
+		done();
 	});
 	it("script template",function(done) {
 		const template = document.createElement("script");
 		template.setAttribute("type","template");
 		template.innerHTML = "${data}";
 		tlx.view(el,{model:{data:"test"},template});
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("test");
-			done();
-		});
+		expect(el.innerHTML).equal("test");
+		done();
 	});
 	it("conditional (render content)",function(done) {
 		el.innerHTML = "${show ? 'hi' : ''}";
 		tlx.view(el,{model:{show:true}});
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("hi");
-			done();
-		});
+		expect(el.innerHTML).equal("hi");
+		done();
 	});
 	it("conditional (don't render content)",function(done) {
 		el.innerHTML = "${show ? 'hi' : ''}";
 		tlx.view(el,{model:{show:false}});
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("");
-			done();
-		});
+		expect(el.innerHTML).equal("");
+		done();
 	});
 	it("conditional directive (render content)",function(done) {
 		el.innerHTML = '<div t-if="${show}">hi</div>';
@@ -122,18 +114,20 @@ describe("views",function() {
 	it("for directive",function(done) {
 		el.innerHTML = '<div t-for:i:of="${[1,2,3]}">${i}</div>';
 		tlx.view(el);
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal('<div t-for:i:of="${[1,2,3]}">123</div>');
-			done();
-		});
+		expect(el.innerHTML).equal('<div t-for:i:of="${[1,2,3]}">123</div>');
+		done();
+	});
+	it("for directive infer looptype",function(done) {
+		el.innerHTML = '<div t-for:i="${[1,2,3]}">${i}</div>';
+		tlx.view(el);
+		expect(el.innerHTML).equal('<div t-for:i="${[1,2,3]}">123</div>');
+		done();
 	});
 	it("foreach directive",function(done) {
 		el.innerHTML = '<div t-foreach="${[1,2,3]}">${value}</div>';
 		tlx.view(el);
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal('<div t-foreach="${[1,2,3]}">123</div>');
-			done();
-		});
+		expect(el.innerHTML).equal('<div t-foreach="${[1,2,3]}">123</div>');
+		done();
 	});
 	it("complex template",function(done) {
 		const model = {
@@ -148,10 +142,8 @@ describe("views",function() {
 					}
 				</script>`;
 			tlx.view(el,{model,template});
-			window.requestAnimationFrame(() => {
-				expect(el.innerHTML).not.equal("");
-				done();
-			});
+			expect(el.innerHTML).not.equal("");
+			done();
 	});
 	it("component",function(done) {
 		const component = tlx.component("my-component",{template:"<div>My Component</div>"}),
@@ -163,11 +155,9 @@ describe("views",function() {
 	it("attribute",function(done) {
 		el.innerHTML = "${data}";
 		tlx.view(el,{model:{data:"test"},attributes:{id:1}});
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("test");
-			expect(el.getAttribute("id")).equal("1");
-			done();
-		});
+		expect(el.innerHTML).equal("test");
+		expect(el.getAttribute("id")).equal("1");
+		done();
 	});
 	it("action",function(done) {
 		el.innerHTML = "${data}";
@@ -179,25 +169,21 @@ describe("views",function() {
 		tlx.view(el,{model:{data:"test"},attributes:{onclick:"(${click})(event)"},actions:{click: (event) => { 
 			event.target.wasclicked=true
 			}}});
-		window.requestAnimationFrame(() => {
-			el.dispatchEvent(event);
-			expect(el.innerHTML).equal("test");
-			expect(typeof(el.onclick)).equal("function");
-			expect(el.wasclicked).equal(true);
-			done();
-		});
+		el.dispatchEvent(event);
+		expect(el.innerHTML).equal("test");
+		expect(typeof(el.onclick)).equal("function");
+		expect(el.wasclicked).equal(true);
+		done();
 	});
 	it("reactive",function(done) {
 		el.innerHTML = "${data}";
 		const model = tlx.reactor({data:"test"});
 		tlx.view(el,{model});
+		expect(el.innerHTML).equal("test");
+		model.data = "changed";
 		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("test");
-			model.data = "changed";
-			window.requestAnimationFrame(() => {
-				expect(el.innerHTML).equal("changed");
-				done();
-			});
+			expect(el.innerHTML).equal("changed");
+			done();
 		});
 	});
 	it("auto linkModel",function(done) {
@@ -209,15 +195,13 @@ describe("views",function() {
 		    cancelable: true
 		  });
 		tlx.view(el,{model,linkModel:true});
+		expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
+		el.firstElementChild.setAttribute("value","changed");
+		el.firstElementChild.dispatchEvent(event);
 		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
-			el.firstElementChild.setAttribute("value","changed");
-			el.firstElementChild.dispatchEvent(event);
-			window.requestAnimationFrame(() => {
-				expect(el.innerHTML).equal("<input name=\"data\" value=\"changed\">");
-				expect(model.data).equal("changed");
-				done();
-			});
+			expect(el.innerHTML).equal("<input name=\"data\" value=\"changed\">");
+			expect(model.data).equal("changed");
+			done();
 		});
 	});
 	it("auto protect",function(done) {
@@ -229,15 +213,13 @@ describe("views",function() {
 		    cancelable: true
 		  });
 		tlx.view(el,{model});
+		expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
+		el.firstElementChild.setAttribute("value","function() { return 'a'}");
+		el.firstElementChild.dispatchEvent(event);
 		window.requestAnimationFrame(() => {
 			expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
-			el.firstElementChild.setAttribute("value","function() { return 'a'}");
-			el.firstElementChild.dispatchEvent(event);
-			window.requestAnimationFrame(() => {
-				expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
-				expect(model.data).equal("test");
-				done();
-			});
+			expect(model.data).equal("test");
+			done();
 		});
 	});
 	it("un-protect",function(done) {
@@ -249,15 +231,13 @@ describe("views",function() {
 		    cancelable: true
 		  });
 		tlx.view(el,{model,linkModel:true,protect:false});
+		expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
+		el.firstElementChild.setAttribute("value","function() { }");
+		el.firstElementChild.dispatchEvent(event);
 		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
-			el.firstElementChild.setAttribute("value","function() { }");
-			el.firstElementChild.dispatchEvent(event);
-			window.requestAnimationFrame(() => {
-				expect(el.innerHTML).equal("<input name=\"data\" value=\"function() { }\">");
-				expect(model.data).equal("function() { }");
-				done();
-			});
+			expect(el.innerHTML).equal("<input name=\"data\" value=\"function() { }\">");
+			expect(model.data).equal("function() { }");
+			done();
 		});
 	});
 	it("direct protect",function(done) {
@@ -269,15 +249,13 @@ describe("views",function() {
 		    cancelable: true
 		  });
 		tlx.view(el,{model,linkModel:true,protect:false});
+		expect(el.innerHTML).equal("<input name=\"data\" value=\"test\" protect=\"\">");
+		el.firstElementChild.setAttribute("value","function() { }");
+		el.firstElementChild.dispatchEvent(event);
 		window.requestAnimationFrame(() => {
 			expect(el.innerHTML).equal("<input name=\"data\" value=\"test\" protect=\"\">");
-			el.firstElementChild.setAttribute("value","function() { }");
-			el.firstElementChild.dispatchEvent(event);
-			window.requestAnimationFrame(() => {
-				expect(el.innerHTML).equal("<input name=\"data\" value=\"test\" protect=\"\">");
-				expect(model.data).equal("test");
-				done();
-			});
+			expect(model.data).equal("test");
+			done();
 		});
 	});
 	it("escape function",function(done) {
@@ -320,6 +298,12 @@ describe("views",function() {
 		tlx.view(el);
 		expect(el.innerHTML).equal(`<div my-case="upper">UPPER</div>`);
 		done();
+	});
+	it("dynamic directive",function(done) {
+			el.innerHTML = '<div ${directivename}:i:${looptype}="${directivevalue}">${i}</div>';
+			tlx.view(el,{model:{directivename:"t-for",directivevalue:[1,2,3],looptype:"of"}});
+			expect(el.innerHTML).equal('<div ${directivename}:i:${looptype}="${directivevalue}">123</div>');
+			done();
 	})
 });
 

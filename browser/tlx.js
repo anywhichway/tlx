@@ -48,11 +48,8 @@
 			!target.parentNode || target.parentNode.replaceChild(fromVDOM(source),target);
 			return;
 		}
-		// loop through target attributes
-		[].slice.call(target.attributes).forEach(attribute => {
-			// remove where does not exist in source
-			if(source.attributes[attribute.name]==null) target.removeAttribute(attribute.name);
-		});
+		// loop through target attributes, remove where does not exist in source
+		slice(target.attributes).forEach(attribute => source.attributes[attribute.name]!==null || target.removeAttribute(attribute.name));
 		// loop through source attributes
 		let directed;
 		Object.keys(source.attributes).forEach(aname => {
@@ -74,18 +71,16 @@
 						; // just ignore, may be an attribute with an unresolved argument, e.g. t-bind:${aname}
 					}
 				}
-			} else if(value!==target[aname]) {
-				target[aname] = value;
+			} else {
+					const pname = toPropertyName(aname);
+					if(value!==target[pname])target[pname] = value;
 			}
 			if(directive) { 
 				while(target.lastChild) target.removeChild(target.lastChild); 
 				const render = (scope,actions) => {
 					source.children.forEach(child => {
-						if(typeof(child)==="string") {
-							 target.appendChild(new Text(child));
-						} else {
-							 target.appendChild(document.createElement(child.tagName));
-						}
+						if(typeof(child)==="string") target.appendChild(new Text(child));
+						else target.appendChild(document.createElement(child.tagName));
 						updateDOM(child,target.lastChild,scope,actions,view);
 					});
 					return target;
@@ -106,14 +101,12 @@
 		if(!directed) {
 			// remove extra children
 			let remove = target.childNodes.length-source.children.length;
-			while(remove-->0) {
-				!target.lastChild || target.removeChild(target.lastChild);
-			}
+			while(remove-->0) !target.lastChild || target.removeChild(target.lastChild);
 			// handle the child nodes
-			let targets = [].slice.call(target.childNodes,0,source.children.length);
+			let targets = slice(target.childNodes,0,source.children.length);
 			if(targets.length===0) {
 				const shadow = target.shadowRoot;
-				if(shadow) targets = [].slice.call(shadow.childNodes,0,source.children.length);
+				if(shadow) targets = slice(shadow.childNodes,0,source.children.length);
 			}
 			source.children.forEach((child,i) => {
 				// update if in range
@@ -128,9 +121,7 @@
 		}
 	}
 	
-	function Component() {
-		
-	}
+	function Component() { }
 	Component.prototype = new Function();
 	
 	let CURRENTVIEW,
@@ -155,11 +146,8 @@
 					unary = value.lastIndexOf("${")===0 && value[value.length-1]==="}";
 				while(true) {
 					try {
-						if(unary) {
-							value = Function("scope={}","actions={}","extras={}","__interpolate","with(scope.__t_model) { with(scope) { with(actions) { with(extras) { return __interpolate`" + value + "`[0]}}}}")(scope,actions,extras,interpolate);
-						} else {
-							value = Function("scope={}","actions={}","extras={}","with(scope.__t_model) { with(scope) { with(actions) { with(extras) { return `" + value + "`}}}}")(scope,actions,extras);
-						}
+						value = Function("scope={}","actions={}","extras={}","__interpolate","with(scope.__t_model) { with(scope) { with(actions) { with(extras) { return " + (unary ? "__interpolate" : "") + "`" + value + "`}}}}")(scope,actions,extras,interpolate);
+						if(unary) value = value[0];
 						break;
 					} catch(e) {
 						const variable = getUndefined(e);
@@ -225,27 +213,32 @@
 				if(handler) handler(event);
 			}
 		},
-		component = (tagName,config={}) => { // config = {template,model,attributes,actions,controller,ctor,register}
+		component = (tagName,config={}) => {
 			let {template,customElement,model,attributes,actions,controller,linkModel,reactive,lifecycle={},protect} = config;
-			if(template && customElement) throw new Error("Component can only take a template or customElement, not both");
-			if(!template && !customElement) throw new Error("Component must have either a template or customElement");
+			if(template && customElement) throw new Error("Component can't take both template and customElement");
+			if(!template && !customElement) throw new Error("Component must have a template or customElement");
+			config = Object.assign({lifecycle:{}},config);
 			if(!customElement) {
 				const cname = tagName.split("-").map(part => `${part[0].toUpperCase()+part.substring(1)}`).join("");
-				customElement = Function("template",`return class ${cname} extends HTMLElement {
-					constructor() {
-					super();
-					const shadow = this.attachShadow({mode: 'open'});
-					shadow.innerHTML = template.innerHTML||template;
-				}}`)(template);
+				customElement = Function("template",`return class ${cname} extends HTMLElement { constructor() { super(); const shadow = this.attachShadow({mode: 'open'}); shadow.innerHTML = template.innerHTML||template; }}`)(template);
 			}
+			customElement.defaults =  {model,attributes,actions,controller,linkModel,reactive,lifecycle,protect};
 			customElements.define(tagName,customElement,config.extends ? {extends:config.extends} : undefined);
 			const prototype = new Component(),
 					f = function(overrides={}) {
 						const el = document.createElement(tagName),
-							config = Object.assign({controller,linkModel,lifecycle,protect},overrides);
+							config = Object.assign({controller,linkModel,lifecycle,protect,reactive},overrides);
 						config.model = patch(JSON.parse(JSON.stringify(model||{})),overrides.model);
+						if(config.reactive) config.model = reactor(config.model);
 						config.attributes = patch(Object.assign({},attributes),overrides.attributes);
 						config.actions = patch(Object.assign({},actions),overrides.actions);
+						Object.keys(config.attributes).forEach(key => {
+							const value = config.attributes[key],
+								type = typeof(value);
+							if(value==null) el.removeAttribute(toAttributeName(key));
+							else if(["boolean","number","string"].includes(type)) el.setAttribute(toAttributeName(key),value);
+							else el[toPropertyName(key)] = value;
+						});
 						if(lifecycle.beforeCreate) lifecycle.beforeCreate.call(el);
 						tlx.view(el,config);
 						if(lifecycle.created) lifecycle.created.call(el);
@@ -301,46 +294,53 @@
 			routes = Object.assign({},routes);
 			return handleEvent;
 		},
+		slice = arrayLike => [].slice.call(arrayLike),
+		toPropertyName = attributeName => {
+			const parts = attributeName.split("-");
+			let name = parts.shift(),
+				part = parts.shift();
+			while(part) {
+				name += part[0].toUpperCase() + part.substring(1);
+				part = parts.shift();
+			}
+			return name;
+		},
+		toAttributeName = name => {
+			let attributeName = "";
+			for(let i=0;i<name.length;i++) {
+				const c = name[i];
+				if(i>0 && c===c.toUpperCase()) attributeName += "-";
+				attributeName += c;
+			}
+			return attributeName;
+		},
 		toVDOM = (node,attributes,tagName=node.tagName) => {
 			if(node.nodeName==="#text") return node.textContent;
 			const vdom = {tagName,attributes:Object.assign({},attributes),children:[]};
-			[].slice.call(node.attributes).forEach(attribute => {
-					vdom.attributes[attribute.name] = attribute.value;
-			});
+			slice(node.attributes).forEach(attribute => vdom.attributes[attribute.name] = attribute.value);
 			for(const key in node) {
-				if(key[0]==="o" && key[1]==="n" && typeof(node[key])==="function") {
-					vdom.attributes[key] = node[key];
-				}
+				if(key[0]==="o" && key[1]==="n" && typeof(node[key])==="function") vdom.attributes[key] = node[key];
 			}
-			[].slice.call(node.childNodes).forEach(child => {
-					vdom.children.push(toVDOM(child));
-			});
+			slice(node.childNodes).forEach(child => vdom.children.push(toVDOM(child)));
 			return vdom;
 		},
 		fromVDOM = vdom => {
-			if(typeof(vdom)==="string") {
-				return new Text(vdom);
-			}
+			if(typeof(vdom)==="string") return new Text(vdom);
 			const el = document.createElement(vdom.tagName);
 			Object.keys(vdom.attributes).forEach(aname => {
 				const value = vdom.attributes[aname];
-				if(value!=null && typeof(value)!=="string") {
-					el[aname] = value;
-				} else {
-					el.setAttribute(aname,value);
-				}
+				if(value!=null && typeof(value)!=="string") el[aname] = value;
+				else el.setAttribute(aname,value);
 			});
-			vdom.children.forEach(child => {
-				el.appendChild(fromVDOM(child));
-			});
+			vdom.children.forEach(child => el.appendChild(fromVDOM(child)));
 			return el;
 		},
-		view = (el,{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect=PROTECTED}={}) => {
+		view = (el,{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect=PROTECTED}=el.constructor.defaults||{}) => {
 			if(template) {
 				const type = typeof(template);
 				if(type==="object") {
 					if(template.tagName==="TEMPLATE") template.innerText = template.innerHTML;
-					Object.assign([].slice.call(template.attributes).reduce((accum,attribute) => {
+					Object.assign(slice(template.attributes).reduce((accum,attribute) => {
 						accum[attribute.name] = attribute.value;
 						return accum;
 					},{}),attributes);
@@ -370,9 +370,7 @@
 								node = scope.__t_model;
 							while((key = parts.shift())) {
 								node = node[key];
-								if(!node) {
-									node[key] = {}; // created undefined properties
-								}
+								if(!node) node[key] = {}; // created undefined properties
 							}
 							node[final] = event.target.value; // set the value
 							renders.forEach(selector => document.querySelectorAll(selector).forEach(el => !el.render || el.render()));
@@ -391,29 +389,27 @@
 						return el;
 					};
 			if(lifecycle.beforeMount) lifecycle.beforeMount.call(el);
-			render(scope);
+			if(el.hasAttribute("defer")) el.removeAttribute("defer");
+			else render(scope);
 			mounted = true;
 			if(lifecycle.mounted) lifecycle.mounted.call(el);
 			if(controller) {
 				let {handleEvent,events,options=false} = controller;
 				if(typeof(controller)==="function") handleEvent = controller;
-				if(events) {
-					events.forEach(event => el.addEventListener(event,handleEvent,options))
-				} else {
+				if(events) events.forEach(event => el.addEventListener(event,handleEvent,options))
+				else {
 					for(const key in el) {
 						if(key[0]==="o" && key[1]==="n") el.addEventListener(key.substring(2),controller,options);
 					}
 				}
 			}
-			const inputs = [].slice.call(el.querySelectorAll("input"));
-			if(el instanceof _window.HTMLInputElement) inputs.push(el);
+			const inputs = slice(el.querySelectorAll("input"));
+			if([ _window.HTMLInputElement,_window.HTMLSelectElement,_window. HTMLTextAreaElement].some(cls => el instanceof cls)) inputs.push(el);
 			inputs.forEach(input => {
 				if(protect || input.hasAttribute("protect")) {
 					const _setAttribute = input.setAttribute;
 					let oldvalue = input.getAttribute("value");
-					if(oldvalue[0]==="$" && oldvalue[1]==="{" && oldvalue[oldvalue.length-1]==="}") {
-						oldvalue = "";
-					}
+					if(oldvalue[0]==="$" && oldvalue[1]==="{" && oldvalue[oldvalue.length-1]==="}") oldvalue = "";
 					input.setAttribute = function(name,value) {
 						if((protect || this.hasAttribute("protect")) && name==="value" && value) {
 							 if(value && clean(value)===undefined) {
@@ -438,11 +434,8 @@
 					 })
 				}
 			});
-			if(linkModel) {
-				inputs.forEach(input => input.addEventListener("change",event => !input.validity.valid || linkmodel(input.name)(event),false))
-			}
-			Object.defineProperty(el,"render",{enumerable:false,configurable:true,writable:true,value:render});
-			Object.defineProperty(el,"linkModel",{enumerable:false,configurable:true,writable:true,value:linkmodel});
+			if(linkModel) inputs.forEach(input => input.addEventListener("change",event => !input.validity.valid || linkmodel(input.name)(event),false));
+			Object.entries({render,linkModel:linkmodel,model}).forEach(([key,value]) => Object.defineProperty(el,key,{enumerable:false,configurable:true,writable:true,value}));
 			return el;
 		},
 		clean = (data,options=clean.options) => {
@@ -462,11 +455,8 @@
 			if(data && typeof(data)==="object") { 
 				for(let key in data) {
 					const cleaned = clean(data[key]);
-					if(typeof(cleaned)==="undefined") {
-						delete data[key];
-					} else {
-						data[key] = cleaned;
-					}
+					if(typeof(cleaned)==="undefined") delete data[key];
+					else data[key] = cleaned;
 				}
 				return data;
 			}
@@ -493,11 +483,8 @@
 			window.prompt = function(title) {
 				const input = _prompt(title),
 					cleaned = clean(input);
-				if(typeof(cleaned)=="undefined") {
-					window.alert("Invalid input: " + input);
-				} else {
-					return cleaned;
-				} 
+				if(typeof(cleaned)=="undefined") window.alert("Invalid input: " + input);
+				else return cleaned;
 			}
 			PROTECTED = true;
 			return;
@@ -509,40 +496,20 @@
 				// directive is of the form "t-for:varname:looptype"
 				let [_,vname,looptype] = resolved.split(":");
 				if(!looptype) looptype = Array.isArray(value) ? "of" : "in";
-				if(looptype==="in") {
-					for(let key in value) {
-						render(Object.assign({},scope,{[vname]:key}))
-					}
-				} else if(looptype==="of") {
-					for(let item of value) {
-						render(Object.assign({},scope,{[vname]:item}))
-					}
-				} else {
-					throw new TypeError(`loop type must be 'in' or 'of' for ${raw}`);
-				}
+				if(looptype==="in") for(let key in value) render(Object.assign({},scope,{[vname]:key}));
+				else if(looptype==="of") for(let item of value) render(Object.assign({},scope,{[vname]:item}));
+				else throw new TypeError(`loop type must be 'in' or 'of' for ${raw}`);
 				return element;
 			},
 			"t-foreach": (array,scope,actions,render,{element}={}) => {
-				if(Array.isArray(array)) { 
-					array.forEach((value,index) => {
-						render(Object.assign(scope,{value,index,array}),actions);
-					});
-				}
+				if(Array.isArray(array)) array.forEach((value,index) => render(Object.assign(scope,{value,index,array}),actions));
 				return element;
 			},
 			"t-forvalues": (object,scope,actions,render,{element}={}) => {
-				if(object && typeof(object)==="object") { 
-					Object.entries(object).forEach(([key,value],index) => {
-						render(Object.assign(scope,{value,key,object}),actions);
-					});
-				}
+				if(object && typeof(object)==="object") Object.entries(object).forEach(([key,value],index) => render(Object.assign(scope,{value,key,object}),actions));
 				return element;
 			},
-			"t-if": (bool,scope,actions,render) => {
-				if(bool) {
-					return render(scope,actions);
-				}
-			}
+			"t-if": (bool,scope,actions,render) => bool ? render(scope,actions) : undefined
 	};
 	// default options/support for coerce, accept, reject, escape, eval
 	clean.options = {
@@ -577,12 +544,9 @@
 							const [key,value] = decodeURIComponent(part).split("="),
 								type = typeof(value), // if type undefined, then may not even be URL query string, so clean "key"
 								cleaned = (type!=="undefined" ? clean(value) : clean(key)); 
-							if(typeof(cleaned)!=="undefined") {
-								// keep only those parts of query string that are clean
-								accum += (type!=="undefined" ? `${key}=${cleaned}` : cleaned) + (i<max-1 ? "&" : "");
-							} else {
-								max--;
-							}
+							// keep only those parts of query string that are clean
+							if(typeof(cleaned)!=="undefined") accum += (type!=="undefined" ? `${key}=${cleaned}` : cleaned) + (i<max-1 ? "&" : "");
+							else max--;
 							return accum;
 						},"?");
 				}

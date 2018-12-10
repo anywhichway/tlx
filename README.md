@@ -1,6 +1,6 @@
-# TLX v1.0.15b
+# TLX v1.0.18
 
-TLX is a small (3.9K minimized and gzipped) multi-paradigm front-end library supporting:
+TLX is a small (< 4K minimized and gzipped) multi-paradigm front-end library supporting:
 
 1) template literals in place of JSX,
 
@@ -8,7 +8,7 @@ TLX is a small (3.9K minimized and gzipped) multi-paradigm front-end library sup
 
 3) automatic or manual creation of standards compliant custom elements and components,
 
-4) `t-for`, `t-foreach` and `t-if` attribute directives,
+4) `t-for`, `t-foreach`, `t-forvalues` and `t-if` attribute directives,
 
 5) custom attribute directives in as little as one line of code,
 
@@ -43,8 +43,9 @@ Tlx can be used in a manner that respects the separation or intergration of deve
   * [`t-if`](#-t-if-)
   * [`t-for:varname:in|of`](#-t-for-varname-in-of-)
   * [`t-foreach`](#-t-foreach-)
-  * [`t-values`](#-t-values-)
+  * [`t-forvalues`](#-t-forvalues-)
   * [Custom Attribute Directives](#custom-attribute-directives)
+- [Working With Components](#working-with-components)
 - [Server Side Rendering](#server-side-rendering)
 - [API](#api)
   * [`undefined tlx.protect()``](#-undefined-tlxprotect----)
@@ -105,7 +106,7 @@ Tlx is agnostic to the use of build tools and development pipelines. In fact, it
 
 The simplest apps to write are those that use HTML to define in-line templates and use element `name` attribute values to support two-way data binding and automatic browser updates through the use of a reactive data model.
 
-```
+```html
 <!DOCTYPE html>
 <html lang="en">
 <body>
@@ -132,7 +133,7 @@ Note, for large applications some people find two way data binding and automatic
 
 Slightly more complex to write are apps that use manual state updating:
 
-```
+```html
 <!DOCTYPE html>
 <html lang="en">
 <body>
@@ -157,7 +158,7 @@ tlx.view(document.getElementById("name"),{model})
 
 You can take complete control over rendering by not using a reactive model and telling tlx which elements to re-render based on DOM selectors.
 
-```
+```html
 <!DOCTYPE html>
 <html lang="en">
 <body>
@@ -259,7 +260,7 @@ The qualifiers `in` and `off` behave the same way they do for JavaScript loops. 
 
 The value provided to `t-foreach`, is the array to process. `t-foreach` will provide the scope properties `value`, `index`, and `array` are automatically to any nested string literal templates, e.g.
 
-```
+```html
 <table t-foreach="[1,2,3]">
 <tr>
 <td>${index}</td><td>${value}</td>
@@ -293,7 +294,7 @@ The directives can inspect the `model` and `actions` and use them or modified ve
 
 Below is the definition of `t-foreach`.
 
-```
+```javascript
 "t-foreach": (array,model,actions,render,{element}={}) => {
 	array.forEach((value,index) => {
 		render(Object.assign({value,index,array},model),actions);
@@ -304,7 +305,7 @@ Below is the definition of `t-foreach`.
 
 Here is an example that changes the case of all nested content:
 
-```
+```javascript
 tlx.directives["my-case"] = function(toCase,model,actions,render,{element}={}) {
 	switch(toCase) {
 		case "upper": return render(model,actions).innerHTML.toUpperCase();
@@ -318,7 +319,7 @@ More advanced use of custom directives can be made using `:` delimited attribute
 
 Note: If using dynamic resolution of directive arguments, make sure the substitution vairables are all lower case. Most browsers lower case attribute names when parsing, which effectively changes your code from this `varName` to this `varname` and model binding will fail to occur.
 
-```
+```javascript
 "t-for": (value,scope,actions,render,{raw,resolved}={}) => {
 	// directive is of the form "t-for:varname:looptype"
 	const [_,vname,looptype] = resolved.split(":");
@@ -336,6 +337,25 @@ Note: If using dynamic resolution of directive arguments, make sure the substitu
 	return true;
 }
 ```
+
+# Working With Components
+
+The easiest way to work with components and maintain separation of concerns is to define them using [`function tlx.component(string tagName,object options)`](#-function-tlxcomponent-string-tagname-object-options--), put them in your HTML using their tag name and add the special unary attribute `defer`, and then later in a script turn them into a view.
+
+```html
+<my-custom-tag id="myid" defer></my-custom-tag>
+<script>tlx.view(document.getElementById("myid"))</script>
+
+```
+
+Alternatively, you can create them in a script and then add them to the DOM:
+
+```javascript
+const el = new MyCustomTag({attributes:{id:"myid"}});
+document.body.appendChild(el);
+
+```
+
 
 # Server Side Rendering
 
@@ -410,7 +430,7 @@ Returns a `view` of the specified `template` bound to the DOM element `el`. If n
 
 `boolean protect` - Protect all input elements in the view. To protect just a single element, add the attribute `protect` to the element. If you have set a style for invalid input, it will be used for invalid elements, e.g.
 
-```
+```javascript
 input:invalid { 
 	box-shadow: 0 0 5px 1px red;
 }
@@ -476,7 +496,7 @@ The returned element can be added to the DOM using normal DOM operations and wil
 
 Takes any data and escapes it so it can't be an HTML injection. Returns `undefined` if it can't be escaped. The psuedo code is as follows:
 
-```
+```javascript
 type = typeof(data);
 switch(data) {
 	case type=="number"||type=="boolean": return data;
@@ -541,6 +561,12 @@ The idea of using `:` to delimit arguments for custom directives is drawn from `
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-10 v1.0.18 - Exposed model as property value on views.
+
+2018-12-8 v1.0.17b - Documentation updates. Improved direct component creation.
+
+2018-12-8 v1.0.16b - Added `defer` attribute.
 
 2018-12-7 v1.0.15b - Removed `requestAnimationFrame` from unit tests. Made directives fully dynamic. Added loop type inference to `t-for`. Added `t-forvalues` directive.
 

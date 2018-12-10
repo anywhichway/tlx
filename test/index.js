@@ -181,10 +181,8 @@ describe("views",function() {
 		tlx.view(el,{model});
 		expect(el.innerHTML).equal("test");
 		model.data = "changed";
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("changed");
-			done();
-		});
+		expect(el.innerHTML).equal("changed");
+		done();
 	});
 	it("auto linkModel",function(done) {
 		el.innerHTML = "<input name='data' value='${data}'>";
@@ -198,11 +196,9 @@ describe("views",function() {
 		expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
 		el.firstElementChild.setAttribute("value","changed");
 		el.firstElementChild.dispatchEvent(event);
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("<input name=\"data\" value=\"changed\">");
-			expect(model.data).equal("changed");
-			done();
-		});
+		expect(el.innerHTML).equal("<input name=\"data\" value=\"changed\">");
+		expect(model.data).equal("changed");
+		done();
 	});
 	it("auto protect",function(done) {
 		el.innerHTML = "<input name='data' value='${data}'>";
@@ -216,11 +212,9 @@ describe("views",function() {
 		expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
 		el.firstElementChild.setAttribute("value","function() { return 'a'}");
 		el.firstElementChild.dispatchEvent(event);
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
-			expect(model.data).equal("test");
-			done();
-		});
+		expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
+		expect(model.data).equal("test");
+		done();
 	});
 	it("un-protect",function(done) {
 		el.innerHTML = "<input name='data' value='${data}'>";
@@ -234,11 +228,9 @@ describe("views",function() {
 		expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
 		el.firstElementChild.setAttribute("value","function() { }");
 		el.firstElementChild.dispatchEvent(event);
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("<input name=\"data\" value=\"function() { }\">");
-			expect(model.data).equal("function() { }");
-			done();
-		});
+		expect(el.innerHTML).equal("<input name=\"data\" value=\"function() { }\">");
+		expect(model.data).equal("function() { }");
+		done();
 	});
 	it("direct protect",function(done) {
 		el.innerHTML = "<input name='data' value='${data}' protect>";
@@ -252,11 +244,9 @@ describe("views",function() {
 		expect(el.innerHTML).equal("<input name=\"data\" value=\"test\" protect=\"\">");
 		el.firstElementChild.setAttribute("value","function() { }");
 		el.firstElementChild.dispatchEvent(event);
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("<input name=\"data\" value=\"test\" protect=\"\">");
-			expect(model.data).equal("test");
-			done();
-		});
+		expect(el.innerHTML).equal("<input name=\"data\" value=\"test\" protect=\"\">");
+		expect(model.data).equal("test");
+		done();
 	});
 	it("escape function",function(done) {
 		expect(tlx.escape(function() {})).equal(undefined);

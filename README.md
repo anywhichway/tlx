@@ -1,6 +1,6 @@
-# TLX v1.0.19
+# TLX v1.0.20
 
-TLX is a small (< 4K minimized and gzipped) multi-paradigm front-end library supporting:
+TLX is a small (< 4.5K minimized and gzipped) multi-paradigm front-end library supporting:
 
 1) template literals in place of JSX,
 
@@ -561,6 +561,8 @@ The idea of using `:` to delimit arguments for custom directives is drawn from `
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-11 v1.0.20 - Improved `<template>` and `<script type="text/template">` handling.
 
 2018-12-10 v1.0.19 - Exposed `resolve`.
 

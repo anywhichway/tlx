@@ -37,9 +37,16 @@
 		const extras = {};
 		// if source and target are text
 		if(typeof(source)==="string" && target.nodeName==="#text") {
-			const value = resolve(source,scope,actions,extras);
-			// update is data not the same
-			if(target.data!==value) target.data = value;
+			const value = (resolve(source,scope,actions,extras)+"").trim(),
+		  		children = slice(new DOMParser().parseFromString(value, "text/html").body.childNodes);
+		  if(children.some(node => node.nodeType === 1)) {
+		  	const parent = target.parentElement;
+		  	updateDOM(toVDOM(removeWhitespace(doc.body)),doc.body,scope,actions,view);
+		  	parent.removeChild(target);
+		  	slice(doc.body.children).forEach(child => parent.appendChild(child));
+		  } else if(target.data!==value) {
+		  	target.data = value;
+		  }
 			return;
 		}
 		// if tags aren't the same
@@ -114,7 +121,7 @@
 					updateDOM(child,targets[i],scope,actions,view);
 					return;
 				}
-				if(typeof(child)==="string") target.appendChild(new Text(child));
+				if(typeof(child)==="string") target.appendChild(new Text());
 				else target.appendChild(document.createElement(child.tagName));
 				updateDOM(child,target.lastChild,scope,actions,view);
 			});
@@ -128,6 +135,16 @@
 		PROTECTED;
 	
 	const DEPENDENCIES = new Map(),
+		removeWhitespace = node => {
+			slice(node.childNodes).forEach(child => {
+				if(child.nodeType === 8 || (child.nodeType === 3 && !/\S/.test(child.nodeValue))) {
+		      node.removeChild(child);
+		    } else if(child.nodeType === 1) {
+		    	removeWhitespace(child);
+		    }
+			});
+			return node;
+		},
 		getUndefined = error => {
 			const i = error.message.indexOf("not defined");
 			if(i>=0) {
@@ -191,8 +208,7 @@
 						oldvalue = target[property];
 					if(oldvalue===value) return true;
 					if(watcher) {
-						const callbacks = Array.isArray(watcher) ? watcher : [watcher];
-						callbacks.forEach(callback => watchers[property](oldvalue,value,property,proxy));
+						(Array.isArray(watcher) ? watcher : [watcher]).forEach(callback => watchers[property](oldvalue,value,property,proxy));
 					}
 					target[property] = value;
 					const dependencies = DEPENDENCIES.get(target);
@@ -233,10 +249,9 @@
 						config.attributes = patch(Object.assign({},attributes),overrides.attributes);
 						config.actions = patch(Object.assign({},actions),overrides.actions);
 						Object.keys(config.attributes).forEach(key => {
-							const value = config.attributes[key],
-								type = typeof(value);
+							const value = config.attributes[key];
 							if(value==null) el.removeAttribute(toAttributeName(key));
-							else if(["boolean","number","string"].includes(type)) el.setAttribute(toAttributeName(key),value);
+							else if(["boolean","number","string"].includes(typeof(value))) el.setAttribute(toAttributeName(key),value);
 							else el[toPropertyName(key)] = value;
 						});
 						if(lifecycle.beforeCreate) lifecycle.beforeCreate.call(el);
@@ -409,7 +424,7 @@
 				if(protect || input.hasAttribute("protect")) {
 					const _setAttribute = input.setAttribute;
 					let oldvalue = input.getAttribute("value");
-					if(oldvalue[0]==="$" && oldvalue[1]==="{" && oldvalue[oldvalue.length-1]==="}") oldvalue = "";
+					if(oldvalue==null || (oldvalue[0]==="$" && oldvalue[1]==="{" && oldvalue[oldvalue.length-1]==="}")) oldvalue = "";
 					input.setAttribute = function(name,value) {
 						if((protect || this.hasAttribute("protect")) && name==="value" && value) {
 							 if(value && clean(value)===undefined) {

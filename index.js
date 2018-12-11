@@ -146,7 +146,7 @@
 					unary = value.lastIndexOf("${")===0 && value[value.length-1]==="}";
 				while(true) {
 					try {
-						value = Function("scope={}","actions={}","extras={}","__interpolate","with(scope.__t_model) { with(scope) { with(actions) { with(extras) { return " + (unary ? "__interpolate" : "") + "`" + value + "`}}}}")(scope,actions,extras,interpolate);
+						value = Function("scope","actions","extras","__interpolate","with(scope.__t_model||{}) { with(scope) { with(actions) { with(extras) { return " + (unary ? "__interpolate" : "") + "`" + value + "`}}}}")(scope||{},actions||{},extras,interpolate);
 						if(unary) value = value[0];
 						break;
 					} catch(e) {
@@ -565,7 +565,7 @@
 		eval: true
 	};
 	
-	const tlx = {component,reactor,view,router,handlers,escape:clean,protect,JSDOM,directives:{}};
+	const tlx = {component,reactor,view,router,handlers,escape:clean,protect,resolve,JSDOM,directives:{}};
 	
 	if(typeof(module)!=="undefined") module.exports = tlx;
 	if(typeof(window)!=="undefined") window.tlx = tlx;

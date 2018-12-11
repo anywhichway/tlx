@@ -1,4 +1,4 @@
-# TLX v1.0.18
+# TLX v1.0.19
 
 TLX is a small (< 4K minimized and gzipped) multi-paradigm front-end library supporting:
 
@@ -561,6 +561,8 @@ The idea of using `:` to delimit arguments for custom directives is drawn from `
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-10 v1.0.19 - Exposed `resolve`.
 
 2018-12-10 v1.0.18 - Exposed model as property value on views.
 

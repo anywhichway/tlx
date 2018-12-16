@@ -1,4 +1,4 @@
-# TLX v1.0.20
+# TLX v1.0.21
 
 TLX is a small (< 4.5K minimized and gzipped) multi-paradigm front-end library supporting:
 
@@ -29,6 +29,7 @@ Tlx can be used in a manner that respects the separation or intergration of deve
 
 ***Don't forget***, give us a star if you like what you see!
 
+- [TLX v1.0.21](#tlx-v1021)
 - [Installation](#installation)
 - [Usage](#usage)
   * [NodeJS](#nodejs)
@@ -38,10 +39,11 @@ Tlx can be used in a manner that respects the separation or intergration of deve
   * [Simplest Apps](#simplest-apps)
   * [Manual State Updating](#manual-state-updating)
   * [Manual State Updating and Re-Rendering](#manual-state-updating-and-re-rendering)
-  * [Templating](#templating)
+- [Template Scripting](#template-scripting)
+- [Type="text/template" Script Tag](#type--text-template--script-tag)
 - [Attribute Directives](#attribute-directives)
   * [`t-if`](#-t-if-)
-  * [`t-for:varname:in|of`](#-t-for-varname-in-of-)
+  * [`t-for:varname[:in|of]`](#-t-for-varname--in-of--)
   * [`t-foreach`](#-t-foreach-)
   * [`t-forvalues`](#-t-forvalues-)
   * [Custom Attribute Directives](#custom-attribute-directives)
@@ -50,6 +52,7 @@ Tlx can be used in a manner that respects the separation or intergration of deve
 - [API](#api)
   * [`undefined tlx.protect()``](#-undefined-tlxprotect----)
   * [`Proxy tlx.reactor(object target={},object watchers={})`](#-proxy-tlxreactor-object-target----object-watchers-----)
+  * [`HTMLElement tx.el(string,tagName,attributes)` - Wraps `string` in the specified `tagName` with `attributes`. Helps avoid the inclusion of tags in embedded HTML scripts so that the use of `<script type="text/template">` can be avoided.](#-htmlelement-txel-string-tagname-attributes-----wraps--string--in-the-specified--tagname--with--attributes--helps-avoid-the-inclusion-of-tags-in-embedded-html-scripts-so-that-the-use-of---script-type--text-template----can-be-avoided)
   * [`HTMLElement tlx.view(HTMLElement el[,object options])`](#-htmlelement-tlxview-htmlelement-el--object-options---)
   * [`function tlx.handlers(object handlers)`](#-function-tlxhandlers-object-handlers--)
   * [`function tlx.router(object routes)`](#-function-tlxrouter-object-routes--)
@@ -181,9 +184,11 @@ tlx.view(document.getElementById("name"),{model})
 
 From this point onward application development gets more complex, but no more so that development with React, HyperHTML, Vue, or other frameworks. In fact, it is often far simpler.
 
-## Templating
+# Template Scripting
 
-Tlx uses JavaScript string template literal notation for templates. All templates should resolve to a valid HTML string. 
+Tlx uses JavaScript string template literal notation for templates. Except for atomic attribute templates (see below), all templates should resolve to a valid HTML string. 
+
+Atomic attribute templates, i.e. those that involve a single literal, can resolve to any JavaScript type and will be stored directly on the HTMLElement. For example, `value="${[1,2,3]}"`
 
 Below is a div that conditionally contains repeating content and assumes the provided model:
 
@@ -192,7 +197,7 @@ Below is a div that conditionally contains repeating content and assumes the pro
 <div id="names">
 ${
 	show
-	? "<ul>" + names.reduce((accum,name) => accum += `<li>${name}</li>`,"") + "</ul>"
+	? tlx.el(names.reduce((accum,name) => accum += tlx.el(name,"li"),""),"ul")
 	: ""
 }
 </div>
@@ -217,12 +222,32 @@ const model = {
 	template = `<div>
 		\${
 			show
-			? "<ul>" + names.reduce((accum,name) => accum += \`<li>\${name}</li>\`,"") + "</ul>"
+			? tlx.el(names.reduce((accum,name) => accum += tlx.el(name,"li"),""),"ul")
 			: ""
 		}
 	</div>`;
 tlx.view(el,{model,template});
 ```
+
+During processing, four special variables `$node`, `$script`, `$template`, and `$view` are available. These are the current element or text node and script plus the top level template vdom and view being processed, e.g.
+
+```javascript
+<div id="names" names="${['joe','bill','mary']}">
+${
+	tlx.el($view.names.reduce((accum,name) => accum += tlx.el(name,"li"),""),"ul")
+}
+</div>
+```
+
+```javascript
+tlx.view(document.getElementById("names"));
+```
+
+
+
+# Type="text/template" Script Tag
+
+You may occasionally run into issues where you can't create valid HTML with the scripts you wish to embed. This will typically happen if you include what looks like a tag or with complex table generating scripts. Tag issues can usually be resolved with `tlx.el(value,tagName)`. Otherwise, if you take your HTML with embedded scripts and place it within `<script id="myscript" type="text/template"> ... </script>`, you will be able to pass it to `tlx.view` as a template. This is because the browser will not attempt to parse it.
 
 # Attribute Directives
 
@@ -369,7 +394,7 @@ The contents of "mytemplate.html":
 <div>
 ${
 	show
-	? "<ul>" + names.reduce((accum,name) => accum += `<li>${name}</li>`,"") + "</ul>"
+	? tlx.el(names.reduce((accum,name) => accum += tlx.el(name,"li"),""),"ul");
 	: ""
 }
 </div>
@@ -392,7 +417,7 @@ In a real world situation, the model would probably be pulled from a database an
 
 # API
 
-Since there are only 8 API entry points, they are presented in order of likely use rather than alphabetically.
+Since there are only 9 API entry points, they are presented in order of likely use rather than alphabetically.
 
 ## `undefined tlx.protect()``
 
@@ -405,8 +430,9 @@ Returns a deep `Proxy` for `object` that automatically tracks usage in `views` a
 
 `target` - The `object` around which to wrap the `Proxy`.
 
-`watchers` - A potentially nested object, the keys of which are intended to match the keys on the target `object`. The values are functions with the signature `(oldvalue,value,property,proxy)`. These are invoked synchronously any time the target property value changes. If they throw an error, the value will not get set. If you desire to use asyncronous behavior, then implement your code
-to inject asynchronicity. Promises will not be awaited if returned.
+`watchers` - A potentially nested object, the keys of which are intended to match the keys on the target `object`. The values are functions with the signature `(oldvalue,value,property,proxy)`. These are invoked synchronously any time the target property value changes. If they throw an error, the value will not get set. If you desire to use asyncronous behavior, then implement your code to inject asynchronicity. Promises will not be awaited if returned.
+
+## `HTMLElement tx.el(string,tagName,attributes)` - Wraps `string` in the specified `tagName` with `attributes`. Helps avoid the inclusion of tags in embedded HTML scripts so that the use of `<script type="text/template">` can be avoided.
 
 ## `HTMLElement tlx.view(HTMLElement el[,object options])`
 
@@ -561,6 +587,8 @@ The idea of using `:` to delimit arguments for custom directives is drawn from `
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-16 v1.0.21 - Added `el` function. Added `$node`, `$script`, `$template`, and `$view` script variables.
 
 2018-12-11 v1.0.20 - Improved `<template>` and `<script type="text/template">` handling.
 

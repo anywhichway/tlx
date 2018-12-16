@@ -32,16 +32,20 @@
 	
 	//update target DOM node from source DOM node
 	//make changes only where necessary
-	function updateDOM(source,target,scope,actions,view=target) {
+	function updateDOM(source,target,scope,actions,view=target,template=source) {
 		Object.defineProperty(target,"view",{enumerable:false,configurable:true,writable:true,value:view});
-		const extras = {};
+		Object.assign(scope,{"$source":source,
+												"$target":target,
+												"$template":template.children.length> 1 ? template.children : template.children[0],
+												"$view":view.children.length> 1 ? view.children : view.children[0]});
 		// if source and target are text
 		if(typeof(source)==="string" && target.nodeName==="#text") {
-			const value = (resolve(source,scope,actions,extras)+"").trim(),
-		  		children = slice(new DOMParser().parseFromString(value, "text/html").body.childNodes);
+			const value = (resolve(source,scope,actions)+"").trim(),
+					doc = new DOMParser().parseFromString(value, "text/html"),
+		  		children = slice(doc.body.childNodes);
 		  if(children.some(node => node.nodeType === 1)) {
 		  	const parent = target.parentElement;
-		  	updateDOM(toVDOM(removeWhitespace(doc.body)),doc.body,scope,actions,view);
+		  	updateDOM(toVDOM(doc.body),doc.body,scope,actions,view,template);
 		  	parent.removeChild(target);
 		  	slice(doc.body.children).forEach(child => parent.appendChild(child));
 		  } else if(target.data!==value) {
@@ -62,9 +66,9 @@
 		Object.keys(source.attributes).forEach(aname => {
 			let value = source.attributes[aname],
 			 type = typeof(value);
-			const dname = resolve(aname.split(":")[0],scope,actions,extras),
+			const dname = resolve(aname.split(":")[0],scope,actions),
 				directive = directives[dname]||tlx.directives[dname];
-			value = resolve(value,scope,actions,extras);
+			value = resolve(value,scope,actions);
 			type = typeof(value);
 			// replace different
 			if(value==null) {
@@ -88,11 +92,11 @@
 					source.children.forEach(child => {
 						if(typeof(child)==="string") target.appendChild(new Text(child));
 						else target.appendChild(document.createElement(child.tagName));
-						updateDOM(child,target.lastChild,scope,actions,view);
+						updateDOM(child,target.lastChild,scope,actions,view,template);
 					});
 					return target;
 				};
-				const result = directive(value,scope,actions,render,{element:target,raw:aname,resolved:aname.indexOf("${")>=0 ? resolve(aname,scope,actions,extras) : aname}),
+				const result = directive(value,scope,actions,render,{element:target,raw:aname,resolved:aname.indexOf("${")>=0 ? resolve(aname,scope,actions) : aname}),
 					rtype = typeof(result);
 				if(!result) {
 					target.parentElement.removeChild(target);
@@ -118,12 +122,12 @@
 			source.children.forEach((child,i) => {
 				// update if in range
 				if(i<targets.length) {
-					updateDOM(child,targets[i],scope,actions,view);
+					updateDOM(child,targets[i],scope,actions,view,template);
 					return;
 				}
 				if(typeof(child)==="string") target.appendChild(new Text());
 				else target.appendChild(document.createElement(child.tagName));
-				updateDOM(child,target.lastChild,scope,actions,view);
+				updateDOM(child,target.lastChild,scope,actions,view,template);
 			});
 		}
 	}
@@ -135,19 +139,13 @@
 		PROTECTED;
 	
 	const DEPENDENCIES = new Map(),
-		removeWhitespace = node => {
-			slice(node.childNodes).forEach(child => {
-				if(child.nodeType === 8 || (child.nodeType === 3 && !/\S/.test(child.nodeValue))) {
-		      node.removeChild(child);
-		    } else if(child.nodeType === 1) {
-		    	removeWhitespace(child);
-		    }
-			});
-			return node;
+		el = (string,tagName,attributes={}) => {
+		  const attrs = Object.values(attributes)
+		    .reduce((accum,[key,val]) => accum += ` ${key}="${val}"`,"");
+		  return `<${tagName}${attrs}>${string}</${tagName}>`;
 		},
 		getUndefined = error => {
-			const i = error.message.indexOf("not defined");
-			if(i>=0) {
+			if(error.message.indexOf("not defined")>=0) {
 				const property = error.message.split(" ")[0];
 				try {
 					return Function(`return ${property}`)();
@@ -158,7 +156,7 @@
 		},
 		interpolate = (template,...interpolations) => interpolations,
 		resolve = (value,scope,actions) => {
-			if(typeof(value)==="string") {
+			if(typeof(value)==="string" && value.indexOf("${")>=0) {
 				const	extras = {},
 					unary = value.lastIndexOf("${")===0 && value[value.length-1]==="}";
 				while(true) {
@@ -179,7 +177,7 @@
 		patch = (target,source) => {
 			source = Object.assign(target,source);
 			Object.keys(source).forEach(key => {
-				if(typeof(source[key])==="undefined") {
+				if(source[key]===undefined) {
 					delete target[key];
 					delete source[key];
 				}
@@ -232,7 +230,7 @@
 		component = (tagName,config={}) => {
 			let {template,customElement,model,attributes,actions,controller,linkModel,reactive,lifecycle={},protect} = config;
 			if(template && customElement) throw new Error("Component can't take both template and customElement");
-			if(!template && !customElement) throw new Error("Component must have a template or customElement");
+			if(!template && !customElement) throw new Error("Component must have template or customElement");
 			config = Object.assign({lifecycle:{}},config);
 			if(!customElement) {
 				const cname = tagName.split("-").map(part => `${part[0].toUpperCase()+part.substring(1)}`).join("");
@@ -470,7 +468,7 @@
 			if(data && typeof(data)==="object") { 
 				for(let key in data) {
 					const cleaned = clean(data[key]);
-					if(typeof(cleaned)==="undefined") delete data[key];
+					if(cleaned===undefined) delete data[key];
 					else data[key] = cleaned;
 				}
 				return data;
@@ -498,7 +496,7 @@
 			window.prompt = function(title) {
 				const input = _prompt(title),
 					cleaned = clean(input);
-				if(typeof(cleaned)=="undefined") window.alert("Invalid input: " + input);
+				if(cleaned===undefined) window.alert("Invalid input: " + input);
 				else return cleaned;
 			}
 			PROTECTED = true;
@@ -560,7 +558,7 @@
 								type = typeof(value), // if type undefined, then may not even be URL query string, so clean "key"
 								cleaned = (type!=="undefined" ? clean(value) : clean(key)); 
 							// keep only those parts of query string that are clean
-							if(typeof(cleaned)!=="undefined") accum += (type!=="undefined" ? `${key}=${cleaned}` : cleaned) + (i<max-1 ? "&" : "");
+							if(cleaned!==undefined) accum += (type!=="undefined" ? `${key}=${cleaned}` : cleaned) + (i<max-1 ? "&" : "");
 							else max--;
 							return accum;
 						},"?");
@@ -580,7 +578,7 @@
 		eval: true
 	};
 	
-	const tlx = {component,reactor,view,router,handlers,escape:clean,protect,resolve,JSDOM,directives:{}};
+	const tlx = {component,reactor,view,router,handlers,escape:clean,protect,resolve,JSDOM,directives:{},el};
 	
 	if(typeof(module)!=="undefined") module.exports = tlx;
 	if(typeof(window)!=="undefined") window.tlx = tlx;

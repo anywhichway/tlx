@@ -55,18 +55,14 @@ describe("views",function() {
 	it("direct element",function(done) {
 		el.innerHTML = "${data}";
 		tlx.view(el,{model:{data:"test"}});
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("test");
-			done();
-		});
+		expect(el.innerHTML).equal("test");
+		done();
 	});
 	it("string template",function(done) {
 		const template = "${data}";
 		tlx.view(el,{model:{data:"test"},template});
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("test");
-			done();
-		});
+		expect(el.innerHTML).equal("test");
+		done();
 	});
 	it("element template",function(done) {
 		const template = document.createElement("template");
@@ -81,6 +77,16 @@ describe("views",function() {
 		template.innerHTML = "${data}";
 		tlx.view(el,{model:{data:"test"},template});
 		expect(el.innerHTML).equal("test");
+		done();
+	});
+	it("$ access",function(done) {
+		el.innerHTML = `<div id="names" names="\${['joe','bill','mary']}">
+		\${
+			tlx.el($view.names.reduce((accum,name) => accum += tlx.el(name,"li"),""),"ul")
+		}
+		</div>`;
+		tlx.view(el);
+		expect(el.firstElementChild.innerHTML).equal(`<ul><li>joe</li><li>bill</li><li>mary</li></ul>`);
 		done();
 	});
 	it("conditional (render content)",function(done) {

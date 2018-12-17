@@ -1,4 +1,4 @@
-# TLX v1.0.21
+# TLX v1.0.22
 
 TLX is a small (< 4.5K minimized and gzipped) multi-paradigm front-end library supporting:
 
@@ -587,6 +587,8 @@ The idea of using `:` to delimit arguments for custom directives is drawn from `
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-17 v1.0.22 - Relaxed script tag type checking so any script can be used as a template.
 
 2018-12-16 v1.0.21 - Added `el` function. Added `$node`, `$script`, `$template`, and `$view` script variables.
 

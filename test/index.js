@@ -83,8 +83,7 @@ describe("views",function() {
 		el.innerHTML = `<div id="names" names="\${['joe','bill','mary']}">
 		\${
 			tlx.el($view.names.reduce((accum,name) => accum += tlx.el(name,"li"),""),"ul")
-		}
-		</div>`;
+		}</div>`;
 		tlx.view(el);
 		expect(el.firstElementChild.innerHTML).equal(`<ul><li>joe</li><li>bill</li><li>mary</li></ul>`);
 		done();

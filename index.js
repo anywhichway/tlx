@@ -36,100 +36,112 @@
 		Object.defineProperty(target,"view",{enumerable:false,configurable:true,writable:true,value:view});
 		Object.assign(scope,{"$source":source,
 												"$target":target,
-												"$template":template.children.length> 1 ? template.children : template.children[0],
+												"$template":template.children ? (template.children.length> 1 ? template.children : template.children[0]) : template,
 												"$view":view.children.length> 1 ? view.children : view.children[0]});
 		// if source and target are text
-		if(typeof(source)==="string" && target.nodeName==="#text") {
-			const value = (resolve(source,scope,actions)+"").trim(),
+		if(typeof(source)==="string") {
+			const value = (resolve(source,scope,actions)+""),
 					doc = new DOMParser().parseFromString(value, "text/html"),
 		  		children = slice(doc.body.childNodes);
 		  if(children.some(node => node.nodeType === 1)) {
-		  	const parent = target.parentElement;
 		  	updateDOM(toVDOM(doc.body),doc.body,scope,actions,view,template);
-		  	parent.removeChild(target);
-		  	slice(doc.body.children).forEach(child => parent.appendChild(child));
+		  	let parent;
+		  	if(target.nodeType===3) {
+			  	parent = target.parentElement;
+			  	parent.removeChild(target);
+		  	} else if(target.nodeType===1) {
+		  		parent = target;
+		  		while(parent.lastChild) parent.removeChild(parent.lastChild);
+		  	}
+		  	slice(doc.body.childNodes).forEach(child => parent.appendChild(child));
 		  } else if(target.data!==value) {
 		  	target.data = value;
 		  }
-			return;
+		  return view;
 		}
 		// if tags aren't the same
 		if(source.tagName!==target.tagName) {
 			// replace the target with the source
-			!target.parentNode || target.parentNode.replaceChild(fromVDOM(source),target);
-			return;
+			if(target.parentNode) {
+				const el = document.createElement(source.tagName);
+				target.parentNode.replaceChild(el,target);
+				target = el;
+			}
 		}
 		// loop through target attributes, remove where does not exist in source
-		slice(target.attributes).forEach(attribute => source.attributes[attribute.name]!==null || target.removeAttribute(attribute.name));
-		// loop through source attributes
-		let directed;
-		Object.keys(source.attributes).forEach(aname => {
-			let value = source.attributes[aname],
-			 type = typeof(value);
-			const dname = resolve(aname.split(":")[0],scope,actions),
-				directive = directives[dname]||tlx.directives[dname];
-			value = resolve(value,scope,actions);
-			type = typeof(value);
-			// replace different
-			if(value==null) {
-				target.removeAttribute(aname);
-				delete target[aname];
-			} else if(["boolean","number","string"].includes(type)) {
-				if(value!==target.getAttribute(aname)) {
-					try {
-						target.setAttribute(aname,value);
-					} catch(e) {
-						; // just ignore, may be an attribute with an unresolved argument, e.g. t-bind:${aname}
+
+			slice(target.attributes).forEach(attribute => source.attributes[attribute.name]!==null || target.removeAttribute(attribute.name));
+			// loop through source attributes
+			let directed;
+			Object.keys(source.attributes).forEach(aname => {
+				let value = source.attributes[aname],
+				 type = typeof(value);
+				const dname = resolve(aname.split(":")[0],scope,actions),
+					directive = directives[dname]||tlx.directives[dname];
+				value = resolve(value,scope,actions);
+				type = typeof(value);
+				// replace different
+				if(value==null) {
+					target.removeAttribute(aname);
+					delete target[aname];
+				} else if(["boolean","number","string"].includes(type)) {
+					if(value!==target.getAttribute(aname)) {
+						try {
+							target.setAttribute(aname,value);
+						} catch(e) {
+							; // just ignore, may be an attribute with an unresolved argument, e.g. t-bind:${aname}
+						}
+					}
+				} else {
+						const pname = toPropertyName(aname);
+						if(value!==target[pname]) target[pname] = value;
+				}
+				if(directive) { 
+					while(target.lastChild) target.removeChild(target.lastChild); 
+					const render = (scope,actions) => {
+						source.children.forEach(child => {
+							if(typeof(child)==="string") target.appendChild(new Text(child));
+							else target.appendChild(document.createElement(child.tagName));
+							updateDOM(child,target.lastChild,scope,actions,view,template);
+						});
+						return target;
+					};
+					const result = directive(value,scope,actions,render,{element:target,raw:aname,resolved:aname.indexOf("${")>=0 ? resolve(aname,scope,actions) : aname}),
+						rtype = typeof(result);
+					if(!result) {
+						target.parentElement.removeChild(target);
+					} else if(rtype==="string") {
+							directed = true;
+							target.innerHTML = result;
+					} else if(rtype==="object" && result instanceof HTMLElement) {
+						directed = true;
+						if(result!==target) target.parentElement.replaceNode(result,target);
 					}
 				}
-			} else {
-					const pname = toPropertyName(aname);
-					if(value!==target[pname])target[pname] = value;
-			}
-			if(directive) { 
-				while(target.lastChild) target.removeChild(target.lastChild); 
-				const render = (scope,actions) => {
-					source.children.forEach(child => {
-						if(typeof(child)==="string") target.appendChild(new Text(child));
-						else target.appendChild(document.createElement(child.tagName));
-						updateDOM(child,target.lastChild,scope,actions,view,template);
-					});
-					return target;
-				};
-				const result = directive(value,scope,actions,render,{element:target,raw:aname,resolved:aname.indexOf("${")>=0 ? resolve(aname,scope,actions) : aname}),
-					rtype = typeof(result);
-				if(!result) {
-					target.parentElement.removeChild(target);
-				} else if(rtype==="string") {
-						directed = true;
-						target.innerHTML = result;
-				} else if(rtype==="object" && result instanceof HTMLElement) {
-					directed = true;
-					if(result!==target) target.parentElement.replaceNode(result,target);
-				}
-			}
-		});
-		if(!directed) {
-			// remove extra children
-			let remove = target.childNodes.length-source.children.length;
-			while(remove-->0) !target.lastChild || target.removeChild(target.lastChild);
-			// handle the child nodes
-			let targets = slice(target.childNodes,0,source.children.length);
-			if(targets.length===0) {
-				const shadow = target.shadowRoot;
-				if(shadow) targets = slice(shadow.childNodes,0,source.children.length);
-			}
-			source.children.forEach((child,i) => {
-				// update if in range
-				if(i<targets.length) {
-					updateDOM(child,targets[i],scope,actions,view,template);
-					return;
-				}
-				if(typeof(child)==="string") target.appendChild(new Text());
-				else target.appendChild(document.createElement(child.tagName));
-				updateDOM(child,target.lastChild,scope,actions,view,template);
 			});
-		}
+			if(!directed) {
+				// remove extra children
+				let remove = target.childNodes.length-source.children.length;
+				while(remove-->0) !target.lastChild || target.removeChild(target.lastChild);
+				// handle the child nodes
+				let targets = slice(target.childNodes,0,source.children.length);
+				if(targets.length===0) {
+					const shadow = target.shadowRoot;
+					if(shadow) targets = slice(shadow.childNodes,0,source.children.length);
+				}
+				source.children.forEach((child,i) => {
+					// update if in range
+					if(i<targets.length) {
+						updateDOM(child,targets[i],scope,actions,view,template);
+						return;
+					}
+					if(typeof(child)==="string") target.appendChild(new Text());
+					else target.appendChild(document.createElement(child.tagName));
+					updateDOM(child,target.lastChild,scope,actions,view,template);
+				});
+			}
+		
+		return view;
 	}
 	
 	function Component() { }
@@ -332,32 +344,24 @@
 			const vdom = {tagName,attributes:Object.assign({},attributes),children:[]};
 			slice(node.attributes).forEach(attribute => vdom.attributes[attribute.name] = attribute.value);
 			for(const key in node) {
-				if(key[0]==="o" && key[1]==="n" && typeof(node[key])==="function") vdom.attributes[key] = node[key];
+				if(key[0]==="o" && key[1]==="n") {
+					let f = node[key];
+					const avalue = node.getAttribute(key);
+					if(!f && avalue) {
+						 f = new Function("event",avalue)
+					}
+					if(f) vdom.attributes[key] = f;
+				}
 			}
 			slice(node.childNodes).forEach(child => vdom.children.push(toVDOM(child)));
 			return vdom;
 		},
-		fromVDOM = vdom => {
-			if(typeof(vdom)==="string") return new Text(vdom);
-			const el = document.createElement(vdom.tagName);
-			Object.keys(vdom.attributes).forEach(aname => {
-				const value = vdom.attributes[aname];
-				if(value!=null && typeof(value)!=="string") el[aname] = value;
-				else el.setAttribute(aname,value);
-			});
-			vdom.children.forEach(child => el.appendChild(fromVDOM(child)));
-			return el;
-		},
-		view = (el,{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect=PROTECTED}=el.constructor.defaults||{}) => {
+		view = (el,{template,model={},attributes={},actions={},controller,linkModel=tlx.linkModel,lifecycle={},protect=PROTECTED}=el.constructor.defaults||{}) => {
 			if(template) {
 				const type = typeof(template);
 				if(type==="object") {
 					if(template.tagName==="TEMPLATE") template.innerText = template.innerHTML;
-					Object.assign(slice(template.attributes).reduce((accum,attribute) => {
-						accum[attribute.name] = attribute.value;
-						return accum;
-					},{}),attributes);
-					template = template.shadowRoot ? template.shadowRoot : template;
+					template = template.shadowRoot ? template.shadowRoot : template.firstChild;
 				} else {
 					const fragment = document.createElement(el.tagName),
 						text = new Text(template);
@@ -372,7 +376,7 @@
 			}
 			let mounted;
 			const scope = {__t_model:model},
-					eltag = template && (template.tagName==="TEMPLATE" || (template.tagName==="SCRIPT" && template.type==="template")) ? el.tagName : undefined,
+					eltag = template && (template.tagName==="TEMPLATE" || template.tagName==="SCRIPT") ? el.tagName : undefined,
 					vdom = toVDOM(template||el,attributes,eltag),
 					linkmodel = (path,...renders) => {
 						return event => {

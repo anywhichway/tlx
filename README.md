@@ -1,4 +1,4 @@
-# TLX v1.0.22
+# TLX v1.0.23
 
 TLX is a small (< 4.5K minimized and gzipped) multi-paradigm front-end library supporting:
 
@@ -432,7 +432,9 @@ Returns a deep `Proxy` for `object` that automatically tracks usage in `views` a
 
 `watchers` - A potentially nested object, the keys of which are intended to match the keys on the target `object`. The values are functions with the signature `(oldvalue,value,property,proxy)`. These are invoked synchronously any time the target property value changes. If they throw an error, the value will not get set. If you desire to use asyncronous behavior, then implement your code to inject asynchronicity. Promises will not be awaited if returned.
 
-## `HTMLElement tx.el(string,tagName,attributes)` - Wraps `string` in the specified `tagName` with `attributes`. Helps avoid the inclusion of tags in embedded HTML scripts so that the use of `<script type="text/template">` can be avoided.
+## `HTMLElement tx.el(string,tagName,attributes)` - 
+
+Wraps `string` in the specified `tagName` with `attributes`. Helps avoid the inclusion of tags in embedded HTML scripts so that the use of `<script type="text/template">` can be avoided.
 
 ## `HTMLElement tlx.view(HTMLElement el[,object options])`
 
@@ -587,6 +589,8 @@ The idea of using `:` to delimit arguments for custom directives is drawn from `
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-21 v1.0.23 - Documentation formatting.
 
 2018-12-17 v1.0.22 - Relaxed script tag type checking so any script can be used as a template.
 

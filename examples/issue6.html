@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+  <style>
+	input:invalid {
+  		box-shadow: 0 0 5px 1px red;
+	}
+	</style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Titel der Seite | Name der Website</title>
+    <script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>
+    <script src="../index.js"></script>
+  </head>
+  <body>
+    <div class="fields" id="field1">Hello ${firstname}</div>
+    <div class="fields" id="field2">Hello ${firstname}</div>
+    <div class="fields" id="field3">Hello ${firstname} ${lastname}</div>
+    <div>First Name: <input id="firstName" name="firstname" value="${firstname}" protect></div>
+
+    <script type="text/javascript">
+        const model = tlx.reactor();
+        //tlx.view(document.getElementById("field1"),{model});
+        //tlx.view(document.getElementById("field2"),{model});
+        //tlx.view(document.getElementById("field3"),{model});
+        //[].forEach.call(document.getElementsByClassName("fields"), function(elem) {
+        //    tlx.view(elem,{model})
+        //});
+        tlx.view(document.getElementsByClassName("fields"),{model});
+
+        tlx.view(document.getElementById("firstName"),{model,linkModel:true});
+    </script>
+  </body>
+</html>

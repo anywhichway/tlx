@@ -361,7 +361,12 @@
 			slice(node.childNodes).forEach(child => vdom.children.push(toVDOM(child)));
 			return vdom;
 		},
-		view = (el,{template,model={},attributes={},actions={},controller,linkModel=tlx.linkModel,lifecycle={},protect=PROTECTED}=el.constructor.defaults||{}) => {
+		view = function(el,{template,model={},attributes={},actions={},controller,linkModel=tlx.linkModel,lifecycle={},protect=PROTECTED}=el.constructor.defaults||{}) {
+			if(el.length && el[0]!=null) {
+				const args = [].slice.call(arguments,1);
+				[].slice.call(el).forEach(el => view(el,...args));
+				return el;
+			}
 			if(template) {
 				const type = typeof(template);
 				if(type==="object") {
@@ -485,7 +490,7 @@
 			if(typeof(data)==="string") {
 				data = options.escape.reduce((accum,escaper) => escaper(accum),data); // escape the data
 				const scope = this || typeof(globalThis)!=="undefined" ? globalThis : typeof(global)!=="undefined" ? global : {};
-				if(options.eval && !scope[data]) { // allows reference to global names but not execution, see below
+				if(options.eval && !scope[data.trim()]) { // allows reference to global names but not execution, see below
 					try {
 						// if data can be converted into something that is legal JavaScript, clean it
 						// make sure that options.reject has already removed undesireable self evaluating or blocking functions
@@ -544,7 +549,7 @@
 			// possible server execution like <?php
 			data => typeof(data)==="string" && data.match(/<\s*\?\s*.*\s*/),
 			// direct eval, might block or negatively impact clean itself,
-			data => typeof(data)==="string" && data.match(/(eval|alert|prompt|dialog|void|clean)\s*\(*\)/),
+			data => typeof(data)==="string" && data.match(/(eval|alert|prompt|dialog|void|clean)\s*\(+/),
 			// very suspicious,
 			data => typeof(data)==="string" && data.match(/url\s*\(/),
 			// might inject nastiness into logs,

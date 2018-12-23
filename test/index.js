@@ -88,6 +88,15 @@ describe("views",function() {
 		expect(el.firstElementChild.innerHTML).equal(`<ul><li>joe</li><li>bill</li><li>mary</li></ul>`);
 		done();
 	});
+	it("input processing",function(done) {
+		el.innerHTML = '<input value="${value}">';
+		const model = tlx.reactor();
+		tlx.view(el,{model,linkModel:true});
+		expect(el.firstElementChild.value).equal("");
+		model.value = "test";
+		expect(el.firstElementChild.value).equal("test");
+		done();
+	});
 	it("conditional (render content)",function(done) {
 		el.innerHTML = "${show ? 'hi' : ''}";
 		tlx.view(el,{model:{show:true}});
@@ -103,18 +112,23 @@ describe("views",function() {
 	it("conditional directive (render content)",function(done) {
 		el.innerHTML = '<div t-if="${show}">hi</div>';
 		tlx.view(el,{model:{show:true}});
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal(`<div t-if="true">hi</div>`);
-			done();
-		});
+		expect(el.innerHTML).equal(`<div t-if="true">hi</div>`);
+		done();
 	});
 	it("conditional directive (don't render content)",function(done) {
 		el.innerHTML = '<div t-if="${show}">hi</div>';
 		tlx.view(el,{model:{show:false}});
-		window.requestAnimationFrame(() => {
-			expect(el.innerHTML).equal("");
-			done();
-		});
+		expect(el.innerHTML).equal(`<div t-if="false"></div>`);
+		done();
+	});
+	it("reactive directive",function(done) {
+		el.innerHTML = '<div t-if="${show}">hi</div>';
+		const model = tlx.reactor({show:true});
+		tlx.view(el,{model});
+		expect(el.innerHTML).equal(`<div t-if="true">hi</div>`);
+		model.show = false;
+		expect(el.innerHTML).equal(`<div t-if="false"></div>`);
+		done();
 	});
 	it("for directive",function(done) {
 		el.innerHTML = '<div t-for:i:of="${[1,2,3]}">${i}</div>';
@@ -200,6 +214,7 @@ describe("views",function() {
 		tlx.view(el,{model,linkModel:true});
 		expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
 		el.firstElementChild.setAttribute("value","changed");
+		el.firstElementChild.value = "changed";
 		el.firstElementChild.dispatchEvent(event);
 		expect(el.innerHTML).equal("<input name=\"data\" value=\"changed\">");
 		expect(model.data).equal("changed");
@@ -232,6 +247,7 @@ describe("views",function() {
 		tlx.view(el,{model,linkModel:true,protect:false});
 		expect(el.innerHTML).equal("<input name=\"data\" value=\"test\">");
 		el.firstElementChild.setAttribute("value","function() { }");
+		el.firstElementChild.value = "function() { }";
 		el.firstElementChild.dispatchEvent(event);
 		expect(el.innerHTML).equal("<input name=\"data\" value=\"function() { }\">");
 		expect(model.data).equal("function() { }");

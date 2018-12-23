@@ -75,10 +75,13 @@
 			let directed;
 			Object.keys(source.attributes).forEach(aname => {
 				let value = source.attributes[aname],
-				 type = typeof(value);
+				 type = typeof(value),
+				 currentview = CURRENTVIEW;
+				CURRENTVIEW = target;
 				const dname = resolve(aname.split(":")[0],scope,actions),
 					directive = directives[dname]||tlx.directives[dname];
 				value = resolve(value,scope,actions);
+				CURRENTVIEW = currentview;
 				type = typeof(value);
 				// replace different
 				if(value==null) {
@@ -88,6 +91,7 @@
 					if(value!==target.getAttribute(aname)) {
 						try {
 							target.setAttribute(aname,value);
+							if(aname==="value") target.value = value;
 						} catch(e) {
 							; // just ignore, may be an attribute with an unresolved argument, e.g. t-bind:${aname}
 						}
@@ -108,7 +112,7 @@
 					};
 					const result = directive(value,scope,actions,render,{element:target,raw:aname,resolved:aname.indexOf("${")>=0 ? resolve(aname,scope,actions) : aname}),
 						rtype = typeof(result);
-					if(!result) {
+					if(result==null) {
 						target.parentElement.removeChild(target);
 					} else if(rtype==="string") {
 							directed = true;
@@ -224,7 +228,8 @@
 					const dependencies = DEPENDENCIES.get(target);
 					if(dependencies && dependencies[property]) {
 						dependencies[property].forEach(view => {
-							if(view.parentElement && view.render) view.render();
+							const render = view.render || (view.view ? view.view.render : null);
+							if(view.parentElement && render) render();
 							else dependencies[property].delete(view);
 						});
 					}
@@ -479,7 +484,8 @@
 			}
 			if(typeof(data)==="string") {
 				data = options.escape.reduce((accum,escaper) => escaper(accum),data); // escape the data
-				if(options.eval) {
+				const scope = this || typeof(globalThis)!=="undefined" ? globalThis : typeof(global)!=="undefined" ? global : {};
+				if(options.eval && !scope[data]) { // allows reference to global names but not execution, see below
 					try {
 						// if data can be converted into something that is legal JavaScript, clean it
 						// make sure that options.reject has already removed undesireable self evaluating or blocking functions
@@ -526,7 +532,7 @@
 				if(object && typeof(object)==="object") Object.entries(object).forEach(([key,value],index) => render(Object.assign(scope,{value,key,object}),actions));
 				return element;
 			},
-			"t-if": (bool,scope,actions,render) => bool ? render(scope,actions) : undefined
+			"t-if": (bool,scope,actions,render,{element}={}) => bool ? render(scope,actions) : ""
 	};
 	// default options/support for coerce, accept, reject, escape, eval
 	clean.options = {
@@ -538,7 +544,7 @@
 			// possible server execution like <?php
 			data => typeof(data)==="string" && data.match(/<\s*\?\s*.*\s*/),
 			// direct eval, might block or negatively impact clean itself,
-			data => typeof(data)==="string" && data.match(/eval|alert|prompt|dialog|void|clean\s*\(/),
+			data => typeof(data)==="string" && data.match(/(eval|alert|prompt|dialog|void|clean)\s*\(*\)/),
 			// very suspicious,
 			data => typeof(data)==="string" && data.match(/url\s*\(/),
 			// might inject nastiness into logs,

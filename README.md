@@ -1,4 +1,4 @@
-# TLX v1.0.25
+# TLX v1.0.26
 
 TLX is a small (< 4.5K minimized and gzipped) multi-paradigm front-end library supporting:
 
@@ -436,11 +436,11 @@ Returns a deep `Proxy` for `object` that automatically tracks usage in `views` a
 
 Wraps `string` in the specified `tagName` with `attributes`. Helps avoid the inclusion of tags in embedded HTML scripts so that the use of `<script type="text/template">` can be avoided.
 
-## `HTMLElement tlx.view(HTMLElement el[,object options])`
+## `HTMLElement tlx.view(HTMLElement||HTMLCollection el[,object options])`
 
 Returns a `view` of the specified `template` bound to the DOM element `el`. If no `template` is specified, then the initial outerHTML of the `el` becomes the template. A `view` is an arbitrary collection of nested DOM nodes the leaves of which are selectively rendered if their contents have changed. The nested DOM nodes all have one additional property `view` that points back to the root element in the `view`.
 
-`HTMLElement el` - A DOM element which may be empty or contain HTML that looks and behaves like JavaScript string template literals. The initial content is overwritten when the node is rendered, but kept as a template if one was not provided.
+`HTMLElement||HTMLCollection el` - An `HTMLElement` which may be empty or contain HTML that looks and behaves like JavaScript string template literals. The initial content is overwritten when the node is rendered, but kept as a template if one was not provided. If an `HTMLCollection` is provided, then each item will be processed using the provided options. This makes it easy to process a whole bunch of DOM nodes returned from a DOM query.
 
 `object options` - `{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect}={}`
 
@@ -452,7 +452,8 @@ Returns a `view` of the specified `template` bound to the DOM element `el`. If n
 
 `function controller` - A standard event handler function to which all events occuring in the view get passed. To limit the events handled, use the return value of `tlx.handlers(object)` as the controller.
 
-`boolean linkModel` - If set to truthy, then the `model` is automatically updated with values from form fields having a `name` attribute by using the `name` attribute value as the key on the model.
+`boolean||string linkModel` - If truthy, then the `model` is automatically updated with values from form fields having a `name` attribute by using the `name` attribute value as the key on the model. If the value of `linkModel` is a string, then that event is used to trigger updates, typically this would be "change" or "input". Use "change" for triggering when a field loses
+focus, use "input" to react to every keystroke. If the value is truthy but not a string, "change" will be used.
 
 `object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeMount`, `mounted`, `beforeUpdate`, `updated`. Because it is not a component, a view does not support `beforeCreate` and `created`. Because the VDOM is tiny and highly ephemeral and the DOM automatically manages disposal of un-used nodes, there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
 
@@ -589,6 +590,8 @@ The idea of using `:` to delimit arguments for custom directives is drawn from `
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-24 v1.0.26 - Added protection for `textarea`. Improved reactivity of `<select>`. Added capability to have `linkModel` respond to `oninput` as well as `onchange`.
 
 2018-12-23 v1.0.25 - Added example for issue: [8(https://github.com/anywhichway/tlx/issues/8)
 

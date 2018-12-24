@@ -14,7 +14,7 @@
     <div>First Name: <input id="firstName" name="firstname" value="${firstname}" protect></div>
 
     <script type="text/javascript">
-        const model = tlx.reactor({show:true});
+        const model = tlx.reactor();
         tlx.view(document.getElementById("field1"),{model});
         tlx.view(document.getElementById("field2"),{model});
         tlx.view(document.getElementById("firstName"),{model,linkModel:true})

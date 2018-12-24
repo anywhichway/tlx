@@ -362,7 +362,7 @@
 			return vdom;
 		},
 		view = function(el,{template,model={},attributes={},actions={},controller,linkModel=tlx.linkModel,lifecycle={},protect=PROTECTED}=el.constructor.defaults||{}) {
-			if(el.length && el[0]!=null) {
+			if(el.length && el[0]!=null && !el.options) {
 				const args = [].slice.call(arguments,1);
 				[].slice.call(el).forEach(el => view(el,...args));
 				return el;
@@ -430,7 +430,7 @@
 					}
 				}
 			}
-			const inputs = slice(el.querySelectorAll("input"));
+			const inputs = el instanceof HTMLInputElement ? [el] : slice(el.querySelectorAll("input, textarea, select"));
 			if([ _window.HTMLInputElement,_window.HTMLSelectElement,_window. HTMLTextAreaElement].some(cls => el instanceof cls)) inputs.push(el);
 			inputs.forEach(input => {
 				if(protect || input.hasAttribute("protect")) {
@@ -461,7 +461,7 @@
 					 })
 				}
 			});
-			if(linkModel) inputs.forEach(input => input.addEventListener("change",event => !input.validity.valid || linkmodel(input.name)(event),false));
+			if(linkModel) inputs.forEach(input => input.addEventListener(typeof(linkModel)==="string" && el.tagName!=="SELECT" ? linkModel : "change",event => !input.validity.valid || linkmodel(input.name)(event),false));
 			Object.entries({render,linkModel:linkmodel,model}).forEach(([key,value]) => Object.defineProperty(el,key,{enumerable:false,configurable:true,writable:true,value}));
 			return el;
 		},

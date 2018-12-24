@@ -1,4 +1,4 @@
-# TLX v1.0.26
+# TLX v1.0.27
 
 TLX is a small (< 4.5K minimized and gzipped) multi-paradigm front-end library supporting:
 
@@ -590,6 +590,8 @@ The idea of using `:` to delimit arguments for custom directives is drawn from `
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-24 v1.0.27 = Added `examples/router.html`.
 
 2018-12-24 v1.0.26 - Added protection for `textarea`. Improved reactivity of `<select>`. Added capability to have `linkModel` respond to `oninput` as well as `onchange`.
 

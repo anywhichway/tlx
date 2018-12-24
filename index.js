@@ -241,7 +241,9 @@
 		handlers = handlers => {
 			return event => {
 				const handler = handlers[event.type]||handlers["*"];
-				if(handler) handler(event);
+				if(handler) {
+					handler(event);
+				}
 			}
 		},
 		component = (tagName,config={}) => {
@@ -286,7 +288,7 @@
 					const a = event.target,
 						target = a.getAttribute("target")||a.view;
 					let pathname = a.pathname.substring(1);
-					if(a.protocol==="file:") pathname = pathname.substring(pathname.indexOf(":")+2);
+					if(a.protocol==="file:") pathname = pathname.substring(pathname.indexOf(":")+1);
 					for(let match in routes) {
 						const f = routes[match];
 						try {
@@ -426,7 +428,9 @@
 				if(events) events.forEach(event => el.addEventListener(event,handleEvent,options))
 				else {
 					for(const key in el) {
-						if(key[0]==="o" && key[1]==="n") el.addEventListener(key.substring(2),controller,options);
+						if(key[0]==="o" && key[1]==="n") {
+							el.addEventListener(key.substring(2),controller,options);
+						}
 					}
 				}
 			}

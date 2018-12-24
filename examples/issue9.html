@@ -1,0 +1,19 @@
+<html lang="en">
+<head>
+<script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>
+<script src="../index.js"></script>
+</head>
+<body>
+<div>
+In the debugger console type "items[0]=3" and the content should update.</div>
+<table id="foreach" t-foreach="${items}">
+<tr>
+<td>${index}</td><td>${value}</td>
+</tr>
+</table>
+<script>
+const items = tlx.reactor([1,2,3])
+tlx.view(document.getElementById("foreach"),{model:items});
+</script>
+</body>
+</html>

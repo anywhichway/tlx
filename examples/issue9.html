@@ -1,11 +1,20 @@
 <html lang="en">
 <head>
-<script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>
-<script src="../index.js"></script>
+	<!--  default to loading current deployed version in case user is not running from tlx directory -->
+	<script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>
+	<!-- load most current version -->
+	<script src="../index.js"></script>
 </head>
 <body>
 <div>
-In the debugger console type "items[0]=3" and the content should update.</div>
+In the debugger console type and of the below and the content should update:
+<ul>
+<li>items[0]=3</li>
+<li>items.push(4)</li>
+<li>items.shift()</li>
+<li>delete items[1]</li>
+</ul>
+</div>
 <table id="foreach" t-foreach="${items}">
 <tr>
 <td>${index}</td><td>${value}</td>

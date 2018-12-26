@@ -4,14 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Titel der Seite | Name der Website</title>
-    <script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>
-    <script src="../index.js"></script>
+    <!--  default to loading current deployed version in case user is not running from tlx directory -->
+	<script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>
+	<!-- load most current version -->
+	<script src="../index.js"></script>
   </head>
   <body>
   	<div>Open debugger and set model.show=true to see hidden field appear from code.</div>
     <div id="field1" t-if="${show}">Hello ${firstname}</div>
     <div id="field2">Hello ${firstname}</div>
-    <div>First Name: <input id="firstName" name="firstname" value="${firstname}" protect></div>
+    <div>First Name: <input id="firstName" name="firstname" value="${firstname}" protect placeholder="Enter a name"></div>
 
     <script type="text/javascript">
         const model = tlx.reactor();

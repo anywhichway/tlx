@@ -591,6 +591,8 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, 
 
 # Release History (reverse chronological order)
 
+2018-12-26 v1.0.28 = Improved array reactivity.
+
 2018-12-24 v1.0.27 = Added `examples/router.html`.
 
 2018-12-24 v1.0.26 - Added protection for `textarea`. Improved reactivity of `<select>`. Added capability to have `linkModel` respond to `oninput` as well as `onchange`.

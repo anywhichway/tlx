@@ -30,8 +30,8 @@
 	}
 	var document = _window.document;
 	
-	//update target DOM node from source DOM node
-	//make changes only where necessary
+	// update target DOM node from source DOM node
+	// make changes only where necessary
 	function updateDOM(source,target,scope,actions,view=target,template=source) {
 		Object.defineProperty(target,"view",{enumerable:false,configurable:true,writable:true,value:view});
 		Object.assign(scope,{"$source":source,
@@ -206,13 +206,17 @@
 			});
 			const proxy = new Proxy(object,{
 				get(target,property) {
+					// keep track of where object properties are referenced
+					// take advantage of JavaScript single threading by using a single
+					// global variable pointing to a DOM node. The variable gets set each
+					// time a DOM node is accessed by tlx code
 					if(CURRENTVIEW) {
 						let dependencies = DEPENDENCIES.get(target);
 						if(!dependencies) {
 							dependencies = {};
 							DEPENDENCIES.set(target,dependencies);
 						}
-						dependencies[property] || (dependencies[property] = new Set());
+						if(!dependencies[property]) dependencies[property] = new Set();
 						dependencies[property].add(CURRENTVIEW);
 					}
 					return target[property];
@@ -225,12 +229,36 @@
 						(Array.isArray(watcher) ? watcher : [watcher]).forEach(callback => watchers[property](oldvalue,value,property,proxy));
 					}
 					target[property] = value;
+					// if oldvalue is undefined, then a new property is being added so get all references to object, not just those using property
+					const dependencies = DEPENDENCIES.get(target),
+						propertysets = oldvalue===undefined ? Object.values(dependencies) : [dependencies[property]],
+						rendered = new Set(); // keep track of rendered views in case the sam eone occurs twice fro new properties
+					if(dependencies && propertysets) {
+						propertysets.forEach(set => {
+							(set||[]).forEach(view => {
+								const render = view.render || (view.view ? view.view.render : null);
+								if(!rendered.has(view) && view.parentElement && render) {
+									render();
+									rendered.add(view);
+								} else if(oldvalue!==undefined) { // view no longer valid if no parentElement
+									dependencies[property].delete(view);
+								}
+							});
+						});
+					}
+					return true;
+				},
+				deleteProperty(target,property) {
+					delete target[property];
 					const dependencies = DEPENDENCIES.get(target);
 					if(dependencies && dependencies[property]) {
 						dependencies[property].forEach(view => {
 							const render = view.render || (view.view ? view.view.render : null);
-							if(view.parentElement && render) render();
-							else dependencies[property].delete(view);
+							if(view.parentElement && render) {
+								render();
+							} else { // view no longer valid if no parentElement
+								dependencies[property].delete(view);
+							}
 						});
 					}
 					return true;
@@ -327,7 +355,7 @@
 			return handleEvent;
 		},
 		slice = arrayLike => [].slice.call(arrayLike),
-		toPropertyName = attributeName => {
+		toPropertyName = attributeName => { // convert dashed attribute name to camel case property name
 			const parts = attributeName.split("-");
 			let name = parts.shift(),
 				part = parts.shift();
@@ -337,7 +365,7 @@
 			}
 			return name;
 		},
-		toAttributeName = name => {
+		toAttributeName = name => { // convert camel case property name to dashed attribute name
 			let attributeName = "";
 			for(let i=0;i<name.length;i++) {
 				const c = name[i];
@@ -460,8 +488,10 @@
 							event.preventDefault();
 							return false;
 						}
-						input.setCustomValidity("");
-						oldvalue = event.target.value;
+						if(oldvalue!==event.target.value) {
+							input.setCustomValidity("");
+							oldvalue = event.target.value;
+						}
 					 })
 				}
 			});

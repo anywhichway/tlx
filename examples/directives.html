@@ -1,5 +1,9 @@
 <html lang="en">
 <head>
+	<!--  default to loading current deployed version in case user is not running from tlx directory -->
+	<script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>
+	<!-- load most current version -->
+	<script src="../index.js"></script>
 	<style>
 	input:invalid {
   		box-shadow: 0 0 5px 1px red;
@@ -18,7 +22,6 @@
 <div id="iffalse" t-if="${show}">
 <div>Should not see</div>
 </div>
-<script src="../index.js"></script>
 <script>
 tlx.view(document.getElementById("foreach"),{model:{items:[1,2,3]}});
 tlx.view(document.getElementById("iftrue"),{model:{show:true}});

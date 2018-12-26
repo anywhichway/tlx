@@ -4,11 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Titel der Seite | Name der Website</title>
-    <script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>
-    <script src="../index.js"></script>
+    <!--  default to loading current deployed version in case user is not running from tlx directory -->
+	<script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>
+	<!-- load most current version -->
+	<script src="../index.js"></script>
   </head>
   <body>
-  	<div>Open debugger and set model="[some value]" to see input value change from code.</div>
+  	<div>Open debugger and set model.firstname="[some value]" to see input value change from code.</div>
     <div id="field1">Hello ${firstname}</div>
     <div id="field2">Hello ${firstname}</div>
     <div>First Name: <input id="firstName" name="firstname" value="${firstname}" protect></div>

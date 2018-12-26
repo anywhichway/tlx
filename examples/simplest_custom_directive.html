@@ -1,10 +1,15 @@
 <html lang="en">
+<head>
+	<!--  default to loading current deployed version in case user is not running from tlx directory -->
+	<script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>
+	<!-- load most current version -->
+	<script src="../index.js"></script>
+</head>
 <body>
 <div id="message" my-case="upper">
 Hello ${firstName}.
 </div>
 First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter">
-<script src="../index.js"></script>
 <script>
 // add custom directive
 tlx.directives["my-case"] = function(toCase,model,actions,render) {

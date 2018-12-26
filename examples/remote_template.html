@@ -1,0 +1,32 @@
+<html lang="en">
+<head>
+	<!--  default to loading current deployed version in case user is not running from tlx directory -->
+	<script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>
+	<!-- load most current version -->
+	<script src="../index.js"></script>
+	<style>
+	input:invalid {
+  		box-shadow: 0 0 5px 1px red;
+	}
+	</style>
+</head>
+<body>
+<div>
+You must be loading this file over an http server for this example to work
+</div>
+<div id="message"></div>
+<div id="name">First Name: <input id="firstName" name="firstname" value="${firstname}" protect placeholder="Enter a name"></div>
+<div>Below there should be a message that a load has failed.</div>
+<div id="fail"></div>
+<script>
+// create an empty reactive model to share
+const model = tlx.reactor({firstname:"joe"}),
+// bind field to model and link "name" attribute values to model and load remote template
+	url = new URL("./template.html",window.location.href),
+	missing = new URL("./missing.html",window.location.href);
+tlx.view(document.getElementById("message"),{model,template:url.href});
+tlx.view(document.getElementById("name"),{model,linkModel:true});
+tlx.view(document.getElementById("fail"),{model,template:missing.href});
+</script>
+</body>
+</html>

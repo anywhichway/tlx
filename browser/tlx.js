@@ -171,6 +171,14 @@
 			}
 		},
 		interpolate = (template,...interpolations) => interpolations,
+		isURL = string => {
+			try {
+				new URL(string);
+				return true;
+			} catch(e) {
+				return false;
+			}
+		},
 		resolve = (value,scope,actions) => {
 			if(typeof(value)==="string" && value.indexOf("${")>=0) {
 				const	extras = {},
@@ -254,11 +262,8 @@
 					if(dependencies && dependencies[property]) {
 						dependencies[property].forEach(view => {
 							const render = view.render || (view.view ? view.view.render : null);
-							if(view.parentElement && render) {
-								render();
-							} else { // view no longer valid if no parentElement
-								dependencies[property].delete(view);
-							}
+							if(view.parentElement && render) render();
+							else dependencies[property].delete(view); // view no longer valid if no parentElement
 						});
 					}
 					return true;
@@ -269,9 +274,7 @@
 		handlers = handlers => {
 			return event => {
 				const handler = handlers[event.type]||handlers["*"];
-				if(handler) {
-					handler(event);
-				}
+				if(handler) handler(event);
 			}
 		},
 		component = (tagName,config={}) => {
@@ -315,7 +318,7 @@
 				if(href) {
 					const a = event.target,
 						target = a.getAttribute("target")||a.view;
-					let pathname = a.pathname.substring(1);
+					let pathname = a.pathname;
 					if(a.protocol==="file:") pathname = pathname.substring(pathname.indexOf(":")+1);
 					for(let match in routes) {
 						const f = routes[match];
@@ -404,12 +407,23 @@
 					template = template.shadowRoot ? template.shadowRoot : template.firstChild;
 				} else {
 					const fragment = document.createElement(el.tagName),
-						text = new Text(template);
+						isurl = isURL(template),
+						text = new Text(isurl ? `loading ${template}...` : template);
 					if(fragment.shadowRoot) {
 						while(fragment.shadowRoot.lastChild) fragment.shadowRoot.removeChild(fragment.shadowRoot.lastChild);
 						fragment.shadowRoot.appendChild(text);
 					} else {
 						fragment.appendChild(text)
+					}
+					if(isurl) {
+						fetch(template).then(response => {
+							if(response.ok) return response.text();
+							throw new Error(`Error: ${text.data}`);
+						}).then(template => {
+							view(el,{template,model,attributes,actions,controller,linkModel,lifecycle,protect});
+						}).catch(e => {
+							el.innerHTML = e.message;
+						});
 					}
 					template = fragment;
 				}
@@ -456,9 +470,7 @@
 				if(events) events.forEach(event => el.addEventListener(event,handleEvent,options))
 				else {
 					for(const key in el) {
-						if(key[0]==="o" && key[1]==="n") {
-							el.addEventListener(key.substring(2),controller,options);
-						}
+						if(key[0]==="o" && key[1]==="n") el.addEventListener(key.substring(2),controller,options);
 					}
 				}
 			}
@@ -604,10 +616,10 @@
 					let max = parts.length;
 					return parts.reduce((accum,part,i) => { 
 							const [key,value] = decodeURIComponent(part).split("="),
-								type = typeof(value), // if type undefined, then may not even be URL query string, so clean "key"
-								cleaned = (type!=="undefined" ? clean(value) : clean(key)); 
+								// if value undefined, then may not even be URL query string, so clean "key"
+								cleaned = (value!==undefined ? clean(value) : clean(key)); 
 							// keep only those parts of query string that are clean
-							if(cleaned!==undefined) accum += (type!=="undefined" ? `${key}=${cleaned}` : cleaned) + (i<max-1 ? "&" : "");
+							if(cleaned!==undefined) accum += (value!==undefined ? `${key}=${cleaned}` : cleaned) + (i<max-1 ? "&" : "");
 							else max--;
 							return accum;
 						},"?");

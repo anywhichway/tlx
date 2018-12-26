@@ -1,10 +1,10 @@
-# TLX v1.0.27
+# TLX v1.0.29
 
-TLX is a small (< 4.5K minimized and gzipped) multi-paradigm front-end library supporting:
+TLX is a small (4.5K minimized and gzipped) multi-paradigm front-end library supporting:
 
 1) template literals in place of JSX,
 
-2) template definition directly in HTML or using `<template>` or `<script type="template">` or JavaScript,
+2) template definition directly in HTML or using `<template>`, or `<script type="template">`, or JavaScript, or simply remote URL references.
 
 3) automatic or manual creation of standards compliant custom elements and components,
 
@@ -444,7 +444,7 @@ Returns a `view` of the specified `template` bound to the DOM element `el`. If n
 
 `object options` - `{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect}={}`
 
-`HTMLElement|string template` - An optional DOM element containing what looks like a JavaScript template literal or a string or an escaped JavaScript template literal, e.g. `\${firstName}` vs `${firstName}`.
+`HTMLElement|string url|string template` - An optional DOM element containing what looks like a JavaScript template literal or a string that is a valid string representation of a URL or a or an escaped JavaScript template literal, e.g. `\${firstName}` vs `${firstName}` containing HTML.
 
 `object model` - The data used when resolving the string template literals. This is typically shared across multiple `views`.
 
@@ -591,9 +591,11 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, 
 
 # Release History (reverse chronological order)
 
-2018-12-26 v1.0.28 = Improved array reactivity.
+2018-12-26 v1.0.29 - Added remote templates. Fixed differences in routing when loaded over file: vs http(s):.
 
-2018-12-24 v1.0.27 = Added `examples/router.html`.
+2018-12-26 v1.0.28 - Improved array reactivity.
+
+2018-12-24 v1.0.27 - Added `examples/router.html`.
 
 2018-12-24 v1.0.26 - Added protection for `textarea`. Improved reactivity of `<select>`. Added capability to have `linkModel` respond to `oninput` as well as `onchange`.
 

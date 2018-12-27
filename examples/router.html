@@ -9,7 +9,8 @@
 <a id="routed" href="/test/1">Click Me</div>
 <script>
 const router =  tlx.router({
-  '/test/:id': args => {
+  '/test/:id': function(args) {
+    console.log(this); // should be an event object
     console.log(args);
     alert("TEST");
   }}),

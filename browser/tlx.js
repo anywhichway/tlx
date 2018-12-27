@@ -316,8 +316,7 @@
 				Object.defineProperty(event,"stopRoute",{enumerable:false,configurable:true,writable:true,value:function(){ this.routeStopped = true; }})
 				const href = event.target.href;
 				if(href) {
-					const a = event.target,
-						target = a.getAttribute("target")||a.view;
+					const a = event.target;
 					let pathname = a.pathname;
 					if(a.protocol==="file:") pathname = pathname.substring(pathname.indexOf(":")+1);
 					for(let match in routes) {
@@ -638,6 +637,29 @@
 		],
 		eval: true
 	};
+	
+	/*
+	 tlx.routes = function(routes) {
+	 for route, load, when loaded, index
+	const routes = {
+			path1: {
+				title:
+				description:
+				template:
+			}
+			path2: template,
+			path3: 
+	}
+	
+	index.tri.url.tricount
+	
+	tlx.search = function(str) {
+		// tokens
+		// find trigrams in index
+		tlx.index[trigrams]
+		urls as keys with counts as values;
+	}
+	tlx.search("token1 token2")*/
 	
 	const tlx = {component,reactor,view,router,handlers,escape:clean,protect,resolve,JSDOM,directives:{},el};
 	

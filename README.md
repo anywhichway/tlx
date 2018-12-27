@@ -1,4 +1,4 @@
-# TLX v1.0.29
+# TLX v1.0.30
 
 TLX is a small (4.5K minimized and gzipped) multi-paradigm front-end library supporting:
 
@@ -483,7 +483,7 @@ Returns a handler designed to work with click events on anchor hrefs.
 
 ```javascript
 // when test/1 is clicked, logs {id:1}
-handlers({click:router({"test/:id":args => {
+handlers({click:router({"test/:id":function(args) {
 	const view = this.target.view; 
 	this.stopRoute(); 
 	view.parentNode.replaceChild(MyComponent(args),view);
@@ -590,6 +590,8 @@ The idea of using `:` to delimit arguments for custom directives is drawn from `
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-27 v1.0.30 - Documentation correction for router, [12](https://github.com/anywhichway/tlx/issues/12)
 
 2018-12-26 v1.0.29 - Added remote templates. Fixed differences in routing when loaded over file: vs http(s):.
 

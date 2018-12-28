@@ -1,30 +1,6 @@
 # TLX v1.0.31
 
-TLX is a small (4.5K minimized and gzipped) multi-paradigm front-end library supporting:
-
-1) template literals in place of JSX,
-
-2) multi-root template support directly in HTML or using `<template>`, or `<script type="template">`, or JavaScript, or simply remote URL references.
-
-3) automatic or manual creation of standards compliant custom elements and components,
-
-4) `t-if` attribute directives,
-
-4) `t-for`, `t-foreach`, `t-forvalues` with iterable protocol support,
-
-5) custom attribute directives in as little as one line of code,
-
-6) optional automatic binding of form fields to state,
-
-7) optional automatic re-rendering,
-
-8) standards compliant event handlers, a.k.a controllers
-
-9) a default router (implemented as a controller)
-
-10) extended lifecycle callbacks
-
-11) automatic HTML injection protection
+TLX is a small (4.5K minimized and gzipped) multi-paradigm front-end library supporting: template literals in place of JSX; multi-root templates in HTML, JavaScript, or remote URL references; `t-for`, `t-foreach`, `t-forvalues` with iterable protocol support; `t-if` attribute directive; custom attribute directives; optional two-way data binding; automatic or manual creation of standards compliant custom elements and components; standards compliant event handlers; a default router; extended lifecycle callbacks; automatic HTML injection protection.
 
 
 Tlx can be used in a manner that respects the separation or intergration of development responsibilites between those with a focus on style and layout (HTML and CSS) vs. those with a focus of logic (JavaScript).

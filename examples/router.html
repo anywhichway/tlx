@@ -6,16 +6,20 @@
 	<script src="../index.js"></script>
 </head>
 <body>
-<a id="routed" href="/test/1">Click Me</div>
+<div id="routed">
+<a id="link" href="/test/1">Click Me</a>
+</div>
 <script>
-const router =  tlx.router({
-  '/test/:id': function(args) {
-    console.log(this); // should be an event object
-    console.log(args);
-    alert("TEST");
-  }}),
-  handlers = tlx.handlers({click:router});
-tlx.view(document.getElementById("routed"),{controller:handlers});
+const routed = document.getElementById("routed"),
+	router =  tlx.router({
+	  '/test/:id': function(args) {
+	    console.log(this); // should be an event object
+	    console.log(args);
+	 	this.stopRoute(true); // stop routing and push href to history
+	    tlx.view(routed,{template:"You clicked!"}); // show the next view
+	  }}),
+	  handlers = tlx.handlers({click:router});
+tlx.view(routed,{controller:handlers});
 </script>
 </body>
 </html>

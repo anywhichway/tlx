@@ -1,14 +1,16 @@
-# TLX v1.0.30
+# TLX v1.0.31
 
 TLX is a small (4.5K minimized and gzipped) multi-paradigm front-end library supporting:
 
 1) template literals in place of JSX,
 
-2) template definition directly in HTML or using `<template>`, or `<script type="template">`, or JavaScript, or simply remote URL references.
+2) multi-root template support directly in HTML or using `<template>`, or `<script type="template">`, or JavaScript, or simply remote URL references.
 
 3) automatic or manual creation of standards compliant custom elements and components,
 
-4) `t-for`, `t-foreach`, `t-forvalues` and `t-if` attribute directives,
+4) `t-if` attribute directives,
+
+4) `t-for`, `t-foreach`, `t-forvalues` with iterable protocol support,
 
 5) custom attribute directives in as little as one line of code,
 
@@ -23,6 +25,7 @@ TLX is a small (4.5K minimized and gzipped) multi-paradigm front-end library sup
 10) extended lifecycle callbacks
 
 11) automatic HTML injection protection
+
 
 Tlx can be used in a manner that respects the separation or intergration of development responsibilites between those with a focus on style and layout (HTML and CSS) vs. those with a focus of logic (JavaScript).
 
@@ -105,6 +108,8 @@ Tlx is agnostic to the use of build tools and development pipelines. In fact, it
 
 # Examples
 
+See the `examples` directory for lots of examples, meanwhile here are some basic ones.
+
 ## Simplest Apps
 
 The simplest apps to write are those that use HTML to define in-line templates and use element `name` attribute values to support two-way data binding and automatic browser updates through the use of a reactive data model.
@@ -130,7 +135,7 @@ tlx.view(document.getElementById("name"),{model,linkModel:true})
 </html>
 ```
 
-Note, for large applications some people find two way data binding and automatic updates can lead to hard to track down infinite loops.
+Note, for large applications, some people find two way data binding and automatic updates can lead to hard to track down infinite loops.
 
 ## Manual State Updating
 
@@ -267,7 +272,7 @@ If the value of `t-if` is truthy, then the element and its nested elements will 
 
 ## `t-for:varname[:in|of]`
 
-The value provided to `t-for`, is the object to process. `t-for` will provide the key or item bound to `varname` for any nested string literal templates, e.g.
+The value provided to `t-for`, is the object to process. `t-for` will provide the key or item bound to `varname` for any nested string literal templates. The value of `t-for` can be anything that supports the iterable protocol, e.g.
 
 ```
 <div t-for:i:of="${[1,2,3]}">${i}</div>
@@ -279,11 +284,11 @@ will render as
 <div t-for:i:of="${[1,2,3]}">1,2,3</div>
 ```
 
-The qualifiers `in` and `off` behave the same way they do for JavaScript loops. If the argument is not provided, then arrays will automatically use `of` and other objects will use `in`.
+The qualifiers `in` and `off` behave the same way they do for JavaScript loops. If the argument is not provided, then iterables will automatically use `of` and other objects will use `in`.
 
 ## `t-foreach`
 
-The value provided to `t-foreach`, is the array to process. `t-foreach` will provide the scope properties `value`, `index`, and `array` are automatically to any nested string literal templates, e.g.
+The value provided to `t-foreach`, is the array to process. `t-foreach` will provide the scope variables `value`, `index`, and `iterable` to any nested string literal templates. And, if the iterable is an array, the variable `array` will also be available, e.g.
 
 ```html
 <table t-foreach="[1,2,3]">
@@ -297,7 +302,7 @@ If an array is not provided, the directive is effectively ignored. Consider usin
 
 ## `t-forvalues`
 
-The directive `t-forvalues` is similar to `t-foreach`, but it can take either an array or a regular object. The scope properties provided are `value`, `key`, and `object` (which might be an array).
+The directive `t-forvalues` is similar to `t-foreach`, but it can take either an array or a regular object. The scope variables provided are `value`, `key`, and `object` (which might be an array).
 
 ## Custom Attribute Directives
 
@@ -428,7 +433,7 @@ an attempt to inject code is made, then the user is informed there is an error a
 
 Returns a deep `Proxy` for `object` that automatically tracks usage in `views` and re-renders them when data they use changes.
 
-`target` - The `object` around which to wrap the `Proxy`.
+`target` - The `object` around which to wrap the `Proxy`. Note, althoush `Map` and `Set` can be used with attribute directives, it is not currently possible to make them reactive.
 
 `watchers` - A potentially nested object, the keys of which are intended to match the keys on the target `object`. The values are functions with the signature `(oldvalue,value,property,proxy)`. These are invoked synchronously any time the target property value changes. If they throw an error, the value will not get set. If you desire to use asyncronous behavior, then implement your code to inject asynchronicity. Promises will not be awaited if returned.
 
@@ -479,15 +484,24 @@ tlx.handlers({click: (event) => { event.preventDefault(); console.log(event); })
 
 Returns a handler designed to work with click events on anchor hrefs.
 
-`object routes` - An object on which the keys are paths to match, functions that return a boolean when passed the target URL path, or regular expressions that can be used to match a URL path. The values are the functions to execute if the path is matched. The functions take a single keyed object as an argument holding any `:values` parsed from the URL. The event will be bound to `this`. The functions will typically instantiate a component and render it to the `this.target.view`; however, they can actually do anything. Calling `this.stopRoute()` will stop more routes from being processed for the `event`.
+`object routes` - An object on which the keys are paths to match, functions that return a boolean when passed the target URL path, or regular expressions that can be used to match a URL path. The values are the functions to execute if the path is matched. The functions take a single keyed object as an argument holding any `:values` parsed from the URL. The event will be bound to `this`. The functions will typically instantiate a component and render it to the `this.target.view`; however, they can actually do anything. Calling `this.stopRoute()` will stop more routes from being processed for the `event`. Passing `true` to `stopRoute()` will update the browser history and show the URL in the navigation bar.
 
-```javascript
-// when test/1 is clicked, logs {id:1}
-handlers({click:router({"test/:id":function(args) {
-	const view = this.target.view; 
-	this.stopRoute(); 
-	view.parentNode.replaceChild(MyComponent(args),view);
-	}})});
+```html
+<div id="routed">
+<a id="link" href="/test/1">Click Me</a>
+</div>
+<script>
+const routed = document.getElementById("routed"),
+	router =  tlx.router({
+	  '/test/:id': function(args) {
+	    console.log(this); // should be an event object
+	    console.log(args);
+	 	this.stopRoute(true); // stop routing and push href to history
+	    tlx.view(routed,{template:"You clicked!"}); // show the next view
+	  }}),
+	  handlers = tlx.handlers({click:router});
+tlx.view(routed,{controller:handlers});
+</script>
 ```
 
 ## `function tlx.component(string tagName,object options)`
@@ -590,6 +604,8 @@ The idea of using `:` to delimit arguments for custom directives is drawn from `
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-28 v1.0.31 - Iterable protocol support for `t-for`, `t-foreach`, `t-values`. Router history added.
 
 2018-12-27 v1.0.30 - Documentation correction for router, [12](https://github.com/anywhichway/tlx/issues/12)
 

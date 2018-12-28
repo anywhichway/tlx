@@ -69,7 +69,6 @@
 			}
 		}
 		// loop through target attributes, remove where does not exist in source
-
 			slice(target.attributes).forEach(attribute => source.attributes[attribute.name]!==null || target.removeAttribute(attribute.name));
 			// loop through source attributes
 			let directed;
@@ -311,16 +310,30 @@
 				Object.setPrototypeOf(f,prototype);
 				return f;
 		},
+		popstate = event => {
+			const render = pushstate.states.pop();
+			if(render) render();
+		},
+		pushstate = (render,href) => {
+			// history.pushState can't clone the render function, so use a parrallel history
+			pushstate.states.push(render);
+			history.pushState({},"",href);
+		},
 		router = routes => {
+			pushstate.states || (pushstate.states = []);
+			window.addEventListener("popstate",popstate,false);
 			function handleEvent(event) {
-				Object.defineProperty(event,"stopRoute",{enumerable:false,configurable:true,writable:true,value:function(){ this.routeStopped = true; }})
+				Object.defineProperty(event,"stopRoute",{enumerable:false,configurable:true,writable:true,value:function(pushHistory) {
+					if(pushHistory) pushstate(this.target.view.render,href);
+					this.routeStopped = true; 
+				}});
 				const href = event.target.href;
 				if(href) {
 					const a = event.target;
 					let pathname = a.pathname;
 					if(a.protocol==="file:") pathname = pathname.substring(pathname.indexOf(":")+1);
 					for(let match in routes) {
-						const f = routes[match];
+						let f = routes[match];
 						try {
 							match = Function("return " + match)();
 						} catch(e) {
@@ -568,18 +581,28 @@
 			"t-for": (value,scope,actions,render,{raw,resolved,element}={}) => {
 				// directive is of the form "t-for:varname:looptype"
 				let [_,vname,looptype] = resolved.split(":");
-				if(!looptype) looptype = Array.isArray(value) ? "of" : "in";
+				if(!looptype) looptype = value[Symbol.iterator] ? "of" : "in";
 				if(looptype==="in") for(let key in value) render(Object.assign({},scope,{[vname]:key}));
 				else if(looptype==="of") for(let item of value) render(Object.assign({},scope,{[vname]:item}));
 				else throw new TypeError(`loop type must be 'in' or 'of' for ${raw}`);
 				return element;
 			},
-			"t-foreach": (array,scope,actions,render,{element}={}) => {
-				if(Array.isArray(array)) array.forEach((value,index) => render(Object.assign(scope,{value,index,array}),actions));
+			"t-foreach": (iterable,scope,actions,render,{element}={}) => {
+				//if(Array.isArray(array)) array.forEach((value,index) => render(Object.assign(scope,{value,index,array}),actions));
+				if(iterable[Symbol.iterator]) {
+					let index = 0;
+					const config = {index:index++,iterable};
+					if(Array.isArray(iterable)) config.array = iterable;
+					scope = Object.assign({},scope,config);
+					for(const value of iterable) {
+						scope.value = value;
+						render(scope,actions);
+					}
+				}
 				return element;
 			},
 			"t-forvalues": (object,scope,actions,render,{element}={}) => {
-				if(object && typeof(object)==="object") Object.entries(object).forEach(([key,value],index) => render(Object.assign(scope,{value,key,object}),actions));
+				if(object && typeof(object)==="object") (object.entries ? object.entries() : Object.entries(object)).forEach(([key,value],index) => render(Object.assign({},scope,{value,key,object}),actions));
 				return element;
 			},
 			"t-if": (bool,scope,actions,render,{element}={}) => bool ? render(scope,actions) : ""

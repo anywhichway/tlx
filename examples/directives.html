@@ -11,7 +11,14 @@
 	</style>
 </head>
 <body>
+<div>foreach using Array</div>
 <table id="foreach" t-foreach="${items}">
+<tr>
+<td>${index}</td><td>${value}</td>
+</tr>
+</table>
+<div>foreach using Set</div>
+<table id="foreachIterable" t-foreach="${items}">
 <tr>
 <td>${index}</td><td>${value}</td>
 </tr>
@@ -23,7 +30,12 @@
 <div>Should not see</div>
 </div>
 <script>
+const iterable = new Set();
+iterable.add(1);
+iterable.add(2);
+iterable.add(3);
 tlx.view(document.getElementById("foreach"),{model:{items:[1,2,3]}});
+tlx.view(document.getElementById("foreachIterable"),{model:{items:iterable}});
 tlx.view(document.getElementById("iftrue"),{model:{show:true}});
 tlx.view(document.getElementById("iffalse"),{model:{show:false}});
 </script>

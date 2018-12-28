@@ -8,7 +8,6 @@ Tlx can be used in a manner that respects the separation or intergration of deve
 
 ***Don't forget***, give us a star if you like what you see!
 
-- [TLX v1.0.21](#tlx-v1021)
 - [Installation](#installation)
 - [Usage](#usage)
   * [NodeJS](#nodejs)

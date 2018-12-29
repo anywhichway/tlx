@@ -1,7 +1,7 @@
 {
   "name": "tlx",
-  "version": "v1.0.31",
-  "description": "TLX is a small (4.5K minimized and gzipped) multi-paradigm front-end library.",
+  "version": "v1.0.32",
+  "description": "TLX is a small (< 5K minimized and gzipped) multi-paradigm front-end library.",
   "engines": {},
   "license": "MIT",
   "scripts": {

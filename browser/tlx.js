@@ -32,6 +32,7 @@
 	
 	// update target DOM node from source DOM node
 	// make changes only where necessary
+	// supports multi-root sources and targets
 	function updateDOM(source,target,scope,actions,view=target,template=source) {
 		Object.defineProperty(target,"view",{enumerable:false,configurable:true,writable:true,value:view});
 		Object.assign(scope,{"$source":source,
@@ -334,30 +335,64 @@
 					if(a.protocol==="file:") pathname = pathname.substring(pathname.indexOf(":")+1);
 					for(let match in routes) {
 						let f = routes[match];
-						try {
+						try { // convert functions or RegExp as property names into functions
 							match = Function("return " + match)();
 						} catch(e) {
 							;
 						}
-						const type = typeof(match),
-							args = {};
+						const type = typeof(match);
+						let args = {};
+						Object.defineProperty(args,"raw",{enumerable:false,value:[]});
+						Object.defineProperty(args,"resolved",{enumerable:false,value:[]});
 						if(type==="string") {
 							const mparts = match.split("/"),
 								pparts = pathname.split("/");
 							if(mparts.length!==pparts.length) continue;
 							// get the : delimited values out of path
 							// for args and fail if there is not a path match
-							if(!mparts.every((mpart,i) => {
+							let prev;
+							if(mparts.every((mpart,i) => {
 								if(mpart[0]===":") {
-									args[mpart.substring(1)] = pparts[i];
-									return true;
+									const value = clean(pparts[i],Object.assign({},clean.options,{eval:true}));
+									args.raw.push(mpart);
+									args.resolved.push(value);
+									args[mpart.substring(1)] = value;
+									prev = "param";
+									return true; // params always "match"
 								}
-								return mpart===pparts[i];
+								if(mpart!==pparts[i]) return false;
+							  // so long as non-param parts of paths are equal every loop will still process
+								if(mpart) {
+									if(args.raw.length===0 || prev==="param") {
+										args.raw.push("/"+mpart);
+										args.resolved.push("/"+mpart);
+									} else {
+										args.raw[args.raw.length-1] += "/" + mpart;
+										args.resolved[args.resolved.length-1] += "/" + mpart;
+									}
+								}
+								return true;
 							})) {
-								continue;
-							};
+								if(a.search) {
+									const search = clean(a.search).substring(1); // top level clean and escape of query
+									args.raw.push(search)
+									const sparts = search.split("&");
+									if(sparts.length>0) {
+										const query = sparts.reduce((accum,part) => {
+											const parts = part.split("=");
+											accum[parts[0]] = clean(parts[1],Object.assign({},clean.options,{eval:true})); // converts to primitives or objects
+											return accum;
+										},{});
+										args.query = query;
+										args.resolved.push(query);
+									}
+								}
+							} else {
+								continue; // goto next route because of path mistmatch
+							}
 						}
-						if(type==="string" || (type==="function" && match(pathname)) || match.match(pathname)) {
+						// key type was a string, or a string converted to a function, or a string converted to a RegExp
+						if(type==="string" || (type==="function" && (args=match(a))!==undefined) || (match instanceof RegExp && (args=match.test(pathname)))) {
 							f.call(event,args);
 							event.preventDefault();
 							if(event.routeStopped) break;
@@ -634,13 +669,14 @@
 		escape: [ 
 			data => { // handle possible query strings
 				if(typeof(data)==="string" && data[0]==="?") { 
-					const parts = data.split("&");
+					const parts = data.substring(1).split("&");
 					let max = parts.length;
 					return parts.reduce((accum,part,i) => { 
-							const [key,value] = decodeURIComponent(part).split("="),
+							const [key,value] = decodeURIComponent(part).split("=");
 								// if value undefined, then may not even be URL query string, so clean "key"
-								cleaned = (value!==undefined ? clean(value) : clean(key)); 
+							let cleaned = (value!==undefined ? clean(value) : clean(key)); 
 							// keep only those parts of query string that are clean
+							if(cleaned && typeof(cleaned)==="object") cleaned = JSON.stringify(cleaned);
 							if(cleaned!==undefined) accum += (value!==undefined ? `${key}=${cleaned}` : cleaned) + (i<max-1 ? "&" : "");
 							else max--;
 							return accum;

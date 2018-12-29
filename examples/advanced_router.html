@@ -6,18 +6,25 @@
 	<script src="../index.js"></script>
 </head>
 <body>
+Open debugger to see results
 <div id="routed">
-<a id="link" href="/test/path/1?name=joe&address={city:'Seattle',state:'WA'}">Click Me</a>
+<a id="link1" href="/functionpath/">click me /functionpath/</a><br>
+<a id="link2" href="/regexppath/">click me /regexppath/</a>
 </div>
 <script>
 const routed = document.getElementById("routed"),
 	router =  tlx.router({
-	  '/test/path/:id': function(args) {
+	  [(url) => url.pathname==="/functionpath/" ? "the arg" : undefined ]: function(args) {
 	    console.log(this); // should be an event object
-	    console.log(args,args.raw,args.resolved);
-	 	this.stopRoute(true); // stop routing and push href to history
-	    tlx.view(routed,{template:"You clicked!"}); // show the next view
-	  }}),
+	    console.log(args);
+	 	this.stopRoute(); // stop routing, don't change view
+	  },
+	  [/regexp.*/]: function(args) {
+	    console.log(this); // should be an event object
+	    console.log(args);
+	 	this.stopRoute(); // stop routing, don't change view
+	  }
+	  }),
 	  handlers = tlx.handlers({click:router});
 tlx.view(routed,{controller:handlers});
 </script>

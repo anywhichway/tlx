@@ -1,4 +1,4 @@
-# TLX v1.0.32
+# TLX v1.0.33
 
 TLX is a small (< 5k minimized and gzipped) multi-paradigm front-end library supporting: template literals in place of JSX; multi-root templates using HTML, JavaScript, or remote URL references; `t-for`, `t-foreach`, `t-forvalues` with iterable protocol support; `t-if` attribute directive; custom attribute directives; optional two-way data binding; automatic or manual creation of standards compliant custom elements and components; standards compliant event handlers; a default router; extended lifecycle callbacks; automatic HTML injection protection.
 
@@ -459,7 +459,7 @@ tlx.handlers({click: (event) => { event.preventDefault(); console.log(event); })
 
 Returns a handler designed to work with click events on anchor hrefs.
 
-`object routes` - An object on which the keys are paths to match, functions that return a boolean when passed the target URL path, or regular expressions that can be used to match a URL path. The values are the functions to execute if the path is matched. The functions take a single keyed object as an argument holding any `:values` parsed from the URL plus a JSON object for the query string in a property named `query`, if any. The event will be bound to `this`. The functions will typically instantiate a component and render it to the `this.target.view`; however, they can actually do anything. Calling `this.stopRoute()` will stop more routes from being processed for the `event`. Passing `true` to `stopRoute()` will update the browser history and show the URL in the navigation bar.
+`object routes` - An object on which the keys are paths to match, functions that return a boolean when passed the target URL path, or regular expressions that can be used to match a URL path. The values are the functions to execute if the path is matched. The functions take a keyed object as an argument holding any `:values` parsed from the URL plus a JSON object for the query string in a property named `query`, if any and a `done` callback. The event will be bound to `this`. The functions will typically instantiate a component and render it to the `this.target.view`; however, they can actually do anything. Calling `this.stopRoute()` or `done()` will stop more routes from being processed for the `event`. Passing `true` to `stopRoute()` or `done()` will update the browser history and show the URL in the navigation bar.
 
 Also available on the keyed object passed to the routed function are two hidden properties, `raw` and `resolved`. These contain the processed path and query string in array formats, e.g. "/root/path/:id" results in `["/root/path",100,{name:"joe"}` for "root/path/100?name='joe'&address={city:'Seattle',state:'WA'}";
 
@@ -500,7 +500,7 @@ The keys on the route may also be short strings convertible to functions or regu
 }
 ```
 
-If using a function as a property the return value is used as the argument to the routed function, unless the return value is undefined; in which case, the route fails to match. For regular expressions, the argument to the routed function will always be `true`.
+If using a function as a property the return value is used as the argument to the routed function, unless the return value is undefined; in which case, the route fails to match. For regular expressions, the argument to the routed function will always be the URL object from the target.
 
 
 ## `function tlx.component(string tagName,object options)`
@@ -603,6 +603,8 @@ The idea of using `:` to delimit arguments for custom directives is drawn from `
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2018-12-29 v1.0.33 = Added `done` as second argument to route functions.
 
 2018-12-29 v1.0.32 - Enhanced argument passing for route paths. Documented advanced routing and added example.
 

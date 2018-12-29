@@ -328,7 +328,8 @@
 					if(pushHistory) pushstate(this.target.view.render,href);
 					this.routeStopped = true; 
 				}});
-				const href = event.target.href;
+				const href = event.target.href,
+					done = (pushHistory) => event.stopRoute(pushHistory);
 				if(href) {
 					const a = event.target;
 					let pathname = a.pathname;
@@ -392,8 +393,8 @@
 							}
 						}
 						// key type was a string, or a string converted to a function, or a string converted to a RegExp
-						if(type==="string" || (type==="function" && (args=match(a))!==undefined) || (match instanceof RegExp && (args=match.test(pathname)))) {
-							f.call(event,args);
+						if(type==="string" || (type==="function" && (args=match(new URL(a.href)))) || (match instanceof RegExp && match.test(pathname) && (args=new URL(a.href)))) {
+							f.call(event,args,done);
 							event.preventDefault();
 							if(event.routeStopped) break;
 						}

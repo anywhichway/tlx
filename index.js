@@ -277,6 +277,10 @@
 				if(handler) handler(event);
 			}
 		},
+		define = (selector,config={}) => {
+			const nodes = [].slice = document.querySelectorAll(selector);
+			nodes.forEach((el) => view(el,config))
+		},
 		component = (tagName,config={}) => {
 			let {template,customElement,model,attributes,actions,controller,linkModel,reactive,lifecycle={},protect} = config;
 			if(template && customElement) throw new Error("Component can't take both template and customElement");
@@ -442,7 +446,8 @@
 			slice(node.childNodes).forEach(child => vdom.children.push(toVDOM(child)));
 			return vdom;
 		},
-		view = function(el,{template,model={},attributes={},actions={},controller,linkModel=tlx.linkModel,lifecycle={},protect=PROTECTED}=el.constructor.defaults||{}) {
+		view = function(el,config=el.constructor.defaults||{}) {
+			let {template,model={},attributes={},actions={},controller,linkModel=tlx.linkModel,lifecycle={},protect=PROTECTED} = config;
 			if(el.length && el[0]!=null && !el.options) {
 				const args = [].slice.call(arguments,1);
 				[].slice.call(el).forEach(el => view(el,...args));
@@ -521,6 +526,12 @@
 						if(key[0]==="o" && key[1]==="n") el.addEventListener(key.substring(2),controller,options);
 					}
 				}
+			} else {
+				Object.keys(config).forEach((key) => {
+					if(key.startsWith("on") && typeof(config[key])==="function") {
+						el.addEventListener(key.substring(2),config[key])
+					}
+				})
 			}
 			const inputs = el instanceof HTMLInputElement ? [el] : slice(el.querySelectorAll("input, textarea, select"));
 			if([ _window.HTMLInputElement,_window.HTMLSelectElement,_window. HTMLTextAreaElement].some(cls => el instanceof cls)) inputs.push(el);
@@ -721,7 +732,7 @@
 	}
 	tlx.search("token1 token2")*/
 	
-	const tlx = {component,reactor,view,router,handlers,escape:clean,protect,resolve,JSDOM,directives:{},el};
+	const tlx = {component,reactor,view,define,router,handlers,escape:clean,protect,resolve,JSDOM,directives:{},el};
 	
 	if(typeof(module)!=="undefined") module.exports = tlx;
 	if(typeof(window)!=="undefined") window.tlx = tlx;

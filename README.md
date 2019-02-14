@@ -397,7 +397,7 @@ In a real world situation, the model would probably be pulled from a database an
 
 # API
 
-Since there are only 9 API entry points, they are presented in order of likely use rather than alphabetically.
+Since there are only 10 API entry points, they are presented in order of likely use rather than alphabetically.
 
 ## `undefined tlx.protect()``
 
@@ -444,6 +444,16 @@ input:invalid {
 	box-shadow: 0 0 5px 1px red;
 }
 ```
+
+### on<event> handlers
+
+The `options` object can also have `on<event>` handlers bound to it directly. These will be attached to the element. They should be used instead of a `controller`, since the `controller` will swallow a lot of events.
+
+## `function tlx.define(cssSelector,options)`
+
+Returns `undefined`.
+
+Attaches the view defined by options to the elements identified by the `cssSelector`. Should be call either during `onload` or at the end of the file.
 
 ## `function tlx.handlers(object handlers)`
 
@@ -600,9 +610,13 @@ The idea of the `linkModel` function to simplify reactive binding is drawn from 
 
 The idea of using `:` to delimit arguments for custom directives is drawn from `Vue`.
 
+The idea of auto binding based on query selectors was taken from wickedElements.
+
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2019-02-14 v1.0.34 = `tlx.define(selector,options)` was added, as was the handling on standard "on<event>" definitions as part of the options rather than using a controlller.
 
 2018-12-29 v1.0.33 = Added `done` as second argument to route functions.
 

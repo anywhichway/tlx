@@ -1,0 +1,26 @@
+<html lang="en">
+<head>
+	<!--  default to loading current deployed version in case user is not running from tlx directory -->
+	<script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>
+	<!-- load most current version -->
+	<script src="../index.js"></script>
+	<!--  default to loading current deployed version in case user is not running from tlx directory -->
+	<script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>
+	<!-- load most current version -->
+	<script src="../index.js"></script>
+</head>
+<body>
+<div class="test">
+Hello ${firstName}.
+</div>
+<div class="test">
+First Name: <input id="name" name="firstName" value="${firstName}" placeholder="Type name and enter">
+</div>
+<script>
+// create an empty reactive model to share
+const model = tlx.reactor();
+// bind all
+tlx.define(".test",{model,linkModel:true});
+</script>
+</body>
+</html>

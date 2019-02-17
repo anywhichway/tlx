@@ -233,6 +233,8 @@ You may occasionally run into issues where you can't create valid HTML with the 
 
 TLX comes with four built-in attribute directives, `t-if`, `t-for`, `t-foreach` and `t-forvalues`.
 
+For all directives, the `model` currently bound to an element is available as `${model}`.
+
 ## `t-if`
 
 If the value of `t-if` is truthy, then the element and its nested elements will be displayed,e.g.
@@ -399,45 +401,35 @@ In a real world situation, the model would probably be pulled from a database an
 
 Since there are only 10 API entry points, they are presented in order of likely use rather than alphabetically.
 
-## `undefined tlx.protect()``
+`undefined tlx.protect()``
 
-Turn on automatic HTML injection protection. Can be overridden on a `view` or HTMLInputElement level. The call also modifies the JavaScript `prompt` function such that any values entered by users are escaped to eliminate code injection. If
+ * Turn on automatic HTML injection protection. Can be overridden on a `view` or HTMLInputElement level. The call also modifies the JavaScript `prompt` function such that any values entered by users are escaped to eliminate code injection. If
 an attempt to inject code is made, then the user is informed there is an error and asked to enter somethng again. See `tlx.escape(data)` at the end of this section for info on the escape process.
 
-## `Proxy tlx.reactor(object target={},object watchers={})`
+`Proxy tlx.reactor(object target={},object watchers={})`
 
-Returns a deep `Proxy` for `object` that automatically tracks usage in `views` and re-renders them when data they use changes.
+ * Returns a deep `Proxy` for `object` that automatically tracks usage in `views` and re-renders them when data they use changes.
+     `target` - The `object` around which to wrap the `Proxy`. Note, althoush `Map` and `Set` can be used with attribute directives, it is not currently possible to make them reactive.
+     `watchers` - A potentially nested object, the keys of which are intended to match the keys on the target `object`. The values are functions with the signature `(oldvalue,value,property,proxy)`. These are invoked synchronously any time the target property value changes. If they throw an error, the value will not get set. If you desire to use asyncronous behavior, then implement your code to inject asynchronicity. Promises will not be awaited if returned.
 
-`target` - The `object` around which to wrap the `Proxy`. Note, althoush `Map` and `Set` can be used with attribute directives, it is not currently possible to make them reactive.
+`HTMLElement tx.el(string,tagName,attributes)` - 
 
-`watchers` - A potentially nested object, the keys of which are intended to match the keys on the target `object`. The values are functions with the signature `(oldvalue,value,property,proxy)`. These are invoked synchronously any time the target property value changes. If they throw an error, the value will not get set. If you desire to use asyncronous behavior, then implement your code to inject asynchronicity. Promises will not be awaited if returned.
+ * Wraps `string` in the specified `tagName` with `attributes`. Helps avoid the inclusion of tags in embedded HTML scripts so that the use of `<script type="text/template">` can be avoided.
 
-## `HTMLElement tx.el(string,tagName,attributes)` - 
+`HTMLElement tlx.view(HTMLElement||HTMLCollection el||DOMSelector[,object options])`
 
-Wraps `string` in the specified `tagName` with `attributes`. Helps avoid the inclusion of tags in embedded HTML scripts so that the use of `<script type="text/template">` can be avoided.
-
-## `HTMLElement tlx.view(HTMLElement||HTMLCollection el[,object options])`
-
-Returns a `view` of the specified `template` bound to the DOM element `el`. If no `template` is specified, then the initial outerHTML of the `el` becomes the template. A `view` is an arbitrary collection of nested DOM nodes the leaves of which are selectively rendered if their contents have changed. The nested DOM nodes all have one additional property `view` that points back to the root element in the `view`.
-
-`HTMLElement||HTMLCollection el` - An `HTMLElement` which may be empty or contain HTML that looks and behaves like JavaScript string template literals. The initial content is overwritten when the node is rendered, but kept as a template if one was not provided. If an `HTMLCollection` is provided, then each item will be processed using the provided options. This makes it easy to process a whole bunch of DOM nodes returned from a DOM query.
-
-`object options` - `{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect}={}`
-
-`HTMLElement|string url|string template` - An optional DOM element containing what looks like a JavaScript template literal or a string that is a valid string representation of a URL or a or an escaped JavaScript template literal, e.g. `\${firstName}` vs `${firstName}` containing HTML.
-
-`object model` - The data used when resolving the string template literals. This is typically shared across multiple `views`.
-
-`object actions` - A keyed object where each property value is a function. These can also be accessed from the templates; however, they are not available for updating in the same way as a `model`. If you provide a function as an attribute value, you need to wrap it in an invocation, e.g. `onclick="(${myclick})(event)`. You can also call the functions anywhere in your templates, e.g. `Name: ${getName()}`.
-
-`function controller` - A standard event handler function to which all events occuring in the view get passed. To limit the events handled, use the return value of `tlx.handlers(object)` as the controller.
-
-`boolean||string linkModel` - If truthy, then the `model` is automatically updated with values from form fields having a `name` attribute by using the `name` attribute value as the key on the model. If the value of `linkModel` is a string, then that event is used to trigger updates, typically this would be "change" or "input". Use "change" for triggering when a field loses
+* Returns a `view` of the specified `template` bound to the DOM element `el`. If no `template` is specified, then the initial outerHTML of the `el` becomes the template. A `view` is an arbitrary collection of nested DOM nodes the leaves of which are selectively rendered if their contents have changed. The nested DOM nodes all have one additional property `view` that points back to the root element in the `view`.
+    `HTMLElement||HTMLCollection el` - An `HTMLElement` which may be empty or contain HTML that looks and behaves like JavaScript string template literals. The initial content is overwritten when the node is rendered, but kept as a template if one was not provided. If an `HTMLCollection` or `DOMSelector` is provided, then each item will be processed using the provided options. This makes it easy to process a whole bunch of DOM nodes returned from a DOM query.
+    `object options` - `{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect}={}`
+    `HTMLElement|idSelector|string url|string template` - An optional DOM element containing what looks like a JavaScript template literal or a string that is a valid string representation of a URL or a or an escaped JavaScript template literal, e.g. `\${firstName}` vs `${firstName}` containing HTML.
+    `object model` - The data used when resolving the string template literals. This is typically shared across multiple `views`.
+    `object actions` - A keyed object where each property value is a function. These can also be accessed from the templates; however, they are not available for updating in the same way as a `model`. If you provide a function as an attribute value, you need to wrap it in an invocation, e.g. `onclick="(${myclick})(event)`. You can also call the functions anywhere in your templates, e.g. `Name: ${getName()}`.
+    `function controller` - A standard event handler function to which all events occuring in the view get passed. To limit the events handled, use the return value of `tlx.handlers(object)` as the controller.
+    `boolean||string linkModel` - If truthy, then the `model` is automatically updated with values from form fields having a `name` attribute by using the `name` attribute value as the key on the model. If the value of `linkModel` is a string, then that event is used to trigger updates, typically this would be "change" or "input". Use "change" for triggering when a field loses
 focus, use "input" to react to every keystroke. If the value is truthy but not a string, "change" will be used.
+    `object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeMount`, `mounted`, `beforeUpdate`, `updated`. Because it is not a component, a view does not support `beforeCreate` and `created`. Because the VDOM is tiny and highly ephemeral and the DOM automatically manages disposal of un-used nodes, there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
 
-`object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeMount`, `mounted`, `beforeUpdate`, `updated`. Because it is not a component, a view does not support `beforeCreate` and `created`. Because the VDOM is tiny and highly ephemeral and the DOM automatically manages disposal of un-used nodes, there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
-
-`boolean protect` - Protect all input elements in the view. To protect just a single element, add the attribute `protect` to the element. If you have set a style for invalid input, it will be used for invalid elements, e.g.
+ `boolean protect` - Protect all input elements in the view. To protect just a single element, add the attribute `protect` to the element. If you have set a style for invalid input, it will be used for invalid elements, e.g.
 
 ```javascript
 input:invalid { 
@@ -445,35 +437,33 @@ input:invalid {
 }
 ```
 
-### on<event> handlers
+## on<event> handlers
 
 The `options` object can also have `on<event>` handlers bound to it directly. These will be attached to the element. They should be used instead of a `controller`, since the `controller` will swallow a lot of events.
 
-## `function tlx.define(cssSelector,options)`
+`function tlx.define(cssSelector,options)`
 
-Returns `undefined`.
+ * Returns `undefined`.
 
-Attaches the view defined by options to the elements identified by the `cssSelector`. Should be call either during `onload` or at the end of the file.
+ * Attaches the view defined by options to the elements identified by the `cssSelector`. Should be call either during `onload` or at the end of the file.
+ 
+ `function tlx.handlers(object handlers)`
 
-## `function tlx.handlers(object handlers)`
-
-Returns an event handler customized to deal with only the events specified on the `object`.
-
-`object handlers` - An object on which the keys are event names, e.g. "click", and the values are standard JavaScript event handlers, e.g.
+ * Returns an event handler customized to deal with only the events specified on the `object`.
+     `object handlers` - An object on which the keys are event names, e.g. "click", and the values are standard JavaScript event handlers, e.g.
 
 ```javascript
 tlx.handlers({click: (event) => { event.preventDefault(); console.log(event); });
 ```
 
-## `function tlx.router(object routes)`
+`function tlx.router(object routes)`
 
-Returns a handler designed to work with click events on anchor hrefs.
+* Returns a handler designed to work with click events on anchor hrefs.
+    `object routes` - An object on which the keys are paths to match, functions that return a boolean when passed the target URL path, or regular expressions that can be used to match a URL path. The values are the functions to execute if the path is matched. The functions take a keyed object as an argument holding any `:values` parsed from the URL plus a JSON object for the query string in a property named `query`, if any and a `done` callback. The event will be bound to `this`. The functions will typically instantiate a component and render it to the `this.target.view`; however, they can actually do anything. Calling `this.stopRoute()` or `done()` will stop more routes from being processed for the `event`. Passing `true` to `stopRoute()` or `done()` will update the browser history and show the URL in the navigation bar.
 
-`object routes` - An object on which the keys are paths to match, functions that return a boolean when passed the target URL path, or regular expressions that can be used to match a URL path. The values are the functions to execute if the path is matched. The functions take a keyed object as an argument holding any `:values` parsed from the URL plus a JSON object for the query string in a property named `query`, if any and a `done` callback. The event will be bound to `this`. The functions will typically instantiate a component and render it to the `this.target.view`; however, they can actually do anything. Calling `this.stopRoute()` or `done()` will stop more routes from being processed for the `event`. Passing `true` to `stopRoute()` or `done()` will update the browser history and show the URL in the navigation bar.
+ * Also available on the keyed object passed to the routed function are two hidden properties, `raw` and `resolved`. These contain the processed path and query string in array formats, e.g. "/root/path/:id" results in `["/root/path",100,{name:"joe"}` for "root/path/100?name='joe'&address={city:'Seattle',state:'WA'}";
 
-Also available on the keyed object passed to the routed function are two hidden properties, `raw` and `resolved`. These contain the processed path and query string in array formats, e.g. "/root/path/:id" results in `["/root/path",100,{name:"joe"}` for "root/path/100?name='joe'&address={city:'Seattle',state:'WA'}";
-
-All parameter values and query strings are automatically cleaned because of the high risk of injection attacks through URLs. They are also converted into primitive types or JSON objects if possible.
+ * All parameter values and query strings are automatically cleaned because of the high risk of injection attacks through URLs. They are also converted into primitive types or JSON objects if possible.
 
 ```html
 <div id="routed">
@@ -493,7 +483,7 @@ tlx.view(routed,{controller:handlers});
 </script>
 ```
 
-The keys on the route may also be short strings convertible to functions or regular expressions like below. Note the use of the object initializer, `[ ]`, to conveniently turn a function or regular expression into a string for use as a  property name.
+ * The keys on the route may also be short strings convertible to functions or regular expressions like below. Note the use of the object initializer, `[ ]`, to conveniently turn a function or regular expression into a string for use as a  property name.
 
 ```javascript
 {
@@ -510,43 +500,32 @@ The keys on the route may also be short strings convertible to functions or regu
 }
 ```
 
-If using a function as a property the return value is used as the argument to the routed function, unless the return value is undefined; in which case, the route fails to match. For regular expressions, the argument to the routed function will always be the URL object from the target.
+* If using a function as a property the return value is used as the argument to the routed function, unless the return value is undefined; in which case, the route fails to match. For regular expressions, the argument to the routed function will always be the URL object from the target.
 
 
-## `function tlx.component(string tagName,object options)`
+`function tlx.component(string tagName,object options)`
 
-Returns a function that will create a custom element with `tagName`. Any nested HTML will be inside a
+* Returns a function that will create a custom element with `tagName`. Any nested HTML will be inside a
 a shadow DOM. With the exception of `template` and `customElement` the options are default values for the function
 returned, i.e. the returned fuction takes an options object with the same named properties, the values of which will be
 merged into the defaults. To eliminate properties, merge in a object with a target property value of `undefined`.
 
-The returned element can be added to the DOM using normal DOM operations and will behave like a `view`.
+* The returned element can be added to the DOM using normal DOM operations and will behave like a `view`.
+    `string tagName` - The custom tag name to use for the component.
+    `object options` - `{template,customElement,model,attributes,actions,controller,linkModel,lifeCycle,reactive,protect}`
+        `HTMLElement|string template` or `HTMLCustomElement customElement` - A template specified as an element containing string literal notation as its content, or a string, or an escaped string literal. Or, an already defined custom element class.
+        `object model` - See `tlx.view`.
+        `object attributes` -  See `tlx.view`.
+        `object actions` -  See `tlx.view`.
+        `function controller` -  See `tlx.view`.
+        `boolean linkModel` -  See `tlx.view`.
+        `object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeCreate`, `created`, `beforeMount`, `mounted`, `beforeUpdate`, `updated`.  Because there is no vdom and the DOM automatically manages disposal there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
+        `boolean reactive` - Set to truthy to make models reactive when they are created upon component creation.
+        `boolean protect` - See `tlx.view`.
 
-`string tagName` - The custom tag name to use for the component.
+`any tlx.escape(any data)`
 
-`object options` - `{template,customElement,model,attributes,actions,controller,linkModel,lifeCycle,reactive,protect}`
-
-`HTMLElement|string template` or `HTMLCustomElement customElement` - A template specified as an element containing string literal notation as its content, or a string, or an escaped string literal. Or, an already defined custom element class.
-
-`object model` - See `tlx.view`.
-
-`object attributes` -  See `tlx.view`.
-
-`object actions` -  See `tlx.view`.
-
-`function controller` -  See `tlx.view`.
-
-`boolean linkModel` -  See `tlx.view`.
-
-`object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeCreate`, `created`, `beforeMount`, `mounted`, `beforeUpdate`, `updated`.  Because there is no vdom and the DOM automatically manages disposal there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
-
-`boolean reactive` - Set to truthy to make models reactive when they are created upon component creation.
-
-`boolean protect` - See `tlx.view`.
-
-## `any tlx.escape(any data)`
-
-Takes any data and escapes it so it can't be an HTML injection. Returns `undefined` if it can't be escaped. The psuedo code is as follows:
+* Takes any data and escapes it so it can't be an HTML injection. Returns `undefined` if it can't be escaped. The psuedo code is as follows:
 
 ```javascript
 type = typeof(data);
@@ -563,11 +542,11 @@ data = escapeHTMLEntities(data); // e.g. >= becomes &gte;
 return data
 ```
 
-`any data` - Any JavaScript data or function. Although, functions will always result in a return of `undefined`.
+    `any data` - Any JavaScript data or function. Although, functions will always result in a return of `undefined`.
 
-## `tlx.off`
+`tlx.off`
 
-Setting `tlx.off` to truthy will prevent any template resolution and display un-resolved string template literal notation.
+* Setting `tlx.off` to truthy will prevent any template resolution and display un-resolved string template literal notation.
 
 # Performance
 
@@ -616,9 +595,11 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, 
 
 # Release History (reverse chronological order)
 
-2019-02-14 v1.0.34 = `tlx.define(selector,options)` was added, as was the handling on standard "on<event>" definitions as part of the options rather than using a controlller.
+2019-02-16 v1.0.35 - `view` can now take a query selector as the first argument and will conver all matching elements. `template` can now also be an id selector.
 
-2018-12-29 v1.0.33 = Added `done` as second argument to route functions.
+2019-02-14 v1.0.34 - `tlx.define(selector,options)` was added, as was the handling on standard "on<event>" definitions as part of the options rather than using a controlller.
+
+2018-12-29 v1.0.33 - Added `done` as second argument to route functions.
 
 2018-12-29 v1.0.32 - Enhanced argument passing for route paths. Documented advanced routing and added example.
 

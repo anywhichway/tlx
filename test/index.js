@@ -79,6 +79,11 @@ describe("views",function() {
 		expect(el.innerHTML).equal("test");
 		done();
 	});
+	it("text template",function(done) {
+		tlx.view(el,{model:{data:"test"}},"#test");
+		expect(el.innerHTML).equal("test");
+		done();
+	});
 	it("$ access",function(done) {
 		el.innerHTML = `<div id="names" names="\${['joe','bill','mary']}">
 		\${

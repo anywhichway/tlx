@@ -450,7 +450,12 @@
 			let {template,model={},attributes={},actions={},controller,linkModel=tlx.linkModel,lifecycle={},protect=PROTECTED} = config;
 			if(el.length && el[0]!=null && !el.options) {
 				const args = [].slice.call(arguments,1);
-				[].slice.call(el).forEach(el => view(el,...args));
+				if(typeof(el)==="string") {
+					const targets = [].slice.call(document.querySelectorAll(el));
+					targets.forEach(el => view(el,...args));
+				} else {
+					[].slice.call(el).forEach(el => view(el,...args));
+				}
 				return el;
 			}
 			if(template) {
@@ -465,7 +470,7 @@
 					if(fragment.shadowRoot) {
 						while(fragment.shadowRoot.lastChild) fragment.shadowRoot.removeChild(fragment.shadowRoot.lastChild);
 						fragment.shadowRoot.appendChild(text);
-					} else {
+					} else if (text[0]!=="#"){
 						fragment.appendChild(text)
 					}
 					if(isurl) {
@@ -477,6 +482,9 @@
 						}).catch(e => {
 							el.innerHTML = e.message;
 						});
+					} else if(template[0]==="#"){
+						const source = document.getElementById(template.substring(0));
+						fragment.innerHTML = source.innerHTML;
 					}
 					template = fragment;
 				}

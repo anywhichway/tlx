@@ -595,6 +595,8 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, 
 
 # Release History (reverse chronological order)
 
+2019-02016 v1.0.36 - Id selectors were sometimes mistaken for URLs due to presence of #. Fixed.
+
 2019-02-16 v1.0.35 - `view` can now take a query selector as the first argument and will conver all matching elements. `template` can now also be an id selector.
 
 2019-02-14 v1.0.34 - `tlx.define(selector,options)` was added, as was the handling on standard "on<event>" definitions as part of the options rather than using a controlller.

@@ -173,8 +173,9 @@
 		interpolate = (template,...interpolations) => interpolations,
 		isURL = string => {
 			try {
-				new URL(string);
-				return true;
+				const url = new URL(string);
+				if(url.pathname) return true;
+				return false;
 			} catch(e) {
 				return false;
 			}
@@ -448,8 +449,8 @@
 		},
 		view = function(el,config=el.constructor.defaults||{}) {
 			let {template,model={},attributes={},actions={},controller,linkModel=tlx.linkModel,lifecycle={},protect=PROTECTED} = config;
+			const args = [].slice.call(arguments,1);
 			if(el.length && el[0]!=null && !el.options) {
-				const args = [].slice.call(arguments,1);
 				if(typeof(el)==="string") {
 					const targets = [].slice.call(document.querySelectorAll(el));
 					targets.forEach(el => view(el,...args));
@@ -462,7 +463,7 @@
 				const type = typeof(template);
 				if(type==="object") {
 					if(template.tagName==="TEMPLATE") template.innerText = template.innerHTML;
-					template = template.shadowRoot ? template.shadowRoot : template.firstChild;
+					else template = template.shadowRoot ? template.shadowRoot : template.firstChild;
 				} else {
 					const fragment = document.createElement(el.tagName),
 						isurl = isURL(template),
@@ -478,13 +479,14 @@
 							if(response.ok) return response.text();
 							throw new Error(`Error: ${text.data}`);
 						}).then(template => {
-							view(el,{template,model,attributes,actions,controller,linkModel,lifecycle,protect});
+							view(el,...args);
 						}).catch(e => {
 							el.innerHTML = e.message;
 						});
 					} else if(template[0]==="#"){
 						const source = document.getElementById(template.substring(0));
-						fragment.innerHTML = source.innerHTML;
+						args.template = source;
+						return view(el,...args);
 					}
 					template = fragment;
 				}

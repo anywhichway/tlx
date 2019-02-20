@@ -1,4 +1,4 @@
-# TLX v1.0.33
+# TLX v1.0.36
 
 TLX is a small (< 5k minimized and gzipped) multi-paradigm front-end library supporting: template literals in place of JSX; multi-root templates using HTML, JavaScript, or remote URL references; `t-for`, `t-foreach`, `t-forvalues` with iterable protocol support; `t-if` attribute directive; custom attribute directives; optional two-way data binding; automatic or manual creation of standards compliant custom elements and components; standards compliant event handlers; a default router; extended lifecycle callbacks; automatic HTML injection protection.
 
@@ -431,16 +431,17 @@ an attempt to inject code is made, then the user is informed there is an error a
        <li>`boolean||string linkModel` - If truthy, then the `model` is automatically updated with values from form fields having a `name` attribute by using the `name` attribute value as the key on the model. If the value of `linkModel` is a string, then that event is used to trigger updates, typically this would be "change" or "input". Use "change" for triggering when a field loses focus, use "input" to react to every keystroke. If the value is truthy but not a string, "change" will be used.</li>
       <li>`object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeMount`, `mounted`, `beforeUpdate`, `updated`. Because it is not a component, a view does not support `beforeCreate` and `created`. Because the VDOM is tiny and highly ephemeral and the DOM automatically manages disposal of un-used nodes, there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.</li>
       <li>`boolean protect` - Protect all input elements in the view. To protect just a single element, add the attribute `protect` to the element. If you have set a style for invalid input, it will be used for invalid elements, e.g.
+      </li>
+     </ul>
+  </li>
+  </ul>
 
 ```javascript
 input:invalid { 
 	box-shadow: 0 0 5px 1px red;
 }
 ```
-     </li>
-     </ul>
-  </li>
-  </ul>
+
 
 ## on<event> handlers
 

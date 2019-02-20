@@ -1,4 +1,4 @@
-# TLX v1.0.36
+# TLX v1.0.38
 
 TLX is a small (< 5k minimized and gzipped) multi-paradigm front-end library supporting: template literals in place of JSX; multi-root templates using HTML, JavaScript, or remote URL references; `t-for`, `t-foreach`, `t-forvalues` with iterable protocol support; `t-if` attribute directive; custom attribute directives; optional two-way data binding; automatic or manual creation of standards compliant custom elements and components; standards compliant event handlers; a default router; extended lifecycle callbacks; automatic HTML injection protection.
 
@@ -604,6 +604,8 @@ The idea of auto binding based on query selectors was taken from wickedElements.
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2019-02-20 v1.0.38 - Added `index` variable to automatic scope for `in` and `of` for directive.
 
 2019-02-19 v1.0.37 - Fixed README formatting;
 

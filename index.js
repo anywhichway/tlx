@@ -638,10 +638,21 @@
 	directives = {
 			"t-for": (value,scope,actions,render,{raw,resolved,element}={}) => {
 				// directive is of the form "t-for:varname:looptype"
-				let [_,vname,looptype] = resolved.split(":");
+				let [_,vname,looptype] = resolved.split(":"),
+					index = 0;
 				if(!looptype) looptype = value[Symbol.iterator] ? "of" : "in";
-				if(looptype==="in") for(let key in value) render(Object.assign({},scope,{[vname]:key}));
-				else if(looptype==="of") for(let item of value) render(Object.assign({},scope,{[vname]:item}));
+				if(looptype==="in") {
+					for(let key in value) {
+						render(Object.assign({},scope,{[vname]:key,index}));
+						index++;
+					}
+				}
+				else if(looptype==="of") {
+					for(let item of value) {
+						render(Object.assign({},scope,{[vname]:item,index}));
+						index++;
+					}
+				}
 				else throw new TypeError(`loop type must be 'in' or 'of' for ${raw}`);
 				return element;
 			},

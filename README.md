@@ -419,23 +419,28 @@ an attempt to inject code is made, then the user is informed there is an error a
 `HTMLElement tlx.view(HTMLElement||HTMLCollection el||DOMSelector[,object options])`
 
 * Returns a `view` of the specified `template` bound to the DOM element `el`. If no `template` is specified, then the initial outerHTML of the `el` becomes the template. A `view` is an arbitrary collection of nested DOM nodes the leaves of which are selectively rendered if their contents have changed. The nested DOM nodes all have one additional property `view` that points back to the root element in the `view`.
-    `HTMLElement||HTMLCollection el` - An `HTMLElement` which may be empty or contain HTML that looks and behaves like JavaScript string template literals. The initial content is overwritten when the node is rendered, but kept as a template if one was not provided. If an `HTMLCollection` or `DOMSelector` is provided, then each item will be processed using the provided options. This makes it easy to process a whole bunch of DOM nodes returned from a DOM query.
-    `object options` - `{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect}={}`
-    `HTMLElement|idSelector|string url|string template` - An optional DOM element containing what looks like a JavaScript template literal or a string that is a valid string representation of a URL or a or an escaped JavaScript template literal, e.g. `\${firstName}` vs `${firstName}` containing HTML.
-    `object model` - The data used when resolving the string template literals. This is typically shared across multiple `views`.
-    `object actions` - A keyed object where each property value is a function. These can also be accessed from the templates; however, they are not available for updating in the same way as a `model`. If you provide a function as an attribute value, you need to wrap it in an invocation, e.g. `onclick="(${myclick})(event)`. You can also call the functions anywhere in your templates, e.g. `Name: ${getName()}`.
-    `function controller` - A standard event handler function to which all events occuring in the view get passed. To limit the events handled, use the return value of `tlx.handlers(object)` as the controller.
-    `boolean||string linkModel` - If truthy, then the `model` is automatically updated with values from form fields having a `name` attribute by using the `name` attribute value as the key on the model. If the value of `linkModel` is a string, then that event is used to trigger updates, typically this would be "change" or "input". Use "change" for triggering when a field loses
-focus, use "input" to react to every keystroke. If the value is truthy but not a string, "change" will be used.
-    `object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeMount`, `mounted`, `beforeUpdate`, `updated`. Because it is not a component, a view does not support `beforeCreate` and `created`. Because the VDOM is tiny and highly ephemeral and the DOM automatically manages disposal of un-used nodes, there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
-
- `boolean protect` - Protect all input elements in the view. To protect just a single element, add the attribute `protect` to the element. If you have set a style for invalid input, it will be used for invalid elements, e.g.
+    
+   <ul>
+   <li>`HTMLElement||HTMLCollection el` - An `HTMLElement` which may be empty or contain HTML that looks and behaves like JavaScript string template literals. The initial content is overwritten when the node is rendered, but kept as a template if one was not provided. If an `HTMLCollection` or `DOMSelector` is provided, then each item will be processed using the provided options. This makes it easy to process a whole bunch of DOM nodes returned from a DOM query.</li>
+    <li>`object options` - `{template,model={},attributes={},actions={},controller,linkModel,lifecycle={},protect}={}`
+    	<ul>
+    	<li>`HTMLElement|idSelector|string url|string template` - An optional DOM element containing what looks like a JavaScript template literal or a string that is a valid string representation of a URL or a or an escaped JavaScript template literal, e.g. `\${firstName}` vs `${firstName}` containing HTML.</li>
+		<li>`object model` - The data used when resolving the string template literals. This is typically shared across multiple `views`.</li>
+       <li>`object actions` - A keyed object where each property value is a function. These can also be accessed from the templates; however, they are not available for updating in the same way as a `model`. If you provide a function as an attribute value, you need to wrap it in an invocation, e.g. `onclick="(${myclick})(event)`. You can also call the functions anywhere in your templates, e.g. `Name: ${getName()}`.</li>
+       <li>`function controller` - A standard event handler function to which all events occuring in the view get passed. To limit the events handled, use the return value of `tlx.handlers(object)` as the controller.</li>
+       <li>`boolean||string linkModel` - If truthy, then the `model` is automatically updated with values from form fields having a `name` attribute by using the `name` attribute value as the key on the model. If the value of `linkModel` is a string, then that event is used to trigger updates, typically this would be "change" or "input". Use "change" for triggering when a field loses focus, use "input" to react to every keystroke. If the value is truthy but not a string, "change" will be used.</li>
+      <li>`object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeMount`, `mounted`, `beforeUpdate`, `updated`. Because it is not a component, a view does not support `beforeCreate` and `created`. Because the VDOM is tiny and highly ephemeral and the DOM automatically manages disposal of un-used nodes, there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.</li>
+      <li>`boolean protect` - Protect all input elements in the view. To protect just a single element, add the attribute `protect` to the element. If you have set a style for invalid input, it will be used for invalid elements, e.g.
 
 ```javascript
 input:invalid { 
 	box-shadow: 0 0 5px 1px red;
 }
 ```
+     </li>
+     </ul>
+  </li>
+  </ul>
 
 ## on<event> handlers
 
@@ -595,7 +600,9 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, 
 
 # Release History (reverse chronological order)
 
-2019-02016 v1.0.36 - Id selectors were sometimes mistaken for URLs due to presence of #. Fixed.
+2019-02-19 v1.0.37 - Fixed README formatting;
+
+2019-02-16 v1.0.36 - Id selectors were sometimes mistaken for URLs due to presence of #. Fixed.
 
 2019-02-16 v1.0.35 - `view` can now take a query selector as the first argument and will conver all matching elements. `template` can now also be an id selector.
 

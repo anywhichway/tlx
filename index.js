@@ -60,6 +60,7 @@
 		  }
 		  return view;
 		}
+		target.view.template = target.view.innerHTML;
 		// if tags aren't the same
 		if(source.tagName!==target.tagName) {
 			// replace the target with the source

@@ -517,17 +517,21 @@ returned, i.e. the returned fuction takes an options object with the same named 
 merged into the defaults. To eliminate properties, merge in a object with a target property value of `undefined`.
 
 * The returned element can be added to the DOM using normal DOM operations and will behave like a `view`.
-    `string tagName` - The custom tag name to use for the component.
-    `object options` - `{template,customElement,model,attributes,actions,controller,linkModel,lifeCycle,reactive,protect}`
-        `HTMLElement|string template` or `HTMLCustomElement customElement` - A template specified as an element containing string literal notation as its content, or a string, or an escaped string literal. Or, an already defined custom element class.
-        `object model` - See `tlx.view`.
-        `object attributes` -  See `tlx.view`.
-        `object actions` -  See `tlx.view`.
-        `function controller` -  See `tlx.view`.
-        `boolean linkModel` -  See `tlx.view`.
-        `object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeCreate`, `created`, `beforeMount`, `mounted`, `beforeUpdate`, `updated`.  Because there is no vdom and the DOM automatically manages disposal there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.
-        `boolean reactive` - Set to truthy to make models reactive when they are created upon component creation.
-        `boolean protect` - See `tlx.view`.
+    
+  `string tagName` - The custom tag name to use for the component.
+    
+  `object options` - `{template,customElement,model,attributes,actions,controller,linkModel,lifeCycle,reactive,protect}`
+  <ul>
+  	<li>`HTMLElement|string template` or `HTMLCustomElement customElement` - A template specified as an element containing string literal notation as its content, or a string, or an escaped string literal. Or, an already defined custom element class.</li>
+   <li>`object model` - See `tlx.view`.</li>
+   <li>`object attributes` -  See `tlx.view`.</li>
+   <li>`object actions` -  See `tlx.view`.</li>
+   <li>`function controller` -  See `tlx.view`.</li>
+   <li>`boolean linkModel` -  See `tlx.view`.</li>
+   <li>`object lifecycle` - Lifecycle callbacks that generally follow the Vue convention for `beforeCreate`, `created`, `beforeMount`, `mounted`, `beforeUpdate`, `updated`.  Because there is no vdom and the DOM automatically manages disposal there is no `activated`, `deactivated`, `beforeDestroy`, or `destroyed`.</li>
+   <li>`boolean reactive` - Set to truthy to make models reactive when they are created upon component creation.</li>
+   <li>`boolean protect` - See `tlx.view`.</li>
+ </ul>
 
 `any tlx.escape(any data)`
 
@@ -548,7 +552,7 @@ data = escapeHTMLEntities(data); // e.g. >= becomes &gte;
 return data
 ```
 
-    `any data` - Any JavaScript data or function. Although, functions will always result in a return of `undefined`.
+   `any data` - Any JavaScript data or function. Although, functions will always result in a return of `undefined`.
 
 `tlx.off`
 

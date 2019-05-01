@@ -31,7 +31,7 @@ Tlx can be used in a manner that respects the separation or intergration of deve
 - [API](#api)
   * [`undefined tlx.protect()`](#protect)
   * [`Proxy tlx.reactor(object target={},object watchers={})`](#reactor)
-  * [`HTMLElement tlx.el(string,tagName,attributes)]`(#el)
+  * [`HTMLElement tlx.el(string,tagName,attributes)`](#el)
   * [`HTMLElement tlx.view(HTMLElement el[,object options])`](#view)
   * [`function tlx.handlers(object handlers)`](#handlers)
   * [`function tlx.router(object routes)`](#router)
@@ -609,7 +609,7 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, 
 
 # Release History (reverse chronological order)
 
-2019-05-01 v1.0.39 - Added `t-content` directive. Fixed some README.md formatting.
+2019-05-01 v1.0.39 - Added `t-content` directive. [14](https://github.com/anywhichway/tlx/issues/14) Fixed some README.md formatting.
 
 2019-02-20 v1.0.38 - Added `index` variable to automatic scope for `in` and `of` for directive.
 
@@ -617,7 +617,7 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, 
 
 2019-02-16 v1.0.36 - Id selectors were sometimes mistaken for URLs due to presence of #. Fixed.
 
-2019-02-16 v1.0.35 - `view` can now take a query selector as the first argument and will conver all matching elements. `template` can now also be an id selector.
+2019-02-16 v1.0.35 - `view` can now take a query selector as the first argument and will convert all matching elements. `template` can now also be an id selector.
 
 2019-02-14 v1.0.34 - `tlx.define(selector,options)` was added, as was the handling on standard "on<event>" definitions as part of the options rather than using a controlller.
 
@@ -637,7 +637,7 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, 
 
 2018-12-24 v1.0.26 - Added protection for `textarea`. Improved reactivity of `<select>`. Added capability to have `linkModel` respond to `oninput` as well as `onchange`.
 
-2018-12-23 v1.0.25 - Added example for issue: [8(https://github.com/anywhichway/tlx/issues/8)
+2018-12-23 v1.0.25 - Added example for issue: [8](https://github.com/anywhichway/tlx/issues/8)
 
 2018-12-23 v1.0.24 - Fixed issues: [5](https://github.com/anywhichway/tlx/issues/5), [7](https://github.com/anywhichway/tlx/issues/7), [8](https://github.com/anywhichway/tlx/issues/8)
 

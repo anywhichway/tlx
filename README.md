@@ -1,4 +1,4 @@
-# TLX v1.0.38
+# TLX v1.0.39
 
 TLX is a small (< 5k minimized and gzipped) multi-paradigm front-end library supporting: template literals in place of JSX; multi-root templates using HTML, JavaScript, or remote URL references; `t-for`, `t-foreach`, `t-forvalues` with iterable protocol support; `t-if` attribute directive; custom attribute directives; optional two-way data binding; automatic or manual creation of standards compliant custom elements and components; standards compliant event handlers; a default router; extended lifecycle callbacks; automatic HTML injection protection.
 
@@ -18,25 +18,25 @@ Tlx can be used in a manner that respects the separation or intergration of deve
   * [Manual State Updating](#manual-state-updating)
   * [Manual State Updating and Re-Rendering](#manual-state-updating-and-re-rendering)
 - [Template Scripting](#template-scripting)
-- [Type="text/template" Script Tag](#type--text-template--script-tag)
+- [Type="text/template" Script Tag](#template)
 - [Attribute Directives](#attribute-directives)
-  * [`t-if`](#-t-if-)
-  * [`t-for:varname[:in|of]`](#-t-for-varname--in-of--)
-  * [`t-foreach`](#-t-foreach-)
-  * [`t-forvalues`](#-t-forvalues-)
+  * [`t-if`](#t-if)
+  * [`t-for:varname[:in|of]`](#t-for)
+  * [`t-foreach`](#t-foreach)
+  * [`t-forvalues`](#t-forvalues)
   * [Custom Attribute Directives](#custom-attribute-directives)
 - [Working With Components](#working-with-components)
 - [Server Side Rendering](#server-side-rendering)
 - [API](#api)
-  * [`undefined tlx.protect()``](#-undefined-tlxprotect----)
-  * [`Proxy tlx.reactor(object target={},object watchers={})`](#-proxy-tlxreactor-object-target----object-watchers-----)
-  * [`HTMLElement tx.el(string,tagName,attributes)` - Wraps `string` in the specified `tagName` with `attributes`. Helps avoid the inclusion of tags in embedded HTML scripts so that the use of `<script type="text/template">` can be avoided.](#-htmlelement-txel-string-tagname-attributes-----wraps--string--in-the-specified--tagname--with--attributes--helps-avoid-the-inclusion-of-tags-in-embedded-html-scripts-so-that-the-use-of---script-type--text-template----can-be-avoided)
-  * [`HTMLElement tlx.view(HTMLElement el[,object options])`](#-htmlelement-tlxview-htmlelement-el--object-options---)
-  * [`function tlx.handlers(object handlers)`](#-function-tlxhandlers-object-handlers--)
-  * [`function tlx.router(object routes)`](#-function-tlxrouter-object-routes--)
-  * [`function tlx.component(string tagName,object options)`](#-function-tlxcomponent-string-tagname-object-options--)
-  * [`any tlx.escape(any data)`](#-any-tlxescape-any-data--)
-  * [`tlx.off`](#-tlxoff-)
+  * [`undefined tlx.protect()`](#protect)
+  * [`Proxy tlx.reactor(object target={},object watchers={})`](#tlxreactor)
+  * [`HTMLElement tlx.el(string,tagName,attributes)` - (#el)
+  * [`HTMLElement tlx.view(HTMLElement el[,object options])`](#view)
+  * [`function tlx.handlers(object handlers)`](#handlers)
+  * [`function tlx.router(object routes)`](#router)
+  * [`function tlx.component(string tagName,object options)`](#component)
+  * [`any tlx.escape(any data)`](#escape)
+  * [`tlx.off`](#off)
 - [Performance](#performance)
 - [Other Reading](#other-reading)
 - [Design Notes](#design-notes)
@@ -231,11 +231,15 @@ You may occasionally run into issues where you can't create valid HTML with the 
 
 # Attribute Directives
 
-TLX comes with four built-in attribute directives, `t-if`, `t-for`, `t-foreach` and `t-forvalues`.
+TLX comes with five built-in attribute directives, `t-content`, `t-if`, `t-for`, `t-foreach` and `t-forvalues`.
 
 For all directives, the `model` currently bound to an element is available as `${model}`.
 
-## `t-if`
+## <a name="t-content">`t-content`</a>
+
+Replaces the `innerHTML` of the element with the escaped value of `t-content`. This can be HTML or plain text.
+
+## <a name="t-if">`t-if`</a>
 
 If the value of `t-if` is truthy, then the element and its nested elements will be displayed,e.g.
 
@@ -247,7 +251,7 @@ If the value of `t-if` is truthy, then the element and its nested elements will 
 <div t-if="false">Will not be shown</div>
 ```
 
-## `t-for:varname[:in|of]`
+## <a name="t-for">`t-for:varname[:in|of]`</a>
 
 The value provided to `t-for`, is the object to process. `t-for` will provide the key or item bound to `varname` for any nested string literal templates. The value of `t-for` can be anything that supports the iterable protocol, e.g.
 
@@ -263,7 +267,7 @@ will render as
 
 The qualifiers `in` and `off` behave the same way they do for JavaScript loops. If the argument is not provided, then iterables will automatically use `of` and other objects will use `in`.
 
-## `t-foreach`
+## <a name="t-foreach">`t-foreach`</a>
 
 The value provided to `t-foreach`, is the array to process. `t-foreach` will provide the scope variables `value`, `index`, and `iterable` to any nested string literal templates. And, if the iterable is an array, the variable `array` will also be available, e.g.
 
@@ -277,7 +281,7 @@ The value provided to `t-foreach`, is the array to process. `t-foreach` will pro
 
 If an array is not provided, the directive is effectively ignored. Consider using `t-forvalues` for more resilient code.
 
-## `t-forvalues`
+## <a name="t-forvalues">`t-forvalues`</a>
 
 The directive `t-forvalues` is similar to `t-foreach`, but it can take either an array or a regular object. The scope variables provided are `value`, `key`, and `object` (which might be an array).
 
@@ -401,22 +405,22 @@ In a real world situation, the model would probably be pulled from a database an
 
 Since there are only 10 API entry points, they are presented in order of likely use rather than alphabetically.
 
-`undefined tlx.protect()``
+## <a name="protect">`undefined tlx.protect()`</a> -
 
  * Turn on automatic HTML injection protection. Can be overridden on a `view` or HTMLInputElement level. The call also modifies the JavaScript `prompt` function such that any values entered by users are escaped to eliminate code injection. If
 an attempt to inject code is made, then the user is informed there is an error and asked to enter somethng again. See `tlx.escape(data)` at the end of this section for info on the escape process.
 
-`Proxy tlx.reactor(object target={},object watchers={})`
+## <a name="reactor">`Proxy tlx.reactor(object target={},object watchers={})`</a> -
 
  * Returns a deep `Proxy` for `object` that automatically tracks usage in `views` and re-renders them when data they use changes.
      `target` - The `object` around which to wrap the `Proxy`. Note, althoush `Map` and `Set` can be used with attribute directives, it is not currently possible to make them reactive.
      `watchers` - A potentially nested object, the keys of which are intended to match the keys on the target `object`. The values are functions with the signature `(oldvalue,value,property,proxy)`. These are invoked synchronously any time the target property value changes. If they throw an error, the value will not get set. If you desire to use asyncronous behavior, then implement your code to inject asynchronicity. Promises will not be awaited if returned.
 
-`HTMLElement tx.el(string,tagName,attributes)` - 
+## <a name="el">`HTMLElement tx.el(string,tagName,attributes)`</a> - 
 
  * Wraps `string` in the specified `tagName` with `attributes`. Helps avoid the inclusion of tags in embedded HTML scripts so that the use of `<script type="text/template">` can be avoided.
 
-`HTMLElement tlx.view(HTMLElement||HTMLCollection el||DOMSelector[,object options])`
+## <a name="view">`HTMLElement tlx.view(HTMLElement||HTMLCollection el||DOMSelector[,object options])`</a> -
 
 * Returns a `view` of the specified `template` bound to the DOM element `el`. If no `template` is specified, then the initial outerHTML of the `el` becomes the template. A `view` is an arbitrary collection of nested DOM nodes the leaves of which are selectively rendered if their contents have changed. The nested DOM nodes all have one additional property `view` that points back to the root element in the `view`.
     
@@ -462,7 +466,7 @@ The `options` object can also have `on<event>` handlers bound to it directly. Th
 tlx.handlers({click: (event) => { event.preventDefault(); console.log(event); });
 ```
 
-`function tlx.router(object routes)`
+## <a name="router">`function tlx.router(object routes)`</a> -
 
 * Returns a handler designed to work with click events on anchor hrefs.
     `object routes` - An object on which the keys are paths to match, functions that return a boolean when passed the target URL path, or regular expressions that can be used to match a URL path. The values are the functions to execute if the path is matched. The functions take a keyed object as an argument holding any `:values` parsed from the URL plus a JSON object for the query string in a property named `query`, if any and a `done` callback. The event will be bound to `this`. The functions will typically instantiate a component and render it to the `this.target.view`; however, they can actually do anything. Calling `this.stopRoute()` or `done()` will stop more routes from being processed for the `event`. Passing `true` to `stopRoute()` or `done()` will update the browser history and show the URL in the navigation bar.
@@ -509,7 +513,7 @@ tlx.view(routed,{controller:handlers});
 * If using a function as a property the return value is used as the argument to the routed function, unless the return value is undefined; in which case, the route fails to match. For regular expressions, the argument to the routed function will always be the URL object from the target.
 
 
-`function tlx.component(string tagName,object options)`
+## <a name="component">`function tlx.component(string tagName,object options)`</a> -
 
 * Returns a function that will create a custom element with `tagName`. Any nested HTML will be inside a
 a shadow DOM. With the exception of `template` and `customElement` the options are default values for the function
@@ -533,7 +537,7 @@ merged into the defaults. To eliminate properties, merge in a object with a targ
    <li>`boolean protect` - See `tlx.view`.</li>
  </ul>
 
-`any tlx.escape(any data)`
+## <a name="escape">`any tlx.escape(any data)`</a> -
 
 * Takes any data and escapes it so it can't be an HTML injection. Returns `undefined` if it can't be escaped. The psuedo code is as follows:
 
@@ -554,7 +558,7 @@ return data
 
    `any data` - Any JavaScript data or function. Although, functions will always result in a return of `undefined`.
 
-`tlx.off`
+## <a name="off">`tlx.off`</a> -
 
 * Setting `tlx.off` to truthy will prevent any template resolution and display un-resolved string template literal notation.
 
@@ -604,6 +608,8 @@ The idea of auto binding based on query selectors was taken from wickedElements.
 Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, `Riot`, `Hyperapp` and `hyperHTML`. We also got inspiration from `Ractive` and `moon`. 
 
 # Release History (reverse chronological order)
+
+2019-05-01 v1.0.39 - Added `t-content` directive. Fixed some README.md formatting.
 
 2019-02-20 v1.0.38 - Added `index` variable to automatic scope for `in` and `of` for directive.
 

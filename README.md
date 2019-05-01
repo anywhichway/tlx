@@ -29,8 +29,8 @@ Tlx can be used in a manner that respects the separation or intergration of deve
 - [Server Side Rendering](#server-side-rendering)
 - [API](#api)
   * [`undefined tlx.protect()`](#protect)
-  * [`Proxy tlx.reactor(object target={},object watchers={})`](#tlxreactor)
-  * [`HTMLElement tlx.el(string,tagName,attributes)` - (#el)
+  * [`Proxy tlx.reactor(object target={},object watchers={})`](#reactor)
+  * [`HTMLElement tlx.el(string,tagName,attributes)]` - (#el)
   * [`HTMLElement tlx.view(HTMLElement el[,object options])`](#view)
   * [`function tlx.handlers(object handlers)`](#handlers)
   * [`function tlx.router(object routes)`](#router)
@@ -405,22 +405,21 @@ In a real world situation, the model would probably be pulled from a database an
 
 Since there are only 10 API entry points, they are presented in order of likely use rather than alphabetically.
 
-## <a name="protect">`undefined tlx.protect()`</a> -
+<a name="protect">`undefined tlx.protect()`</a> -
 
  * Turn on automatic HTML injection protection. Can be overridden on a `view` or HTMLInputElement level. The call also modifies the JavaScript `prompt` function such that any values entered by users are escaped to eliminate code injection. If
 an attempt to inject code is made, then the user is informed there is an error and asked to enter somethng again. See `tlx.escape(data)` at the end of this section for info on the escape process.
-
-## <a name="reactor">`Proxy tlx.reactor(object target={},object watchers={})`</a> -
+<a name="reactor">`Proxy tlx.reactor(object target={},object watchers={})`</a> -
 
  * Returns a deep `Proxy` for `object` that automatically tracks usage in `views` and re-renders them when data they use changes.
      `target` - The `object` around which to wrap the `Proxy`. Note, althoush `Map` and `Set` can be used with attribute directives, it is not currently possible to make them reactive.
      `watchers` - A potentially nested object, the keys of which are intended to match the keys on the target `object`. The values are functions with the signature `(oldvalue,value,property,proxy)`. These are invoked synchronously any time the target property value changes. If they throw an error, the value will not get set. If you desire to use asyncronous behavior, then implement your code to inject asynchronicity. Promises will not be awaited if returned.
 
-## <a name="el">`HTMLElement tx.el(string,tagName,attributes)`</a> - 
+<a name="el">`HTMLElement tx.el(string,tagName,attributes)`</a> - 
 
  * Wraps `string` in the specified `tagName` with `attributes`. Helps avoid the inclusion of tags in embedded HTML scripts so that the use of `<script type="text/template">` can be avoided.
 
-## <a name="view">`HTMLElement tlx.view(HTMLElement||HTMLCollection el||DOMSelector[,object options])`</a> -
+<a name="view">`HTMLElement tlx.view(HTMLElement||HTMLCollection el||DOMSelector[,object options])`</a> -
 
 * Returns a `view` of the specified `template` bound to the DOM element `el`. If no `template` is specified, then the initial outerHTML of the `el` becomes the template. A `view` is an arbitrary collection of nested DOM nodes the leaves of which are selectively rendered if their contents have changed. The nested DOM nodes all have one additional property `view` that points back to the root element in the `view`.
     
@@ -466,7 +465,7 @@ The `options` object can also have `on<event>` handlers bound to it directly. Th
 tlx.handlers({click: (event) => { event.preventDefault(); console.log(event); });
 ```
 
-## <a name="router">`function tlx.router(object routes)`</a> -
+<a name="router">`function tlx.router(object routes)`</a> -
 
 * Returns a handler designed to work with click events on anchor hrefs.
     `object routes` - An object on which the keys are paths to match, functions that return a boolean when passed the target URL path, or regular expressions that can be used to match a URL path. The values are the functions to execute if the path is matched. The functions take a keyed object as an argument holding any `:values` parsed from the URL plus a JSON object for the query string in a property named `query`, if any and a `done` callback. The event will be bound to `this`. The functions will typically instantiate a component and render it to the `this.target.view`; however, they can actually do anything. Calling `this.stopRoute()` or `done()` will stop more routes from being processed for the `event`. Passing `true` to `stopRoute()` or `done()` will update the browser history and show the URL in the navigation bar.
@@ -513,7 +512,7 @@ tlx.view(routed,{controller:handlers});
 * If using a function as a property the return value is used as the argument to the routed function, unless the return value is undefined; in which case, the route fails to match. For regular expressions, the argument to the routed function will always be the URL object from the target.
 
 
-## <a name="component">`function tlx.component(string tagName,object options)`</a> -
+<a name="component">`function tlx.component(string tagName,object options)`</a> -
 
 * Returns a function that will create a custom element with `tagName`. Any nested HTML will be inside a
 a shadow DOM. With the exception of `template` and `customElement` the options are default values for the function
@@ -537,7 +536,7 @@ merged into the defaults. To eliminate properties, merge in a object with a targ
    <li>`boolean protect` - See `tlx.view`.</li>
  </ul>
 
-## <a name="escape">`any tlx.escape(any data)`</a> -
+<a name="escape">`any tlx.escape(any data)`</a> -
 
 * Takes any data and escapes it so it can't be an HTML injection. Returns `undefined` if it can't be escaped. The psuedo code is as follows:
 
@@ -558,7 +557,7 @@ return data
 
    `any data` - Any JavaScript data or function. Although, functions will always result in a return of `undefined`.
 
-## <a name="off">`tlx.off`</a> -
+<a name="off">`tlx.off`</a> -
 
 * Setting `tlx.off` to truthy will prevent any template resolution and display un-resolved string template literal notation.
 

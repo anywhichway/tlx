@@ -120,7 +120,7 @@
 							target.innerHTML = result;
 					} else if(rtype==="object" && result instanceof HTMLElement) {
 						directed = true;
-						if(result!==target) target.parentElement.replaceNode(result,target);
+						if(result!==target) target.parentElement.replaceChild(result,target);
 					}
 				}
 			});
@@ -636,6 +636,13 @@
 	  return el;
 	},
 	directives = {
+			"t-content": (value,scope,actions,render,{raw,resolved,element}={}) => {
+				console.log(raw,element);
+				element = element.cloneNode(element,true);
+				element.removeAttribute("t-content");
+				element.innerHTML=tlx.escape(value);
+				return element;
+			},
 			"t-for": (value,scope,actions,render,{raw,resolved,element}={}) => {
 				// directive is of the form "t-for:varname:looptype"
 				let [_,vname,looptype] = resolved.split(":"),

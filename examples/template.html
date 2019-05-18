@@ -1,6 +1,9 @@
 <div>
-This message area was loaded remotely by remote_template.html.
+This message area was loaded remotely by remote_template.html. You should see the first name twice.
 </div>
 <div>
 ${firstname}
+</div>
+<div t-content="${firstname}">
+
 </div>

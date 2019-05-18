@@ -115,9 +115,9 @@ describe("views",function() {
 		done();
 	});
 	it("content directive (render content)",function(done) {
-		el.innerHTML = '<div t-content="${show}"></div>';
-		tlx.view(el,{model:{show:true}});
-		expect(el.innerHTML).equal(`<div>true</div>`);
+		el.innerHTML = '<div t-content="${value}"></div>';
+		tlx.view(el,{model:{value:1}});
+		expect(el.innerHTML).equal(`<div>1</div>`);
 		done();
 	});
 	it("conditional directive (render content)",function(done) {

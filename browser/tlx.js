@@ -450,13 +450,12 @@
 		},
 		view = function(el,config=el.constructor.defaults||{}) {
 			let {template,model={},attributes={},actions={},controller,linkModel=tlx.linkModel,lifecycle={},protect=PROTECTED} = config;
-			//const args = [].slice.call(arguments,1);
 			if(el.length && el[0]!=null && !el.options) {
 				if(typeof(el)==="string") {
 					const targets = [].slice.call(document.querySelectorAll(el));
-					targets.forEach(el => view(el,...args));
+					targets.forEach(el => view(el,config));
 				} else {
-					[].slice.call(el).forEach(el => view(el,...args));
+					[].slice.call(el).forEach(el => view(el,config));
 				}
 				return el;
 			}
@@ -639,7 +638,8 @@
 	},
 	directives = {
 			"t-content": (value,scope,actions,render,{raw,resolved,element}={}) => {
-				console.log(raw,element);
+				//console.log(raw,element);
+				//if(value.includes("${")) value = resolve(value,scope,actions);
 				element = element.cloneNode(element,true);
 				element.removeAttribute("t-content");
 				element.innerHTML=tlx.escape(value);

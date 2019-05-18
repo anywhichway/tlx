@@ -609,6 +609,8 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, 
 
 # Release History (reverse chronological order)
 
+2019-05-17 v1.0.40 - Fixed [15](https://github.com/anywhichway/tlx/issues/15).
+
 2019-05-01 v1.0.39 - Added `t-content` directive. [14](https://github.com/anywhichway/tlx/issues/14) Fixed some README.md formatting.
 
 2019-02-20 v1.0.38 - Added `index` variable to automatic scope for `in` and `of` for directive.

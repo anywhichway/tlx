@@ -450,7 +450,7 @@
 		},
 		view = function(el,config=el.constructor.defaults||{}) {
 			let {template,model={},attributes={},actions={},controller,linkModel=tlx.linkModel,lifecycle={},protect=PROTECTED} = config;
-			const args = [].slice.call(arguments,1);
+			//const args = [].slice.call(arguments,1);
 			if(el.length && el[0]!=null && !el.options) {
 				if(typeof(el)==="string") {
 					const targets = [].slice.call(document.querySelectorAll(el));
@@ -469,25 +469,27 @@
 					const fragment = document.createElement(el.tagName),
 						isurl = isURL(template),
 						text = new Text(isurl ? `loading ${template}...` : template);
-					if(fragment.shadowRoot) {
-						while(fragment.shadowRoot.lastChild) fragment.shadowRoot.removeChild(fragment.shadowRoot.lastChild);
-						fragment.shadowRoot.appendChild(text);
-					} else if (text[0]!=="#"){
+					if (text[0]!=="#"){
 						fragment.appendChild(text)
 					}
+					config = Object.assign({},config);
+					delete config.template;
 					if(isurl) {
 						fetch(template).then(response => {
 							if(response.ok) return response.text();
 							throw new Error(`Error: ${text.data}`);
 						}).then(template => {
-							view(el,...args);
+							el.innerHTML = template;
+							view(el,config);
+							return;
 						}).catch(e => {
 							el.innerHTML = e.message;
+							return;
 						});
 					} else if(template[0]==="#"){
 						const source = document.getElementById(template.substring(0));
-						args.template = source;
-						return view(el,...args);
+						el.innerHTML = source;
+						return view(el,config);
 					}
 					template = fragment;
 				}

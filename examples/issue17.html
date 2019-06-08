@@ -1,0 +1,44 @@
+<html lang="en">
+<head>
+	<!--<script src="https://unpkg.com/tlx/browser/tlx.min.js"></script>-->
+	<script src="https://unpkg.com/tlx@1.0.41/browser/tlx.min.js"></script>
+	<style>
+	input:invalid {
+  		box-shadow: 0 0 5px 1px red;
+	}
+	</style>
+</head>
+<body id="body">
+<div>
+You must be loading this file over an http server for this example to work
+</div>
+<div id="message"></div>
+<hr />
+<div id="test1" style="color:red;">${myvar}</div>
+<hr />
+<div id="name">First Name: <input id="firstName" name="firstname" value="${firstname}" protect placeholder="Enter a name"></div>
+<hr />
+<hr />
+<div>Below there should be a message that a load has failed.</div>
+<div id="fail"></div>
+<script>
+
+const model = tlx.reactor({firstname:"joe"}),
+	 model2 = tlx.reactor({myvar:"TemplateContentVariableValue"}),
+		url = new URL("./template.html",window.location.href),
+	missing = new URL("./missing.html",window.location.href);
+
+
+tlx.view(document.getElementById("name"),{model,linkModel:true});
+
+tlx.view(document.getElementById("test1"),{model:model2,linkModel:true});
+
+tlx.view(document.getElementById("message"),{model,template:url.href});
+tlx.view(document.getElementById("fail"),{model,template:missing.href});
+
+
+//tlx.view(document.getElementsByClassName("test1"),{model:model2,linkModel:true});
+//tlx.view(document.getElementById("test2"),{model:model2,linkModel:true});
+</script>
+</body>
+</html>

@@ -102,6 +102,24 @@ describe("views",function() {
 		expect(el.firstElementChild.value).equal("test");
 		done();
 	});
+	it("content directive (null content)",function(done) {
+		el.innerHTML = '<div t-content="${value}">original</div>';
+		tlx.view(el,{model:{value:null}});
+		expect(el.innerHTML).equal('<div t-content="${value}">original</div>');
+		done();
+	});
+	it("content directive (empty content)",function(done) {
+		el.innerHTML = '<div t-content="${value}">original</div>';
+		tlx.view(el,{model:{value:""}});
+		expect(el.innerHTML).equal('<div></div>');
+		done();
+	});
+	it("content directive (render content)",function(done) {
+		el.innerHTML = '<div t-content="${value}"></div>';
+		tlx.view(el,{model:{value:1}});
+		expect(el.innerHTML).equal(`<div>1</div>`);
+		done();
+	});
 	it("conditional (render content)",function(done) {
 		el.innerHTML = "${show ? 'hi' : ''}";
 		tlx.view(el,{model:{show:true}});
@@ -112,12 +130,6 @@ describe("views",function() {
 		el.innerHTML = "${show ? 'hi' : ''}";
 		tlx.view(el,{model:{show:false}});
 		expect(el.innerHTML).equal("");
-		done();
-	});
-	it("content directive (render content)",function(done) {
-		el.innerHTML = '<div t-content="${value}"></div>';
-		tlx.view(el,{model:{value:1}});
-		expect(el.innerHTML).equal(`<div>1</div>`);
 		done();
 	});
 	it("conditional directive (render content)",function(done) {

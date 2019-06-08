@@ -211,11 +211,13 @@
 			return target;
 		},
 		reactor = (object={},watchers={}) => {
-			Object.keys(object).forEach(key => {
-				if(object[key] && typeof(object[key])==="object") reactor(object[key],watchers[key]);
+			const target = Object.assign({},object);
+			Object.keys(target).forEach(key => {
+				if(target[key] && typeof(target[key])==="object") target[key] = reactor(target[key],watchers[key]);
 			});
-			const proxy = new Proxy(object,{
+			const proxy = new Proxy(target,{
 				get(target,property) {
+					if(property==="__isReactor__") return true;
 					// keep track of where object properties are referenced
 					// take advantage of JavaScript single threading by using a single
 					// global variable pointing to a DOM node. The variable gets set each
@@ -237,6 +239,9 @@
 					if(oldvalue===value) return true;
 					if(watcher) {
 						(Array.isArray(watcher) ? watcher : [watcher]).forEach(callback => watchers[property](oldvalue,value,property,proxy));
+					}
+					if(value && typeof(value)==="object" && !value.__isReactor__) {
+						value = reactor(value);
 					}
 					target[property] = value;
 					// if oldvalue is undefined, then a new property is being added so get all references to object, not just those using property
@@ -638,11 +643,13 @@
 	},
 	directives = {
 			"t-content": (value,scope,actions,render,{raw,resolved,element}={}) => {
-				//console.log(raw,element);
-				//if(value.includes("${")) value = resolve(value,scope,actions);
-				element = element.cloneNode(element,true);
-				element.removeAttribute("t-content");
-				element.innerHTML=tlx.escape(value);
+				//element = element.cloneNode(element,true);
+				if(value!=null) {
+					element.removeAttribute("t-content");
+					element.innerHTML=tlx.escape(value);
+				} else {
+					element.outerHTML=element.view.template;
+				}
 				return element;
 			},
 			"t-for": (value,scope,actions,render,{raw,resolved,element}={}) => {

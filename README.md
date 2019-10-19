@@ -609,6 +609,8 @@ Obviously, inspiration has been drawn from `React`, `preact`, `Vue`, `Angular`, 
 
 # Release History (reverse chronological order)
 
+2019-10-19 v1.0.44 - Fixed [20](https://github.com/anywhichway/tlx/issues/20) - Reactor creation was not handling Arrays very well.
+
 2019-05-25 v1.0.43 - Ehanced `t-content` to leave existing innerHTML if t-content value is null or undefined.
 
 2019-05-25 v1.0.42 - Ehanced `reactor` to create nested reactors.

@@ -211,7 +211,7 @@
 			return target;
 		},
 		reactor = (object={},watchers={}) => {
-			const target = Object.assign({},object);
+			const target = Object.assign(Array.isArray(object) ? [] : {},object);
 			Object.keys(target).forEach(key => {
 				if(target[key] && typeof(target[key])==="object") target[key] = reactor(target[key],watchers[key]);
 			});
@@ -245,21 +245,23 @@
 					}
 					target[property] = value;
 					// if oldvalue is undefined, then a new property is being added so get all references to object, not just those using property
-					const dependencies = DEPENDENCIES.get(target),
-						propertysets = oldvalue===undefined ? Object.values(dependencies) : [dependencies[property]],
+					const dependencies = DEPENDENCIES.get(target);
+					if(dependencies) {
+						const propertysets = oldvalue===undefined ? Object.values(dependencies) : [dependencies[property]],
 						rendered = new Set(); // keep track of rendered views in case the sam eone occurs twice fro new properties
-					if(dependencies && propertysets) {
-						propertysets.forEach(set => {
-							(set||[]).forEach(view => {
-								const render = view.render || (view.view ? view.view.render : null);
-								if(!rendered.has(view) && view.parentElement && render) {
-									render();
-									rendered.add(view);
-								} else if(oldvalue!==undefined) { // view no longer valid if no parentElement
-									dependencies[property].delete(view);
-								}
+						if(propertysets) {
+							propertysets.forEach(set => {
+								(set||[]).forEach(view => {
+									const render = view.render || (view.view ? view.view.render : null);
+									if(!rendered.has(view) && view.parentElement && render) {
+										render();
+										rendered.add(view);
+									} else if(oldvalue!==undefined) { // view no longer valid if no parentElement
+										dependencies[property].delete(view);
+									}
+								});
 							});
-						});
+						}
 					}
 					return true;
 				},

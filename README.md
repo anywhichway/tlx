@@ -1,4 +1,4 @@
-# TLX v1.0.43
+# TLX v1.0.45
 
 TLX is a small (< 5k minimized and gzipped) multi-paradigm front-end library supporting: template literals in place of JSX; multi-root templates using HTML, JavaScript, or remote URL references; `t-for`, `t-foreach`, `t-forvalues` with iterable protocol support; `t-if` attribute directive; custom attribute directives; optional two-way data binding; automatic or manual creation of standards compliant custom elements and components; standards compliant event handlers; a default router; extended lifecycle callbacks; automatic HTML injection protection.
 

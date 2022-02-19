@@ -1,7 +1,7 @@
 {
   "name": "tlx",
-  "version": "v1.0.45",
-  "description": "TLX is a small (< 5K minimized and gzipped) multi-paradigm front-end library.",
+  "version": "v2.0.0b",
+  "description": "TLX is a small (5K minimized and gzipped) multi-paradigm front-end library.",
   "engines": {},
   "license": "MIT",
   "scripts": {
@@ -19,7 +19,8 @@
     "hyperapp",
     "CustomElements",
     "VUE",
-    "Riot"
+    "Riot",
+    "Svelte"
   ],
   "author": "Simon Y. Blackwell <syblackwell@anywhichway.com> (http://www.github.com/anywhichway)",
   "bugs": {

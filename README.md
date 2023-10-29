@@ -1,5 +1,7 @@
 # TLX v1.0.45
 
+The project has been depreacted in favor of [lazui](https://https://github.com/anywhichway/lazui).
+
 TLX is a small (< 5k minimized and gzipped) multi-paradigm front-end library supporting: template literals in place of JSX; multi-root templates using HTML, JavaScript, or remote URL references; `t-for`, `t-foreach`, `t-forvalues` with iterable protocol support; `t-if` attribute directive; custom attribute directives; optional two-way data binding; automatic or manual creation of standards compliant custom elements and components; standards compliant event handlers; a default router; extended lifecycle callbacks; automatic HTML injection protection.
 
 
@@ -572,7 +574,7 @@ Tlx generally updates at about 60 FPS regardless of % of nodes changing. For a d
 
 [HTML Injection Protection With TLX](https://medium.com/@anywhichway/html-injection-protection-with-tlx-35bda6a4c573)
 
-[Custom Attribute Directives With TLX](https://medium.com/@anywhichway/custom-attribute-directives-with-tlx-13fd53bf2b9a)
+[Custom Attribute Directives WithÂ TLX](https://medium.com/@anywhichway/custom-attribute-directives-with-tlx-13fd53bf2b9a)
 
 
 # Design Notes

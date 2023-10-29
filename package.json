@@ -1,12 +1,9 @@
 {
   "name": "tlx",
-  "version": "v2.0.0b",
+  "version": "v1.0.46",
   "description": "TLX is a small (5K minimized and gzipped) multi-paradigm front-end library.",
   "engines": {},
   "license": "MIT",
-  "scripts": {
-    "prepare": "cp index.js ./browser/tlx.js && uglifyjs browser/tlx.js --mangle -o browser/tlx.min.js"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/anywhichway/tlx.git"
